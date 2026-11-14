@@ -1,0 +1,49 @@
+[gd_resource type="Resource" script_class="HordeConfig" load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://scripts/hordes/horde_config.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/hordes/horde_spawn_entry.gd" id="2"]
+[ext_resource type="Resource" path="res://data/enemies/zombie.tres" id="3"]
+[ext_resource type="Resource" path="res://data/enemies/zombie_fast.tres" id="4"]
+[ext_resource type="Resource" path="res://data/enemies/zombie_brute.tres" id="5"]
+
+[sub_resource type="Resource" id="Entry_zombie"]
+script = ExtResource("2")
+enemy = ExtResource("3")
+unlock_night = 1
+weight = 10.0
+weight_growth = 0.0
+max_per_night = 0
+guaranteed = 0
+
+[sub_resource type="Resource" id="Entry_fast"]
+script = ExtResource("2")
+enemy = ExtResource("4")
+unlock_night = 4
+weight = 2.5
+weight_growth = 0.6
+max_per_night = 0
+guaranteed = 3
+
+[sub_resource type="Resource" id="Entry_brute"]
+script = ExtResource("2")
+enemy = ExtResource("5")
+unlock_night = 5
+weight = 0.6
+weight_growth = 0.25
+max_per_night = 0
+guaranteed = 1
+
+[resource]
+script = ExtResource("1")
+entries = Array[ExtResource("2")]([SubResource("Entry_zombie"), SubResource("Entry_fast"), SubResource("Entry_brute")])
+base_count = 10
+count_per_night = 6.0
+late_growth = 1.12
+max_alive = 140
+hp_growth_per_night = 0.08
+damage_growth_per_night = 0.05
+spawn_window = 0.6
+waves = 3
+elite_nights = PackedInt32Array(3, 5, 7, 9)
+elite_every_after = 10
+blood_moon_every = 7

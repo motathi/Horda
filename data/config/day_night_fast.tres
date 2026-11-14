@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="DayNightConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/day_night_config.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+dawn_duration = 45.0
+day_duration = 300.0
+dusk_duration = 60.0
+night_duration = 240.0
+night_warning_time = 40.0

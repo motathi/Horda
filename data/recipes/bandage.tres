@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="Recipe" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/crafting/recipe.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"bandage"
+display_name = "Curativo"
+description = "Recupera 120 de vida ao longo de 6 segundos (tecla 2)."
+inputs = {
+&"herbs": 2,
+&"cloth": 2
+}
+output_item = &"bandage"
+output_amount = 1

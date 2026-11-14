@@ -1,0 +1,67 @@
+[gd_resource type="Resource" script_class="EnemyDef" load_steps=10 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_def.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/enemies/portrait_zombie.jpg" id="2"]
+[ext_resource type="Script" path="res://scripts/enemies/loot_entry.gd" id="3"]
+[ext_resource type="Script" path="res://scripts/enemies/loot_table.gd" id="4"]
+
+[sub_resource type="Resource" id="LootEntry_0"]
+script = ExtResource("3")
+item_id = &"wood"
+min_amount = 1
+max_amount = 2
+chance = 0.35
+
+[sub_resource type="Resource" id="LootEntry_1"]
+script = ExtResource("3")
+item_id = &"cloth"
+min_amount = 1
+max_amount = 2
+chance = 0.45
+
+[sub_resource type="Resource" id="LootEntry_2"]
+script = ExtResource("3")
+item_id = &"meat"
+min_amount = 1
+max_amount = 1
+chance = 0.3
+
+[sub_resource type="Resource" id="LootEntry_3"]
+script = ExtResource("3")
+item_id = &"scrap"
+min_amount = 1
+max_amount = 2
+chance = 0.25
+
+[sub_resource type="Resource" id="LootEntry_4"]
+script = ExtResource("3")
+item_id = &"herbs"
+min_amount = 1
+max_amount = 1
+chance = 0.15
+
+[sub_resource type="Resource" id="LootTable_main"]
+script = ExtResource("4")
+entries = Array[ExtResource("3")]([SubResource("LootEntry_0"), SubResource("LootEntry_1"), SubResource("LootEntry_2"), SubResource("LootEntry_3"), SubResource("LootEntry_4")])
+
+[resource]
+script = ExtResource("1")
+id = &"zombie"
+display_name = "Zumbi Comum"
+description = "Lento e persistente. Ataca em grandes grupos."
+portrait = ExtResource("2")
+behavior = 0
+max_health = 60.0
+armor = 0.0
+damage = 9.0
+attack_range = 1.6
+attack_cooldown = 1.4
+move_speed = 3.0
+aggro_range = 11.0
+structure_damage_mult = 1.0
+xp_reward = 10
+model_scale = 1.0
+skin_tint = Color(0.62, 0.78, 0.52, 1)
+cloth_tint = Color(0.36, 0.3, 0.42, 1)
+hunch = 0.35
+loot = SubResource("LootTable_main")

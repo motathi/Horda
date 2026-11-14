@@ -1,0 +1,222 @@
+class_name EffectsHub
+extends Node3D
+## Central de efeitos visuais com pooling (textos de dano, sangue, lascas,
+## itens no chão, marcadores). Acesso estático: EffectsHub.spawn_blood(...).
+
+static var _inst: EffectsHub
+
+var _texts: ObjectPool
+var _blood: ObjectPool
+var _debris: ObjectPool
+var _stone: ObjectPool
+var _heal: ObjectPool
+var _pickups: ObjectPool
+var _marker: MeshInstance3D
+var _marker_t: float = 0.0
+
+func _enter_tree() -> void:
+	_inst = self
+
+func _exit_tree() -> void:
+	if _inst == self:
+		_inst = null
+
+func _ready() -> void:
+	_texts = _make_pool("Texts", func() -> Node: return FloatingText.new(), 32)
+	_blood = _make_pool("Blood", func() -> Node: return _make_burst(Color(0.55, 0.05, 0.04), 18, 0.6, 4.0, 0.07), 24)
+	_debris = _make_pool("Debris", func() -> Node: return _make_burst(Color(0.55, 0.38, 0.2), 10, 0.7, 4.5, 0.09), 8)
+	_stone = _make_pool("Stone", func() -> Node: return _make_burst(Color(0.6, 0.6, 0.62), 10, 0.7, 4.5, 0.1), 8)
+	_heal = _make_pool("Heal", func() -> Node: return _make_burst(Color(0.4, 1.0, 0.4), 24, 1.0, 2.0, 0.08, -3.0), 4)
+	_pickups = _make_pool("Pickups", func() -> Node: return ResourcePickup.new(), 24)
+	_marker = MeshInstance3D.new()
+	var torus := TorusMesh.new()
+	torus.inner_radius = 0.35
+	torus.outer_radius = 0.5
+	_marker.mesh = torus
+	_marker.material_override = MaterialLib.flat(Color(0.3, 1.0, 0.3), 0.5, 2.0)
+	_marker.visible = false
+	add_child(_marker)
+	EventBus.damage_dealt.connect(_on_damage_dealt)
+
+func _make_pool(n: String, f: Callable, pre: int) -> ObjectPool:
+	var p := ObjectPool.new()
+	p.name = n
+	p.factory = f
+	p.prewarm = pre
+	add_child(p)
+	return p
+
+func _make_burst(color: Color, amount: int, life: float, speed: float, size: float, gravity: float = -12.0) -> BurstEffect:
+	var b := BurstEffect.new()
+	b.one_shot = true
+	b.emitting = false
+	b.amount = amount
+	b.lifetime = life
+	b.explosiveness = 0.95
+	b.local_coords = false
+	var pm := ParticleProcessMaterial.new()
+	pm.direction = Vector3.UP
+	pm.spread = 75.0
+	pm.initial_velocity_min = speed * 0.5
+	pm.initial_velocity_max = speed
+	pm.gravity = Vector3(0, gravity, 0)
+	pm.scale_min = 0.6
+	pm.scale_max = 1.3
+	pm.color = color
+	var curve := CurveTexture.new()
+	var c := Curve.new()
+	c.add_point(Vector2(0, 1))
+	c.add_point(Vector2(1, 0))
+	curve.curve = c
+	pm.scale_curve = curve
+	b.process_material = pm
+	var mesh := BoxMesh.new()
+	mesh.size = Vector3.ONE * size
+	var mat := StandardMaterial3D.new()
+	mat.vertex_color_use_as_albedo = true
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mesh.material = mat
+	b.draw_pass_1 = mesh
+	return b
+
+# --- API estática ------------------------------------------------------------
+
+static func float_text(pos: Vector3, txt: String, color: Color, size: int = 44) -> void:
+	if _inst:
+		(_inst._texts.acquire() as FloatingText).activate(pos, txt, color, size, 1.2)
+
+static func spawn_blood(pos: Vector3, big: bool = false) -> void:
+	if _inst:
+		(_inst._blood.acquire() as BurstEffect).activate(pos, Color(0.5, 0.06, 0.04) if randf() < 0.7 else Color(0.3, 0.45, 0.1), 1.0 if big else 0.6)
+
+static func spawn_debris(pos: Vector3, stone: bool = false) -> void:
+	if _inst:
+		var pool := _inst._stone if stone else _inst._debris
+		(pool.acquire() as BurstEffect).activate(pos, Color(0.6, 0.6, 0.62) if stone else Color(0.55, 0.38, 0.2))
+
+static func spawn_heal(pos: Vector3) -> void:
+	if _inst:
+		(_inst._heal.acquire() as BurstEffect).activate(pos + Vector3.UP * 0.5, Color(0.4, 1.0, 0.45))
+
+static func drop_item(pos: Vector3, id: StringName, amount: int) -> void:
+	if _inst and amount > 0:
+		(_inst._pickups.acquire() as ResourcePickup).activate(pos, id, amount)
+
+static func spawn_marker(pos: Vector3) -> void:
+	if _inst:
+		_inst._marker.global_position = pos + Vector3.UP * 0.05
+		_inst._marker.visible = true
+		_inst._marker_t = 0.6
+
+static func spawn_slash(pos: Vector3, yaw: float) -> void:
+	if _inst == null:
+		return
+	var arc := MeshInstance3D.new()
+	var torus := TorusMesh.new()
+	torus.inner_radius = 1.1
+	torus.outer_radius = 1.4
+	torus.rings = 16
+	torus.ring_segments = 4
+	arc.mesh = torus
+	arc.scale = Vector3(1, 0.08, 1)
+	arc.material_override = MaterialLib.unshaded(Color(1.0, 0.9, 0.6, 0.5))
+	arc.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_inst.add_child(arc)
+	arc.global_position = pos
+	arc.rotation.y = yaw
+	var tw := arc.create_tween()
+	tw.tween_property(arc, "scale", Vector3(1.4, 0.02, 1.4), 0.15)
+	tw.tween_callback(arc.queue_free)
+
+## Fogo preso a um nó (zumbis queimando ao amanhecer).
+static func attach_fire(target: Node3D) -> Node3D:
+	var f := make_fire_particles(0.8)
+	target.add_child(f)
+	return f
+
+static func make_fire_particles(size: float) -> GPUParticles3D:
+	var p := GPUParticles3D.new()
+	p.amount = 24
+	p.lifetime = 0.8
+	p.local_coords = false
+	var pm := ParticleProcessMaterial.new()
+	pm.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
+	pm.emission_sphere_radius = 0.35 * size
+	pm.direction = Vector3.UP
+	pm.spread = 15.0
+	pm.initial_velocity_min = 1.0 * size
+	pm.initial_velocity_max = 2.2 * size
+	pm.gravity = Vector3(0, 1.5, 0)
+	var grad := Gradient.new()
+	grad.set_color(0, Color(1.0, 0.85, 0.3, 1.0))
+	grad.set_color(1, Color(0.8, 0.15, 0.02, 0.0))
+	var gt := GradientTexture1D.new()
+	gt.gradient = grad
+	pm.color_ramp = gt
+	var curve := CurveTexture.new()
+	var c := Curve.new()
+	c.add_point(Vector2(0, 1))
+	c.add_point(Vector2(1, 0.2))
+	curve.curve = c
+	pm.scale_curve = curve
+	p.process_material = pm
+	var q := QuadMesh.new()
+	q.size = Vector2.ONE * 0.45 * size
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.vertex_color_use_as_albedo = true
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+	mat.albedo_texture = _soft_dot()
+	q.material = mat
+	p.draw_pass_1 = q
+	return p
+
+static var _dot: GradientTexture2D
+
+## Textura radial suave usada pelas partículas de fogo.
+static func _soft_dot() -> GradientTexture2D:
+	if _dot == null:
+		var g := Gradient.new()
+		g.set_color(0, Color(1, 1, 1, 1))
+		g.set_color(1, Color(1, 1, 1, 0))
+		_dot = GradientTexture2D.new()
+		_dot.gradient = g
+		_dot.fill = GradientTexture2D.FILL_RADIAL
+		_dot.fill_from = Vector2(0.5, 0.5)
+		_dot.fill_to = Vector2(1.0, 0.5)
+		_dot.width = 64
+		_dot.height = 64
+	return _dot
+
+func pickups_to_save() -> Array:
+	var out := []
+	for c in _pickups.get_children():
+		var rp := c as ResourcePickup
+		if rp and rp.visible:
+			out.append(rp.to_save())
+	return out
+
+static func instance() -> EffectsHub:
+	return _inst
+
+func _process(delta: float) -> void:
+	if _marker_t > 0.0:
+		_marker_t -= delta
+		_marker.scale = Vector3.ONE * (0.5 + _marker_t)
+		if _marker_t <= 0.0:
+			_marker.visible = false
+
+func _on_damage_dealt(target: Node3D, info: DamageInfo, amount: float) -> void:
+	var pos := target.global_position + Vector3.UP * 2.2
+	var txt := str(int(round(amount)))
+	if target is Hero:
+		float_text(pos, "-" + txt, Color(1.0, 0.3, 0.25), 40)
+	elif target is Structure:
+		if randf() < 0.35:
+			float_text(pos + Vector3.UP, txt, Color(1.0, 0.6, 0.2), 34)
+	elif info.is_crit:
+		float_text(pos, txt + "!", Color(1.0, 0.85, 0.15), 64)
+	elif info.source is Hero:
+		float_text(pos, txt, Color(1, 1, 1), 46)

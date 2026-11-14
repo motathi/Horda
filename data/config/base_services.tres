@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="BaseServicesConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/economy/base_services_config.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+wall_hp_per_wood = 20.0
+core_hp_per_unit = 45.0
+sharpen_max_level = 5
+sharpen_base_cost = {
+&"scrap": 6,
+&"stone": 3
+}

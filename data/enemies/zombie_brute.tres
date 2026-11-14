@@ -1,0 +1,60 @@
+[gd_resource type="Resource" script_class="EnemyDef" load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_def.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/enemies/portrait_zombie_brute.jpg" id="2"]
+[ext_resource type="Script" path="res://scripts/enemies/loot_entry.gd" id="3"]
+[ext_resource type="Script" path="res://scripts/enemies/loot_table.gd" id="4"]
+
+[sub_resource type="Resource" id="LootEntry_0"]
+script = ExtResource("3")
+item_id = &"stone"
+min_amount = 2
+max_amount = 4
+chance = 0.7
+
+[sub_resource type="Resource" id="LootEntry_1"]
+script = ExtResource("3")
+item_id = &"scrap"
+min_amount = 2
+max_amount = 5
+chance = 0.8
+
+[sub_resource type="Resource" id="LootEntry_2"]
+script = ExtResource("3")
+item_id = &"meat"
+min_amount = 1
+max_amount = 3
+chance = 0.6
+
+[sub_resource type="Resource" id="LootEntry_3"]
+script = ExtResource("3")
+item_id = &"wood"
+min_amount = 1
+max_amount = 3
+chance = 0.5
+
+[sub_resource type="Resource" id="LootTable_main"]
+script = ExtResource("4")
+entries = Array[ExtResource("3")]([SubResource("LootEntry_0"), SubResource("LootEntry_1"), SubResource("LootEntry_2"), SubResource("LootEntry_3")])
+
+[resource]
+script = ExtResource("1")
+id = &"zombie_brute"
+display_name = "Zumbi Resistente"
+description = "Enorme e blindado. Derruba muros com facilidade."
+portrait = ExtResource("2")
+behavior = 2
+max_health = 240.0
+armor = 3.0
+damage = 22.0
+attack_range = 2.1
+attack_cooldown = 2.0
+move_speed = 2.3
+aggro_range = 10.0
+structure_damage_mult = 2.5
+xp_reward = 40
+model_scale = 1.55
+skin_tint = Color(0.55, 0.6, 0.7, 1)
+cloth_tint = Color(0.25, 0.22, 0.2, 1)
+hunch = 0.2
+loot = SubResource("LootTable_main")

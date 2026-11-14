@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="ItemDef" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/inventory/item_def.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/res_stone.jpg" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = &"stone"
+display_name = "Pedra"
+description = "Usada para reforçar e reparar o Núcleo da base."
+category = 0
+icon = ExtResource("2")
+weight = 2
+color = Color(0.6, 0.62, 0.66, 1)
+heal_instant = 0.0
+heal_over_time = 0.0
+heal_duration = 0.0

@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="ItemDef" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/inventory/item_def.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/ability_heal.jpg" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = &"bandage"
+display_name = "Curativo"
+description = "Consumível (tecla 2): recupera 120 de vida ao longo de 6 segundos."
+category = 1
+icon = ExtResource("2")
+weight = 1
+color = Color(0.95, 0.95, 0.9, 1)
+heal_instant = 0.0
+heal_over_time = 120.0
+heal_duration = 6.0

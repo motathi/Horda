@@ -1,0 +1,53 @@
+[gd_resource type="Resource" script_class="EnemyDef" load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_def.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/enemies/portrait_zombie_fast.jpg" id="2"]
+[ext_resource type="Script" path="res://scripts/enemies/loot_entry.gd" id="3"]
+[ext_resource type="Script" path="res://scripts/enemies/loot_table.gd" id="4"]
+
+[sub_resource type="Resource" id="LootEntry_0"]
+script = ExtResource("3")
+item_id = &"cloth"
+min_amount = 1
+max_amount = 2
+chance = 0.5
+
+[sub_resource type="Resource" id="LootEntry_1"]
+script = ExtResource("3")
+item_id = &"herbs"
+min_amount = 1
+max_amount = 2
+chance = 0.35
+
+[sub_resource type="Resource" id="LootEntry_2"]
+script = ExtResource("3")
+item_id = &"meat"
+min_amount = 1
+max_amount = 1
+chance = 0.3
+
+[sub_resource type="Resource" id="LootTable_main"]
+script = ExtResource("4")
+entries = Array[ExtResource("3")]([SubResource("LootEntry_0"), SubResource("LootEntry_1"), SubResource("LootEntry_2")])
+
+[resource]
+script = ExtResource("1")
+id = &"zombie_fast"
+display_name = "Zumbi Rápido"
+description = "Corre em disparada até o alvo. Frágil, mas perigoso em bandos."
+portrait = ExtResource("2")
+behavior = 1
+max_health = 38.0
+armor = 0.0
+damage = 7.0
+attack_range = 1.5
+attack_cooldown = 0.9
+move_speed = 6.2
+aggro_range = 16.0
+structure_damage_mult = 0.7
+xp_reward = 12
+model_scale = 0.9
+skin_tint = Color(0.72, 0.68, 0.6, 1)
+cloth_tint = Color(0.5, 0.18, 0.15, 1)
+hunch = 0.55
+loot = SubResource("LootTable_main")

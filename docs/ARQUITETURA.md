@@ -1,0 +1,67 @@
+# Arquitetura — Fase 1
+
+## Princípios
+
+- **Dados separados da lógica**: itens, inimigos, saques, receitas, hordas, ciclo dia/noite e custos
+  da base são `Resource`s em `res://data/**.tres`. Balancear = editar dados no inspetor.
+- **Comunicação por sinais** (`EventBus`) entre módulos; nada de referências cruzadas entre HUD,
+  economia, combate e hordas. Autoloads só expõem estado global, nunca dependem de cenas.
+- **Componentes reutilizáveis**: `HealthComponent` (vida/armadura/regeneração/cura ao longo do tempo)
+  serve herói, zumbis e construções; `ObjectPool` recicla textos de dano, partículas e itens no chão.
+- **Uma cena por entidade** (`scenes/player/hero.tscn`, `scenes/enemies/zombie.tscn`,
+  `scenes/buildings/*.tscn`); o visual dos personagens é montado proceduralmente (`CharacterModel`)
+  a partir de primitivas + texturas pintadas, com animação procedural (andar, golpe, dano, morte).
+- **Preparado para co-op**: o herói é uma entidade comum no grupo `allies`; inimigos escolhem
+  alvos por grupo (não por singleton), e todo estado salvo é serializado por sistema — base para
+  replicar com `MultiplayerSynchronizer` no futuro.
+
+## Autoloads
+
+| Autoload | Responsabilidade |
+|---|---|
+| `EventBus` | Sinais globais (dano, abates, coleta, hordas, mensagens/banners) |
+| `GameManager` | Estado da partida, dificuldade, troca de cena, fim de jogo, estatísticas |
+| `TimeManager` | Relógio e ciclo Amanhecer/Dia/Entardecer/Noite (config `DayNightConfig`) |
+| `ResourceManager` | Catálogo de itens, mochila do herói (capacidade por peso) e armazém da base |
+| `SaveManager` | Salvamento JSON em `user://savegame.json` (cada sistema serializa a si mesmo) |
+| `AudioManager` | Pool de players 2D/3D com limitação de repetição |
+
+## Módulos (scripts/)
+
+| Pasta | Conteúdo |
+|---|---|
+| `core/` | `HealthComponent`, `DamageInfo`, `ObjectPool`, `Layers`, `DayNightConfig` |
+| `player/` | `Hero` (movimento WASD/clique, ataque em arco, interação, consumíveis, morte/renascimento), `CameraRig` |
+| `enemies/` | `Enemy` (IA em estados: vagar, perseguir, atacar, cerco, voltar), `EnemyDef`, `LootTable` |
+| `hordes/` | `HordeConfig` (progressão por dados), `HordeDirector` (ondas, direções, elites, lua de sangue), `WorldSpawner` (população diurna por região) |
+| `building/` | `Structure` (paliçada, portão só para aliados, núcleo), `BaseZone` (depósito automático) |
+| `economy/` `crafting/` | `BaseServices` (reparos, afiar arma, fabricação), `Recipe`, `BaseServicesConfig` |
+| `world/` | `World` (orquestra a partida), `WorldBuilder` (mapa determinístico por semente), `PropFactory`, `Harvestable`, `Lootable`, `ResourcePickup`, `DayNightVisuals` |
+| `combat/` | `EffectsHub` (efeitos com pool), `FloatingText`, `BurstEffect` |
+| `visual/` | `CharacterModel`, `HealthBar3D`, `MaterialLib` (cache de materiais) |
+| `ui/` | `HUD`, `TopBar`, `BottomBar`, `SelectionPanel`, `Minimap`, `InventoryPanel`, `BasePanel`, `MainMenu`, `UIStyle` |
+
+## Decisões importantes
+
+- **Zumbis x muros**: a malha de navegação é assada só com a camada `world` (terreno e props);
+  muros/portões ficam fora. Assim os zumbis seguem o caminho direto até o Núcleo, esbarram na
+  paliçada e passam a atacá-la (`Enemy._check_blockers` / detecção de "preso"). Zumbis resistentes
+  têm multiplicador de dano contra estruturas.
+- **Portão**: está na camada `gate`, que colide com inimigos mas não com o herói — abre visualmente
+  para aliados e continua bloqueando zumbis.
+- **Desempenho**: IA "pensa" a 4 Hz com fase aleatória; zumbis diurnos a mais de 75 m do herói
+  dormem; separação entre zumbis é um empurrão barato em vez de física/avoidance; sons são
+  limitados por tipo; efeitos e itens usam pool; materiais são compartilhados.
+- **Malha de navegação** é reassada em segundo plano ao amanhecer quando árvores foram derrubadas.
+- **Renderização**: Forward+ (SSAO, glow, sombras). Shaders evitam `instance uniform` para também
+  rodar no renderizador Compatibility.
+
+## Roteiro
+
+- **Fase 2 — RPG**: experiência/níveis (já há `xp_reward` nos inimigos), atributos (Força, Agilidade,
+  Vitalidade, Inteligência, Engenharia), energia, habilidades (ícones de *Golpe Giratório* e *Cura* já
+  gerados), equipamentos com raridade e fabricação de armas via `Recipe`.
+- **Fase 3 — Construção**: posicionamento com prévia (reutiliza `Structure`), muros de pedra/ferro,
+  torres automáticas, aprimoramentos.
+- **Fase 4 — Exército**, **Fase 5 — Conteúdo** (ferro, couro, eletrônicos, pólvora, combustível e cristais
+  — ícones já gerados — entram junto com os sistemas que os usam), **Fase 6 — Polimento**.

@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="ItemDef" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/inventory/item_def.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/res_scrap.jpg" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = &"scrap"
+display_name = "Sucata"
+description = "Metal recuperado. Repara o Núcleo e afia a arma do herói."
+category = 0
+icon = ExtResource("2")
+weight = 2
+color = Color(0.75, 0.5, 0.3, 1)
+heal_instant = 0.0
+heal_over_time = 0.0
+heal_duration = 0.0

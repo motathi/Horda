@@ -1,0 +1,200 @@
+[
+ {
+  "name": "tex_grass",
+  "out": "assets/environment/textures/grass.jpg",
+  "size": "2048x2048",
+  "prompt": "Seamless tileable square game texture, viewed straight from above, flat even lighting, no perspective, no shadows, no text, no border, lush green grass ground with tiny wildflowers and a few clover patches, in the art style of Dota 2 and Warcraft III, hand-painted, painterly stylized fantasy, rich saturated colors, high detail"
+ },
+ {
+  "name": "tex_dirt",
+  "out": "assets/environment/textures/dirt.jpg",
+  "size": "2048x2048",
+  "prompt": "Seamless tileable square game texture, viewed straight from above, flat even lighting, no perspective, no shadows, no text, no border, packed brown dirt path ground with small pebbles and dry cracks, in the art style of Dota 2 and Warcraft III, hand-painted, painterly stylized fantasy, rich saturated colors, high detail"
+ },
+ {
+  "name": "tex_rock",
+  "out": "assets/environment/textures/rock.jpg",
+  "size": "2048x2048",
+  "prompt": "Seamless tileable square game texture, viewed straight from above, flat even lighting, no perspective, no shadows, no text, no border, rough grey granite rock surface with mossy crevices, in the art style of Dota 2 and Warcraft III, hand-painted, painterly stylized fantasy, rich saturated colors, high detail"
+ },
+ {
+  "name": "tex_planks",
+  "out": "assets/environment/textures/planks.jpg",
+  "size": "2048x2048",
+  "prompt": "Seamless tileable square game texture, viewed straight from above, flat even lighting, no perspective, no shadows, no text, no border, weathered wooden planks nailed together, warm brown wood, horizontal boards, in the art style of Dota 2 and Warcraft III, hand-painted, painterly stylized fantasy, rich saturated colors, high detail"
+ },
+ {
+  "name": "tex_stone_floor",
+  "out": "assets/environment/textures/stone_floor.jpg",
+  "size": "2048x2048",
+  "prompt": "Seamless tileable square game texture, viewed straight from above, flat even lighting, no perspective, no shadows, no text, no border, cobblestone plaza floor, grey-blue rounded stones with dirt between them, in the art style of Dota 2 and Warcraft III, hand-painted, painterly stylized fantasy, rich saturated colors, high detail"
+ },
+ {
+  "name": "tex_bark",
+  "out": "assets/environment/textures/bark.jpg",
+  "size": "2048x2048",
+  "prompt": "Seamless tileable square game texture, viewed straight from above, flat even lighting, no perspective, no shadows, no text, no border, rough tree bark with deep vertical grooves, dark brown, in the art style of Dota 2 and Warcraft III, hand-painted, painterly stylized fantasy, rich saturated colors, high detail"
+ },
+ {
+  "name": "tex_leaves",
+  "out": "assets/environment/textures/leaves.jpg",
+  "size": "2048x2048",
+  "prompt": "Seamless tileable square game texture, viewed straight from above, flat even lighting, no perspective, no shadows, no text, no border, dense canopy of dark green stylized leaves, clumpy painterly foliage, in the art style of Dota 2 and Warcraft III, hand-painted, painterly stylized fantasy, rich saturated colors, high detail"
+ },
+ {
+  "name": "tex_zombie_skin",
+  "out": "assets/environment/textures/zombie_skin.jpg",
+  "size": "2048x2048",
+  "prompt": "Seamless tileable square game texture, viewed straight from above, flat even lighting, no perspective, no shadows, no text, no border, rotting greenish-grey undead zombie skin with veins, scars and stitches, in the art style of Dota 2 and Warcraft III, hand-painted, painterly stylized fantasy, rich saturated colors, high detail"
+ },
+ {
+  "name": "tex_armor",
+  "out": "assets/environment/textures/armor.jpg",
+  "size": "2048x2048",
+  "prompt": "Seamless tileable square game texture, viewed straight from above, flat even lighting, no perspective, no shadows, no text, no border, hammered steel plate armor with brass rivets and leather straps, in the art style of Dota 2 and Warcraft III, hand-painted, painterly stylized fantasy, rich saturated colors, high detail"
+ },
+ {
+  "name": "tex_metal",
+  "out": "assets/environment/textures/metal.jpg",
+  "size": "2048x2048",
+  "prompt": "Seamless tileable square game texture, viewed straight from above, flat even lighting, no perspective, no shadows, no text, no border, rusty corrugated scrap metal sheet with paint flecks, in the art style of Dota 2 and Warcraft III, hand-painted, painterly stylized fantasy, rich saturated colors, high detail"
+ },
+ {
+  "name": "tex_cloth",
+  "out": "assets/environment/textures/cloth.jpg",
+  "size": "2048x2048",
+  "prompt": "Seamless tileable square game texture, viewed straight from above, flat even lighting, no perspective, no shadows, no text, no border, coarse woven burlap fabric, tan color, in the art style of Dota 2 and Warcraft III, hand-painted, painterly stylized fantasy, rich saturated colors, high detail"
+ },
+ {
+  "name": "tex_corrupted",
+  "out": "assets/environment/textures/corrupted.jpg",
+  "size": "2048x2048",
+  "prompt": "Seamless tileable square game texture, viewed straight from above, flat even lighting, no perspective, no shadows, no text, no border, corrupted toxic ground, dark purple-black soil with glowing green cracks, in the art style of Dota 2 and Warcraft III, hand-painted, painterly stylized fantasy, rich saturated colors, high detail"
+ },
+ {
+  "name": "icon_wood",
+  "out": "assets/ui/icons/res_wood.jpg",
+  "size": "1024x1024",
+  "prompt": "Square RPG inventory item icon, single centered object, bold readable silhouette, dark moody vignette background, thin ornate bronze frame, no text, a bundle of chopped wooden logs tied with rope, in the art style of Dota 2 and Warcraft III, hand-painted, painterly stylized fantasy, rich saturated colors, high detail"
+ },
+ {
+  "name": "icon_stone",
+  "out": "assets/ui/icons/res_stone.jpg",
+  "size": "1024x1024",
+  "prompt": "Square RPG inventory item icon, single centered object, bold readable silhouette, dark moody vignette background, thin ornate bronze frame, no text, a pile of rough grey stone chunks, in the art style of Dota 2 and Warcraft III, hand-painted, painterly stylized fantasy, rich saturated colors, high detail"
+ },
+ {
+  "name": "icon_iron",
+  "out": "assets/ui/icons/res_iron.jpg",
+  "size": "1024x1024",
+  "prompt": "Square RPG inventory item icon, single centered object, bold readable silhouette, dark moody vignette background, thin ornate bronze frame, no text, a stack of dark iron ingots, in the art style of Dota 2 and Warcraft III, hand-painted, painterly stylized fantasy, rich saturated colors, high detail"
+ },
+ {
+  "name": "icon_scrap",
+  "out": "assets/ui/icons/res_scrap.jpg",
+  "size": "1024x1024",
+  "prompt": "Square RPG inventory item icon, single centered object, bold readable silhouette, dark moody vignette background, thin ornate bronze frame, no text, a heap of rusty scrap metal, gears and bolts, in the art style of Dota 2 and Warcraft III, hand-painted, painterly stylized fantasy, rich saturated colors, high detail"
+ },
+ {
+  "name": "icon_cloth",
+  "out": "assets/ui/icons/res_cloth.jpg",
+  "size": "1024x1024",
+  "prompt": "Square RPG inventory item icon, single centered object, bold readable silhouette, dark moody vignette background, thin ornate bronze frame, no text, a folded roll of tan cloth fabric, in the art style of Dota 2 and Warcraft III, hand-painted, painterly stylized fantasy, rich saturated colors, high detail"
+ },
+ {
+  "name": "icon_leather",
+  "out": "assets/ui/icons/res_leather.jpg",
+  "size": "1024x1024",
+  "prompt": "Square RPG inventory item icon, single centered object, bold readable silhouette, dark moody vignette background, thin ornate bronze frame, no text, a tanned leather hide, in the art style of Dota 2 and Warcraft III, hand-painted, painterly stylized fantasy, rich saturated colors, high detail"
+ },
+ {
+  "name": "icon_meat",
+  "out": "assets/ui/icons/res_meat.jpg",
+  "size": "1024x1024",
+  "prompt": "Square RPG inventory item icon, single centered object, bold readable silhouette, dark moody vignette background, thin ornate bronze frame, no text, a raw chunk of meat on the bone, in the art style of Dota 2 and Warcraft III, hand-painted, painterly stylized fantasy, rich saturated colors, high detail"
+ },
+ {
+  "name": "icon_herbs",
+  "out": "assets/ui/icons/res_herbs.jpg",
+  "size": "1024x1024",
+  "prompt": "Square RPG inventory item icon, single centered object, bold readable silhouette, dark moody vignette background, thin ornate bronze frame, no text, a bunch of green medicinal herbs with small flowers, in the art style of Dota 2 and Warcraft III, hand-painted, painterly stylized fantasy, rich saturated colors, high detail"
+ },
+ {
+  "name": "icon_electronics",
+  "out": "assets/ui/icons/res_electronics.jpg",
+  "size": "1024x1024",
+  "prompt": "Square RPG inventory item icon, single centered object, bold readable silhouette, dark moody vignette background, thin ornate bronze frame, no text, a green circuit board with wires and chips, in the art style of Dota 2 and Warcraft III, hand-painted, painterly stylized fantasy, rich saturated colors, high detail"
+ },
+ {
+  "name": "icon_gunpowder",
+  "out": "assets/ui/icons/res_gunpowder.jpg",
+  "size": "1024x1024",
+  "prompt": "Square RPG inventory item icon, single centered object, bold readable silhouette, dark moody vignette background, thin ornate bronze frame, no text, a small black gunpowder pouch spilling dark powder, in the art style of Dota 2 and Warcraft III, hand-painted, painterly stylized fantasy, rich saturated colors, high detail"
+ },
+ {
+  "name": "icon_fuel",
+  "out": "assets/ui/icons/res_fuel.jpg",
+  "size": "1024x1024",
+  "prompt": "Square RPG inventory item icon, single centered object, bold readable silhouette, dark moody vignette background, thin ornate bronze frame, no text, a red metal jerrycan of fuel, in the art style of Dota 2 and Warcraft III, hand-painted, painterly stylized fantasy, rich saturated colors, high detail"
+ },
+ {
+  "name": "icon_crystals",
+  "out": "assets/ui/icons/res_crystals.jpg",
+  "size": "1024x1024",
+  "prompt": "Square RPG inventory item icon, single centered object, bold readable silhouette, dark moody vignette background, thin ornate bronze frame, no text, a cluster of glowing toxic green mutant crystals, in the art style of Dota 2 and Warcraft III, hand-painted, painterly stylized fantasy, rich saturated colors, high detail"
+ },
+ {
+  "name": "icon_attack",
+  "out": "assets/ui/icons/ability_attack.jpg",
+  "size": "1024x1024",
+  "prompt": "Square RPG inventory item icon, single centered object, bold readable silhouette, dark moody vignette background, thin ornate bronze frame, no text, a crossed steel sword and axe with motion sparks, in the art style of Dota 2 and Warcraft III, hand-painted, painterly stylized fantasy, rich saturated colors, high detail"
+ },
+ {
+  "name": "icon_cleave",
+  "out": "assets/ui/icons/ability_cleave.jpg",
+  "size": "1024x1024",
+  "prompt": "Square RPG inventory item icon, single centered object, bold readable silhouette, dark moody vignette background, thin ornate bronze frame, no text, a glowing orange spinning blade arc slash, whirlwind, in the art style of Dota 2 and Warcraft III, hand-painted, painterly stylized fantasy, rich saturated colors, high detail"
+ },
+ {
+  "name": "icon_heal",
+  "out": "assets/ui/icons/ability_heal.jpg",
+  "size": "1024x1024",
+  "prompt": "Square RPG inventory item icon, single centered object, bold readable silhouette, dark moody vignette background, thin ornate bronze frame, no text, a green glowing healing potion flask with sparkles, in the art style of Dota 2 and Warcraft III, hand-painted, painterly stylized fantasy, rich saturated colors, high detail"
+ },
+ {
+  "name": "icon_base",
+  "out": "assets/ui/icons/base_core.jpg",
+  "size": "1024x1024",
+  "prompt": "Square RPG inventory item icon, single centered object, bold readable silhouette, dark moody vignette background, thin ornate bronze frame, no text, a fortified campfire bonfire with a wooden palisade, glowing warm, in the art style of Dota 2 and Warcraft III, hand-painted, painterly stylized fantasy, rich saturated colors, high detail"
+ },
+ {
+  "name": "portrait_hero",
+  "out": "assets/characters/portrait_hero.jpg",
+  "size": "2048x2048",
+  "prompt": "Square character portrait for a strategy game HUD, head and shoulders, three-quarter view, dramatic rim lighting, dark background, no text, rugged human survivor warrior with a scarred face, short beard, red bandana, steel shoulder pauldron, holding a large axe, in the art style of Dota 2 and Warcraft III, hand-painted, painterly stylized fantasy, rich saturated colors, high detail"
+ },
+ {
+  "name": "portrait_zombie",
+  "out": "assets/enemies/portrait_zombie.jpg",
+  "size": "2048x2048",
+  "prompt": "Square character portrait for a strategy game HUD, head and shoulders, three-quarter view, dramatic rim lighting, dark background, no text, a shambling green-skinned zombie with torn clothes, glowing yellow eyes, open jaw, in the art style of Dota 2 and Warcraft III, hand-painted, painterly stylized fantasy, rich saturated colors, high detail"
+ },
+ {
+  "name": "portrait_zombie_fast",
+  "out": "assets/enemies/portrait_zombie_fast.jpg",
+  "size": "2048x2048",
+  "prompt": "Square character portrait for a strategy game HUD, head and shoulders, three-quarter view, dramatic rim lighting, dark background, no text, a lean feral running zombie, gaunt, long claws, red glowing eyes, snarling, in the art style of Dota 2 and Warcraft III, hand-painted, painterly stylized fantasy, rich saturated colors, high detail"
+ },
+ {
+  "name": "portrait_zombie_brute",
+  "out": "assets/enemies/portrait_zombie_brute.jpg",
+  "size": "2048x2048",
+  "prompt": "Square character portrait for a strategy game HUD, head and shoulders, three-quarter view, dramatic rim lighting, dark background, no text, a huge bloated brute zombie with pieces of armor plates bolted into the skin, purple veins, in the art style of Dota 2 and Warcraft III, hand-painted, painterly stylized fantasy, rich saturated colors, high detail"
+ },
+ {
+  "name": "menu_bg",
+  "out": "assets/ui/menu_background.jpg",
+  "size": "2560x1440",
+  "prompt": "Epic key art for a cooperative zombie survival strategy game: a lone fortified wooden outpost with torches and watchtowers at dusk, a heroic survivor with an axe on the wall, a massive horde of zombies emerging from a dark forest under a blood-red moon, isometric-ish high angle, dramatic lighting, no text, in the art style of Dota 2 and Warcraft III, hand-painted, painterly stylized fantasy, rich saturated colors, high detail"
+ }
+]
