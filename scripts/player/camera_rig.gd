@@ -15,6 +15,8 @@ var _target: Node3D
 var _yaw: float = deg_to_rad(45.0)
 var _zoom_target: float
 var _dragging: bool = false
+var _touches: Dictionary = {}  # índice -> posição (pinça para zoom no celular)
+var _pinch_dist: float = 0.0
 @onready var camera: Camera3D = $Camera3D
 
 func _ready() -> void:
@@ -30,6 +32,24 @@ func set_target(t: Node3D) -> void:
 	global_position = t.global_position
 
 func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventScreenTouch:
+		var t := event as InputEventScreenTouch
+		if t.pressed:
+			_touches[t.index] = t.position
+		else:
+			_touches.erase(t.index)
+		_pinch_dist = _current_pinch()
+		return
+	if event is InputEventScreenDrag:
+		var d := event as InputEventScreenDrag
+		if _touches.has(d.index):
+			_touches[d.index] = d.position
+			if _touches.size() == 2:
+				var nd := _current_pinch()
+				if _pinch_dist > 0.0:
+					_zoom_target = clampf(_zoom_target * _pinch_dist / maxf(1.0, nd), min_distance, max_distance)
+				_pinch_dist = nd
+		return
 	if event is InputEventMouseButton:
 		var mb := event as InputEventMouseButton
 		if mb.button_index == MOUSE_BUTTON_WHEEL_UP and mb.pressed:
@@ -42,6 +62,12 @@ func _unhandled_input(event: InputEvent) -> void:
 		_yaw -= (event as InputEventMouseMotion).relative.x * 0.006
 	elif event.is_action_pressed("camera_center") and _target:
 		global_position = _target.global_position
+
+func _current_pinch() -> float:
+	if _touches.size() != 2:
+		return 0.0
+	var p: Array = _touches.values()
+	return (p[0] as Vector2).distance_to(p[1])
 
 func _process(delta: float) -> void:
 	if Input.is_action_pressed("camera_rotate_left"):

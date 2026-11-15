@@ -134,7 +134,7 @@ static func attach_fire(target: Node3D) -> Node3D:
 	target.add_child(f)
 	return f
 
-static func make_fire_particles(size: float) -> GPUParticles3D:
+static func make_fire_particles(size: float) -> Node3D:
 	var p := GPUParticles3D.new()
 	p.amount = 24
 	p.lifetime = 0.8

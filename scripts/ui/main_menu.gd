@@ -9,6 +9,9 @@ var _main_panel: Control
 func _ready() -> void:
 	GameManager.state = GameManager.State.MENU
 	TimeManager.running = false
+	if OS.has_feature("web") and str(JavaScriptBridge.eval("window.location.search", true)).contains("autostart=1"):
+		GameManager.start_new_game.call_deferred("normal", "normal")
+		return
 	var bg := TextureRect.new()
 	bg.texture = load("res://assets/ui/menu_background.jpg")
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -69,9 +72,14 @@ func _build_main() -> Control:
 		_main_panel.visible = false
 		_new_panel.visible = true)
 	col.add_child(new)
-	var quit := UIStyle.button("Sair", 22)
-	quit.pressed.connect(func() -> void: get_tree().quit())
-	col.add_child(quit)
+	if OS.has_feature("web"):
+		var fs := UIStyle.button("Tela cheia", 22)
+		fs.pressed.connect(func() -> void: Platform.toggle_fullscreen())
+		col.add_child(fs)
+	else:
+		var quit := UIStyle.button("Sair", 22)
+		quit.pressed.connect(func() -> void: get_tree().quit())
+		col.add_child(quit)
 	_place(panel)
 	return panel
 

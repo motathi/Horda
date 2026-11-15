@@ -28,7 +28,15 @@ func _refresh() -> void:
 	for o in objectives.objectives:
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation", 8)
-		var box := UIStyle.label("☑" if o.done else "☐", 18, UIStyle.GREEN if o.done else UIStyle.TEXT_DIM)
+		var box := Panel.new()
+		box.custom_minimum_size = Vector2(15, 15)
+		box.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		var st := StyleBoxFlat.new()
+		st.bg_color = UIStyle.GREEN if o.done else Color(0, 0, 0, 0.3)
+		st.border_color = UIStyle.GREEN if o.done else UIStyle.TEXT_DIM
+		st.set_border_width_all(2)
+		st.set_corner_radius_all(2)
+		box.add_theme_stylebox_override("panel", st)
 		row.add_child(box)
 		var txt := String(o.text)
 		if int(o.target) > 1:

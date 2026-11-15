@@ -23,6 +23,9 @@ signal stats_changed
 const SHARPEN_BONUS := 4.0
 
 var weapon_level: int = 0
+## Modo toque (celular): ataque pelo botão, mira automática, toque no mundo = mover/atacar.
+var touch_mode: bool = false
+var touch_attack_held: bool = false
 var health: HealthComponent
 var model: CharacterModel
 var _camera: Camera3D
@@ -55,6 +58,7 @@ func _ready() -> void:
 	($HealthBar as HealthBar3D).bind(health)
 	_home = global_position
 	GameManager.hero = self
+	touch_mode = Platform.touch
 	# Lanterna: luz quente ao redor do herói durante a noite (grupo night_lights).
 	var lantern := OmniLight3D.new()
 	lantern.light_color = Color(1.0, 0.75, 0.45)
@@ -87,12 +91,18 @@ func _physics_process(delta: float) -> void:
 		return
 	_attack_timer = maxf(0.0, _attack_timer - delta)
 	attack_cooldown_changed.emit(_attack_timer * attacks_per_second)
-	_update_aim()
 	var dir := _input_direction()
 	if dir != Vector3.ZERO:
 		_has_move_target = false
 		_target_enemy = null
-	var want_attack := Input.is_action_pressed("attack") and not _mouse_over_ui()
+	var want_attack: bool
+	if touch_mode:
+		want_attack = touch_attack_held
+		if want_attack:
+			_auto_aim(dir)
+	else:
+		_update_aim()
+		want_attack = Input.is_action_pressed("attack") and not _mouse_over_ui()
 	if want_attack:
 		_target_enemy = null
 		_has_move_target = false
@@ -153,7 +163,8 @@ func _input_direction() -> Vector3:
 func _unhandled_input(event: InputEvent) -> void:
 	if health.dead or not GameManager.is_playing():
 		return
-	if event.is_action_pressed("command"):
+	if event.is_action_pressed("command") or (touch_mode and event.is_action_pressed("attack")):
+		# No celular, tocar no mundo funciona como o clique direito do PC.
 		_on_command_click()
 	elif event.is_action_pressed("attack"):
 		var hit := _raycast_mouse(Layers.ENEMIES | Layers.STRUCTURES | Layers.INTERACTABLES | Layers.WORLD)
@@ -326,6 +337,35 @@ func use_consumable(id: StringName) -> void:
 	AudioManager.play_3d(&"heal", global_position)
 
 # --- Interação ------------------------------------------------------------
+
+## Mira automática (celular): inimigo mais próximo, depois recurso, senão para frente.
+func _auto_aim(move_dir: Vector3) -> void:
+	var best: Node3D = null
+	var best_d := attack_range + 3.0
+	for e: Node in get_tree().get_nodes_in_group("enemies"):
+		var en := e as Enemy
+		if en and not en.is_dead():
+			var d := en.global_position.distance_to(global_position)
+			if d < best_d:
+				best_d = d
+				best = en
+	if best == null:
+		best_d = attack_range + 1.2
+		for h: Node in get_tree().get_nodes_in_group("harvestable"):
+			var hv := h as Node3D
+			var d2 := hv.global_position.distance_to(global_position)
+			if d2 < best_d:
+				best_d = d2
+				best = hv
+	if best:
+		_aim_point = best.global_position
+	elif move_dir != Vector3.ZERO:
+		_aim_point = global_position + move_dir * 2.0
+	else:
+		_aim_point = global_position + facing() * 2.0
+
+func try_interact() -> void:
+	_try_interact()
 
 func _try_interact() -> void:
 	var best: Lootable = null

@@ -10,6 +10,10 @@ var _bag_bar: ProgressBar
 var _bag_label: Label
 var _attack_cd: ProgressBar
 var _slot_counts: Dictionary = {}
+var _slot_nodes: Array[Control] = []
+var _portrait: TextureRect
+var _mid: VBoxContainer
+var _name_label: Label
 
 func _ready() -> void:
 	add_theme_stylebox_override("panel", UIStyle.panel_style())
@@ -18,13 +22,16 @@ func _ready() -> void:
 	add_child(row)
 	var portrait_frame := PanelContainer.new()
 	portrait_frame.add_theme_stylebox_override("panel", UIStyle.panel_style(Color.BLACK, UIStyle.GOLD, 2, 2))
-	portrait_frame.add_child(UIStyle.icon(load("res://assets/characters/portrait_hero.jpg"), 96))
+	_portrait = UIStyle.icon(load("res://assets/characters/portrait_hero.jpg"), 96)
+	portrait_frame.add_child(_portrait)
 	row.add_child(portrait_frame)
 	var mid := VBoxContainer.new()
 	mid.custom_minimum_size = Vector2(320, 0)
+	_mid = mid
 	mid.add_theme_constant_override("separation", 4)
 	row.add_child(mid)
-	mid.add_child(UIStyle.label("Sobrevivente", 20, UIStyle.GOLD))
+	_name_label = UIStyle.label("Sobrevivente", 20, UIStyle.GOLD)
+	mid.add_child(_name_label)
 	var hp_stack := Control.new()
 	hp_stack.custom_minimum_size = Vector2(0, 22)
 	_hp_bar = UIStyle.bar(Color(0.2, 0.75, 0.22), 22)
@@ -47,11 +54,23 @@ func _ready() -> void:
 	_bag_label = UIStyle.label("", 14)
 	bag_row.add_child(_bag_label)
 	mid.add_child(bag_row)
-	row.add_child(VSeparator.new())
+	var sep := VSeparator.new()
+	row.add_child(sep)
+	_slot_nodes.append(sep)
 	# Ataque básico (clique esquerdo) com indicador de recarga
-	row.add_child(_ability_slot(load("res://assets/ui/icons/ability_attack.jpg"), "LMB", "Ataque em arco\nClique esquerdo / Espaço: golpeia na direção do cursor.\nTambém coleta madeira e pedra."))
-	row.add_child(_consumable_slot(&"meat", "1"))
-	row.add_child(_consumable_slot(&"bandage", "2"))
+	for c: Control in [_ability_slot(load("res://assets/ui/icons/ability_attack.jpg"), "LMB", "Ataque em arco\nClique esquerdo / Espaço: golpeia na direção do cursor.\nTambém coleta madeira e pedra."),
+			_consumable_slot(&"meat", "1"), _consumable_slot(&"bandage", "2")]:
+		row.add_child(c)
+		_slot_nodes.append(c)
+
+## Celular: esconde os atalhos (viram botões de toque) e reduz o painel.
+func set_compact() -> void:
+	for n in _slot_nodes:
+		n.visible = false
+	_stats.visible = false
+	_portrait.custom_minimum_size = Vector2(60, 60)
+	_mid.custom_minimum_size = Vector2(220, 0)
+	_name_label.add_theme_font_size_override("font_size", 16)
 
 func bind(h: Hero) -> void:
 	_hero = h

@@ -60,7 +60,7 @@ func _add_multimesh(mesh: Mesh, xforms: Array[Transform3D], colors: Array) -> vo
 	var mmi := MultiMeshInstance3D.new()
 	mmi.multimesh = mm
 	mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	mmi.visibility_range_end = VIS_RANGE
+	mmi.visibility_range_end = VIS_RANGE * (0.65 if Platform.low_end else 1.0)
 	mmi.visibility_range_end_margin = 10.0
 	mmi.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
 	add_child(mmi)

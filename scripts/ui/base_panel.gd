@@ -68,7 +68,7 @@ func _rebuild() -> void:
 		func() -> String: return services.repair_core(), not core_cost.is_empty(), true)
 	var can_sharp := services.can_sharpen(hero)
 	var sharp_cost := services.sharpen_cost(hero) if can_sharp else {}
-	_add_row("Afiar arma (nv. %d → %d)" % [hero.weapon_level, hero.weapon_level + 1] if can_sharp else "Arma no nível máximo",
+	_add_row("Afiar arma (nv. %d para %d)" % [hero.weapon_level, hero.weapon_level + 1] if can_sharp else "Arma no nível máximo",
 		"+%d de dano por nível" % int(Hero.SHARPEN_BONUS), sharp_cost,
 		func() -> String: return services.sharpen(hero), can_sharp, false)
 	for r in services.recipes:

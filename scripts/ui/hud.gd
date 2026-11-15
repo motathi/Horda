@@ -25,9 +25,11 @@ var _help: Control
 var _game_over: Control
 var _vignette: ColorRect
 var _hero: Hero
+var touch_controls: TouchControls
 
 func _ready() -> void:
 	layer = 10
+	add_to_group("hud")
 	var root := Control.new()
 	root.set_anchors_preset(Control.PRESET_FULL_RECT)
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -138,6 +140,9 @@ func _ready() -> void:
 	_game_over = _build_game_over()
 	_center(_game_over, root)
 
+	if Platform.touch:
+		_setup_touch(root, mm_frame)
+
 	EventBus.message.connect(_on_message)
 	EventBus.banner.connect(show_banner)
 	EventBus.interaction_progress.connect(_on_interaction)
@@ -146,6 +151,45 @@ func _ready() -> void:
 	EventBus.hero_damaged.connect(func(_a: float) -> void: _flash_vignette())
 	TimeManager.night_warning.connect(_on_night_warning)
 	TimeManager.phase_changed.connect(_on_phase_changed)
+
+## Layout para celular: joystick/botões, painéis reposicionados e menores.
+func _setup_touch(root: Control, mm_frame: Control) -> void:
+	_hint.visible = false
+	bottom_bar.set_compact()
+	minimap.custom_minimum_size = Vector2(112, 112)
+	time_panel.set_compact()
+	mm_frame.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	mm_frame.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	mm_frame.grow_vertical = Control.GROW_DIRECTION_END
+	mm_frame.offset_right = -12
+	mm_frame.offset_left = -12 - 134
+	mm_frame.offset_top = 124
+	mm_frame.offset_bottom = 124 + 130
+	objectives_panel.position = Vector2(8, 64)
+	objectives_panel.scale = Vector2.ONE * 0.85
+	selection.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	selection.grow_vertical = Control.GROW_DIRECTION_END
+	selection.position.y = 64
+	_feed.position = Vector2(10, -60)
+	touch_controls = TouchControls.new()
+	root.add_child(touch_controls)
+	root.move_child(touch_controls, 1)
+	touch_controls.toggle_inventory.connect(func() -> void:
+		inventory.visible = not inventory.visible
+		base_panel.visible = false)
+	touch_controls.toggle_base.connect(func() -> void:
+		base_panel.visible = not base_panel.visible
+		inventory.visible = false)
+	var menu_btn := UIStyle.button("II", 24)
+	menu_btn.custom_minimum_size = Vector2(58, 58)
+	menu_btn.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	menu_btn.position = Vector2(8, 4)
+	menu_btn.pressed.connect(_toggle_pause)
+	root.add_child(menu_btn)
+	objectives_panel.position = Vector2(8, 66)
+
+func is_menu_paused() -> bool:
+	return _pause.visible
 
 func _center(c: Control, root: Control) -> void:
 	c.set_anchors_preset(Control.PRESET_CENTER)
@@ -156,6 +200,8 @@ func _center(c: Control, root: Control) -> void:
 func bind(hero: Hero, services: BaseServices, regions: Array[Dictionary], lootables: Dictionary, objectives: DailyObjectives) -> void:
 	_hero = hero
 	objectives_panel.bind(objectives)
+	if touch_controls:
+		touch_controls.hero = hero
 	bottom_bar.bind(hero)
 	base_panel.services = services
 	base_panel.hero = hero
@@ -306,9 +352,10 @@ func _build_pause() -> Control:
 	var menu := UIStyle.button("Menu principal")
 	menu.pressed.connect(func() -> void: GameManager.return_to_menu())
 	col.add_child(menu)
-	var quit := UIStyle.button("Sair do jogo")
-	quit.pressed.connect(func() -> void: get_tree().quit())
-	col.add_child(quit)
+	if not OS.has_feature("web"):
+		var quit := UIStyle.button("Sair do jogo")
+		quit.pressed.connect(func() -> void: get_tree().quit())
+		col.add_child(quit)
 	panel.visible = false
 	return panel
 
@@ -342,6 +389,8 @@ func _build_help() -> Control:
 		grid.add_child(UIStyle.label(l[1], 16))
 	col.add_child(grid)
 	col.add_child(HSeparator.new())
+	if Platform.touch:
+		col.add_child(UIStyle.label("Celular: joystick à esquerda para andar • botão grande para atacar (mira automática)\nToque no chão para ir até lá, num inimigo para atacá-lo • E saqueia • pinça = zoom", 15, UIStyle.GOLD))
 	var goal := UIStyle.label("Objetivo: explore de dia, colete recursos e volte antes do anoitecer.\nÀ noite a horda ataca a base — proteja o Núcleo até o amanhecer.", 15, UIStyle.TEXT_DIM)
 	col.add_child(goal)
 	var close := UIStyle.button("Fechar")

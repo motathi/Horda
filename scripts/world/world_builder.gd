@@ -129,7 +129,7 @@ func _build_foliage(world: Node3D) -> void:
 	var f := Foliage.new()
 	f.name = "Foliage"
 	world.add_child(f)
-	f.build(MAP_HALF - 2.0, 0.55, _is_grass, rng.seed + 7)
+	f.build(MAP_HALF - 2.0, 0.25 if Platform.low_end else 0.55, _is_grass, rng.seed + 7)
 
 func _is_grass(p: Vector3) -> bool:
 	var n := int(MAP_HALF * 2)

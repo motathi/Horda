@@ -11,6 +11,7 @@ config/icon="res://icon.svg"
 
 [autoload]
 
+Platform="*res://autoload/platform.gd"
 EventBus="*res://autoload/event_bus.gd"
 GameManager="*res://autoload/game_manager.gd"
 TimeManager="*res://autoload/time_manager.gd"
@@ -140,6 +141,8 @@ common/physics_ticks_per_second=60
 3d/physics_engine="GodotPhysics3D"
 
 [rendering]
+
+limits/spatial_indexer/threaded_cull_minimum_instances.web=10000000
 
 anti_aliasing/quality/msaa_3d=2
 lights_and_shadows/directional_shadow/size=4096

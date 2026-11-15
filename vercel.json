@@ -1,0 +1,17 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "echo sem dependencias",
+  "buildCommand": "bash tools/vercel_build.sh",
+  "outputDirectory": "build/web",
+  "headers": [
+    {
+      "source": "/index.(pck|wasm)",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=300, must-revalidate" }]
+    },
+    {
+      "source": "/index.service.worker.js",
+      "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
+    }
+  ]
+}
