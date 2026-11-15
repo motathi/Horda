@@ -21,6 +21,8 @@ var difficulty: String = "normal"
 var cycle_preset: String = "normal"
 var world_seed: int = 1337
 var load_from_save: bool = false
+## Aparência do herói (HeroSkins); lembrada em user://settings.cfg e gravada no save.
+var hero_skin: String = "hunter"
 
 var hero: Node3D = null
 var base_core: Node3D = null
@@ -60,6 +62,7 @@ func continue_game() -> void:
 	cycle_preset = str(meta.get("cycle", "normal"))
 	world_seed = int(meta.get("seed", 1337))
 	stats = meta.get("stats", stats)
+	hero_skin = str(meta.get("hero_skin", hero_skin))
 	ResourceManager.reset()
 	TimeManager.setup(cycle_preset)
 	_change_to_world()

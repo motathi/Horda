@@ -45,6 +45,10 @@ var _run_threshold: float = 0.7
 
 func build_hero() -> void:
 	kind = Kind.HERO
+	var sk := HeroSkins.get_skin(GameManager.hero_skin)
+	if sk["id"] != HeroSkins.DEFAULT and rigged_path(sk["model"]) != "":
+		_build_rigged(sk["model"], sk["height"])
+		return
 	if ResourceLoader.exists(RIGGED_DIR + "hero.glb"):
 		_build_rigged("hero", 2.2)
 		return

@@ -36,6 +36,7 @@ func _ready() -> void:
 		var holder := Node3D.new()
 		add_child(holder)
 		holder.add_child(node)
+		await get_tree().process_frame
 		var aabb := _aabb(node)
 		aabb.position -= holder.global_position
 		var s := 1.7 / maxf(0.01, maxf(aabb.size.y, maxf(aabb.size.x, aabb.size.z)))

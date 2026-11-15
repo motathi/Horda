@@ -16,7 +16,14 @@ func _ready() -> void:
 	add_child(menu)
 	await _frames(20)
 	await _shot("01_menu")
+	menu.set("_main_panel", menu.get("_main_panel"))
+	(menu.get("_main_panel") as Control).visible = false
+	(menu.get("_new_panel") as Control).visible = true
+	await _frames(6)
+	await _shot("01b_novo_jogo")
 	menu.queue_free()
+	# Herói escolhido pela variável de ambiente HORDA_SKIN (padrão: caçador).
+	GameManager.hero_skin = OS.get_environment("HORDA_SKIN") if OS.get_environment("HORDA_SKIN") != "" else HeroSkins.DEFAULT
 	GameManager.difficulty = "normal"
 	ResourceManager.reset()
 	TimeManager.setup("normal")

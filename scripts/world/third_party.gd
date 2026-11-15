@@ -8,6 +8,7 @@ const NATURE := "quaternius_nature"
 const HALLOWEEN := "kaykit_halloween"
 const PROPS := "quaternius_props"
 const VILLAGE := "quaternius_village"
+const DUNGEON := "kaykit_dungeon"
 
 const TREES: Array[String] = ["CommonTree_1", "CommonTree_2", "CommonTree_3", "CommonTree_4", "CommonTree_5"]
 const PINES: Array[String] = ["Pine_1", "Pine_2", "Pine_3", "Pine_4", "Pine_5"]

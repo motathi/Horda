@@ -31,6 +31,7 @@ func save_game() -> bool:
 			"cycle": GameManager.cycle_preset,
 			"seed": GameManager.world_seed,
 			"stats": GameManager.stats,
+			"hero_skin": GameManager.hero_skin,
 			"day": TimeManager.day,
 			"saved_at": Time.get_datetime_string_from_system(),
 		},

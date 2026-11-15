@@ -5,6 +5,7 @@ extends SceneTree
 
 const SK := "res://assets/third_party/kaykit_skeletons/"
 const AN := "res://assets/third_party/kaykit_animations/"
+const AD := "res://assets/third_party/kaykit_adventurers/"
 const OUT := "res://assets/models/rigged/"
 
 # id -> [personagem, arma mão direita, arma mão esquerda, animação de ataque]
@@ -13,6 +14,13 @@ const JOBS := {
 	"skeleton_warrior": ["Skeleton_Warrior.glb", "Skeleton_Axe.gltf", "Skeleton_Shield_Small_A.gltf", "Melee_1H_Attack_Chop"],
 	"skeleton_rogue": ["Skeleton_Rogue.glb", "Skeleton_Blade.gltf", "Skeleton_Blade.gltf", "Melee_Dualwield_Attack_Slice"],
 	"skeleton_mage": ["Skeleton_Mage.glb", "Skeleton_Staff.gltf", "", "Ranged_Magic_Shoot"],
+	# Heróis jogáveis (KayKit Adventurers) — escolhidos no menu "Novo jogo".
+	"hero_knight": ["@Knight.glb", "@sword_1handed.gltf", "@shield_badge_color.gltf", "Melee_1H_Attack_Chop"],
+	"hero_barbarian": ["@Barbarian.glb", "@axe_2handed.gltf", "", "Melee_2H_Attack_Chop"],
+	"hero_mage": ["@Mage.glb", "@staff.gltf", "@spellbook_open.gltf", "Melee_2H_Attack_Spin"],
+	"hero_ranger": ["@Ranger.glb", "@dagger.gltf", "@dagger.gltf", "Melee_Dualwield_Attack_Stab"],
+	"hero_rogue": ["@Rogue.glb", "@dagger.gltf", "@dagger.gltf", "Melee_Dualwield_Attack_Slice"],
+	"hero_rogue_hooded": ["@Rogue_Hooded.glb", "@sword_1handed.gltf", "@smokebomb.gltf", "Melee_1H_Attack_Slice_Horizontal"],
 }
 const MAP := {"idle": "Idle_A", "walk": "Walking_A", "run": "Running_A", "hurt": "Death_A"}
 
@@ -28,7 +36,7 @@ func _init() -> void:
 		var job: Array = JOBS[id]
 		var root := Node3D.new()
 		root.name = id
-		var ch := (load(SK + job[0]) as PackedScene).instantiate() as Node3D
+		var ch := (load(_res(job[0])) as PackedScene).instantiate() as Node3D
 		ch.rotation.y = PI * 0.5  # KayKit olha para +Z; o jogo espera +X (como os modelos Tripo)
 		root.add_child(ch)
 		var sk := ch.find_children("*", "Skeleton3D", true, false)[0] as Skeleton3D
@@ -40,7 +48,7 @@ func _init() -> void:
 			att.bone_name = side[0]
 			att.name = "Hand_" + side[0].replace(".", "_")
 			sk.add_child(att)
-			var w := (load(SK + side[1]) as PackedScene).instantiate()
+			var w := (load(_res(side[1])) as PackedScene).instantiate()
 			w.name = "Weapon"
 			att.add_child(w)
 			extra.append(att)
@@ -66,6 +74,10 @@ func _init() -> void:
 		print(id, " -> ", OUT + id + ".scn", " (", error_string(err), ")")
 		root.free()
 	quit()
+
+## "@arquivo" = pacote Adventurers; senão pacote Skeletons.
+func _res(f: String) -> String:
+	return AD + f.substr(1) if f.begins_with("@") else SK + f
 
 ## Torna tudo local (sem referência às cenas instanciadas) para salvar armas e animações juntas.
 func _own(n: Node, owner_node: Node) -> void:

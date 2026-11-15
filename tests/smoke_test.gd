@@ -77,6 +77,34 @@ func _test_world() -> void:
 					break
 	check(crypt, "cemitério com cripta na Área Contaminada")
 	check(tp_trees > 40, "árvores variadas do pacote de natureza (%d)" % tp_trees)
+	# Ruínas (KayKit Dungeon) e sobreviventes (Quaternius).
+	var ruins := 0
+	for n in b.nav_region.get_children():
+		if n is StaticBody3D and n.get_child_count() > 0 and String(n.get_child(0).scene_file_path).contains("kaykit_dungeon"):
+			ruins += 1
+	check(ruins > 20, "ruínas e acampamento do Dungeon Pack (%d peças)" % ruins)
+	var survivors: Array[Survivor] = []
+	for n in b.structures_root.get_children():
+		if n is Survivor:
+			survivors.append(n)
+	check(survivors.size() >= 4, "sobreviventes na base (%d)" % survivors.size())
+	await get_tree().process_frame
+	check(survivors.all(func(sv: Survivor) -> bool: return sv._ap != null and sv._ap.is_playing()), "sobreviventes animados")
+	EventBus.horde_started.emit(1, 1)
+	await wait(4.5)
+	check(survivors.all(func(sv: Survivor) -> bool: return sv.is_hidden()), "sobreviventes se escondem na fortaleza durante a horda")
+	EventBus.horde_ended.emit(1)
+	await get_tree().process_frame
+	check(survivors.all(func(sv: Survivor) -> bool: return sv.visible), "sobreviventes voltam depois da horda")
+	# Escolha de herói (KayKit Adventurers).
+	for skin in ["knight", "mage", "rogue_hooded"]:
+		GameManager.hero_skin = skin
+		var cm := CharacterModel.new()
+		add_child(cm)
+		cm.build_hero()
+		check(cm._rigged and cm._anim_names.has("slash") and cm._anim_names.has("run"), "herói %s com modelo e animações" % skin)
+		cm.queue_free()
+	GameManager.hero_skin = HeroSkins.DEFAULT
 	# Esqueletos (KayKit) com animações.
 	for id in ["skeleton_minion", "skeleton_rogue", "skeleton_warrior", "skeleton_mage"]:
 		var sk := _spawn_def(id, Vector3(30, 0, 30))

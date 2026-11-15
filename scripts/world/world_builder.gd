@@ -542,6 +542,8 @@ func _build_scenery() -> void:
 	_srng.seed = rng.seed + 777
 	_build_cemetery()
 	_build_base_props()
+	_build_ruins()
+	_build_survivors()
 	# Cidade: barracas, carroças, barris e cercas de ferro.
 	var city := Vector2(80, 12)
 	for i in 5:
@@ -681,3 +683,64 @@ func _build_decor(world: Node3D) -> void:
 				sc.add(it[0], it[1], p, drng.randf_range(it[3], it[4]), drng.randf() * TAU)
 				placed += 1
 		sc.commit(not Platform.low_end)
+
+## Ruínas (KayKit Dungeon Pack, CC0): muros quebrados, colunas e escombros espalhados.
+func _ruin_cluster(c: Vector3, rot: float) -> void:
+	var D := ThirdParty.DUNGEON
+	var basis := Basis(Vector3.UP, rot)
+	var walls := ["wall_broken", "wall_cracked", "wall_half"]
+	_place_solid(D, walls[_srng.randi() % 3], c + basis * Vector3(0, 0, -1.8), _srng.randf_range(2.2, 3.2), rot, 0.0)
+	if _srng.randf() < 0.7:
+		_place_solid(D, walls[_srng.randi() % 3], c + basis * Vector3(-2.1, 0, 0.2), _srng.randf_range(1.8, 2.8), rot + PI * 0.5, 0.0)
+	_place_solid(D, "pillar" if _srng.randf() < 0.5 else "pillar_decorated", c + basis * Vector3(2.4, 0, -1.6), 3.2, rot, 0.0)
+	_place_solid(D, "rubble_large" if _srng.randf() < 0.6 else "rubble_half", c + basis * Vector3(0.8, 0, 1.2), 0.9, _srng.randf() * TAU, 0.0)
+	_reserve(c, 3.6)
+
+func _build_ruins() -> void:
+	var D := ThirdParty.DUNGEON
+	if not ThirdParty.has(D, "wall_broken"):
+		return
+	for spec: Array in [[Vector2(80, 12), Vector2(30, 42), 4], [Vector2(-85, 15), Vector2(26, 30), 3], [Vector2(-25, -78), Vector2(80, 34), 2], [Vector2.ZERO, Vector2(100, 100), 3]]:
+		for i in int(spec[2]):
+			var p: Variant = _try_place_s(spec[0], spec[1], 3.8, 2.0)
+			if p != null and (p as Vector3).length() > 30.0:
+				_ruin_cluster(p, _srng.randf() * TAU)
+	# Colunas antigas soltas na pedreira.
+	for i in 6:
+		var cp: Variant = _try_place_s(Vector2(-85, 15), Vector2(26, 30), 1.0)
+		if cp != null:
+			_place_solid(D, "column", cp, _srng.randf_range(2.2, 3.4), _srng.randf() * TAU, 1.0)
+	# Acampamento na base: barris, caixas, mesa quebrada e armas.
+	for item: Array in [["keg", Vector3(-8.2, 0, 1.2), 1.1], ["barrel_small_stack", Vector3(7.8, 0, 2.6), 1.2], ["crates_stacked", Vector3(-3.2, 0, -8.6), 1.4],
+			["sword_shield", Vector3(3.6, 0, 8.4), 1.2], ["table_long_broken", Vector3(-4.8, 0, 7.2), 0.9], ["stool", Vector3(-3.4, 0, 8.3), 0.5], ["trunk_large_A", Vector3(8.6, 0, -3.8), 0.9]]:
+		_place_solid(D, item[0], item[1], item[2], _srng.randf() * TAU, 0.6)
+
+## Sobreviventes da base (Quaternius, CC0): ferreiro, vigias nos portões, conversa e um andarilho.
+func _build_survivors() -> void:
+	if CharacterModel.rigged_path("npc_peasant_m") == "":
+		return
+	var forge_ang := 2.0
+	var r := BASE_RADIUS - 3.2
+	var fc := Vector3(sin(forge_ang) * r, 0, -cos(forge_ang) * r)
+	var list: Array = [
+		["npc_peasant_m", Survivor.Role.WORK, fc + (Vector3.ZERO - fc).normalized() * 1.3, fc],
+		["npc_ranger_m", Survivor.Role.GUARD, Vector3(2.2, 0, -BASE_RADIUS + 2.6), Vector3(2.2, 0, -40)],
+		["npc_ranger_f", Survivor.Role.GUARD, Vector3(-2.2, 0, BASE_RADIUS - 2.6), Vector3(-2.2, 0, 40)],
+		["npc_peasant_f", Survivor.Role.WANDER, Vector3(6.5, 0, 5.5), Vector3.ZERO],
+	]
+	if not Platform.low_end:
+		list.append(["npc_peasant_f", Survivor.Role.TALK, Vector3(-5.6, 0, 6.6), Vector3(-4.4, 0, 8.4)])
+		list.append(["npc_ranger_m", Survivor.Role.TALK, Vector3(-4.4, 0, 8.4), Vector3(-5.6, 0, 6.6)])
+	var wander: Array[Vector3] = []
+	for i in 6:
+		var a := i * TAU / 6.0 + 0.4
+		wander.append(Vector3(sin(a) * 7.6, 0, -cos(a) * 7.6))
+	for it: Array in list:
+		var sv := Survivor.new()
+		sv.model_id = it[0]
+		sv.role = it[1]
+		sv.spot = it[2]
+		sv.face_to = it[3]
+		sv.wander_points = wander
+		sv.name = "Survivor_%s_%d" % [it[0], structures_root.get_child_count()]
+		structures_root.add_child(sv)

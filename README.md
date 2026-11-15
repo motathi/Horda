@@ -87,12 +87,18 @@ Além da arte gerada por IA, o mapa usa pacotes **CC0** baixados do itch.io (cr�
 *Stylized Nature MegaKit* (Quaternius), cemitério do *Halloween Bits* (Kay Lousberg), objetos de cenário
 do *Fantasy Props* e *Medieval Village MegaKit* (Quaternius) e os **esqueletos** animados do *KayKit
 Skeletons* + *Character Animations* (Kay Lousberg), que entram na horda: *Esqueleto* (horda 2),
-*Ladino* (5), *Guerreiro* (8) e *Mago* (12, ataca de longe). Para baixar de novo:
+*Ladino* (5), *Guerreiro* (8) e *Mago* (12, ataca de longe). Também: **escolha de herói** no "Novo jogo"
+(Caçador original + Cavaleiro, Bárbaro, Maga, Patrulheiro, Ladina e Encapuzado do *KayKit Adventurers*),
+**sobreviventes** animados na base (ferreiro, vigias, conversa, andarilho — *Modular Character Outfits* +
+*Universal Base Characters* + *Universal Animation Library*, Quaternius), que se escondem na fortaleza
+durante a horda, e **ruínas** do *KayKit Dungeon Pack* na cidade, pedreira e floresta. Para baixar de novo:
 
 ```bash
 python3 tools/itch_fetch.py /tmp/itch quaternius/stylized-nature-megakit kaylousberg/kaykit-skeletons ...
 python3 tools/import_third_party.py /tmp/itch/extraido      # copia só os modelos usados
-godot --headless --script res://tools/bake_kaykit.gd         # monta os esqueletos com armas e animações
+godot --headless --script res://tools/bake_kaykit.gd         # esqueletos e heróis com armas e animações
+godot --headless --script res://tools/bake_npcs.gd           # sobreviventes (cabeça + roupa + cabelo + animações)
+xvfb-run godot res://tools/render_portraits.tscn            # retratos dos heróis
 ```
 
 ## Testes

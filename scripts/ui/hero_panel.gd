@@ -24,10 +24,10 @@ func _ready() -> void:
 	custom_minimum_size = Vector2(W, H)
 	size = custom_minimum_size
 	mouse_filter = Control.MOUSE_FILTER_STOP
-	_portrait_tex = load("res://assets/characters/portrait_hero.jpg")
+	_portrait_tex = HeroSkins.portrait(GameManager.hero_skin)
 	_heart = UIStyle.hud_icon("heart")
 	_bag = UIStyle.hud_icon("backpack")
-	var name_l := UIStyle.label("Sobrevivente", 21, Color.WHITE)
+	var name_l := UIStyle.label(HeroSkins.get_skin(GameManager.hero_skin)["name"] if GameManager.hero_skin != HeroSkins.DEFAULT else "Sobrevivente", 21, Color.WHITE)
 	name_l.position = Vector2(PORTRAIT + 26, 6)
 	add_child(name_l)
 	_hp_bar = UIStyle.hud_bar(Color(0.22, 0.78, 0.18), 26)

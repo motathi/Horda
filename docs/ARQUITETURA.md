@@ -110,6 +110,11 @@ próprios para o cenário (`_srng`, `PropFactory.style_rng`), então a sequênci
 de coletáveis/saqueáveis dos saves não mudam. Os esqueletos KayKit são montados por
 `tools/bake_kaykit.gd` em `assets/models/rigged/*.scn` (personagem + armas em `BoneAttachment3D` +
 animações renomeadas para idle/walk/run/slash/hurt), carregados por `CharacterModel.rigged_path()`.
+Os heróis jogáveis (`HeroSkins`, só visual) usam o mesmo bake; `GameManager.hero_skin` é lembrado em
+`user://settings.cfg` e gravado no save. Os sobreviventes (`Survivor`, `tools/bake_npcs.gd`) juntam no mesmo
+`Skeleton3D` a cabeça do corpo base (triângulos filtrados pelos ossos da cabeça/pescoço), a roupa e o cabelo
+tingido, com animações do Universal Animation Library; papéis WORK/GUARD/TALK/WANDER e fuga para o núcleo
+em `horde_started`. As ruínas vêm de `WorldBuilder._build_ruins()` (KayKit Dungeon).
 
 ## Roteiro
 

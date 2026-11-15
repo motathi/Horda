@@ -85,11 +85,13 @@ func _build_main() -> Control:
 
 func _build_new_game() -> Control:
 	var panel := UIStyle.panel()
-	panel.custom_minimum_size = Vector2(520, 0)
+	panel.custom_minimum_size = Vector2(640, 0)
 	var col := VBoxContainer.new()
 	col.add_theme_constant_override("separation", 10)
 	panel.add_child(col)
 	col.add_child(UIStyle.label("Novo jogo", 28, UIStyle.GOLD))
+	col.add_child(UIStyle.label("Herói", 18))
+	col.add_child(_hero_picker())
 	col.add_child(UIStyle.label("Dificuldade", 18))
 	col.add_child(_choice_row({"facil": "Fácil", "normal": "Normal", "dificil": "Difícil"}, "normal", func(k: String) -> void: _diff = k))
 	col.add_child(UIStyle.label("100 hordas • 2 minutos de preparação antes de cada uma", 16, UIStyle.GOLD))
@@ -110,6 +112,59 @@ func _build_new_game() -> Control:
 	panel.visible = false
 	_place(panel)
 	return panel
+
+## Retratos clicáveis das aparências do herói (lembra a última escolha).
+func _hero_picker() -> Control:
+	var cfg := ConfigFile.new()
+	cfg.load(AudioManager.SETTINGS)
+	GameManager.hero_skin = str(cfg.get_value("game", "hero_skin", GameManager.hero_skin))
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 6)
+	var group := ButtonGroup.new()
+	for sk: Dictionary in HeroSkins.LIST:
+		var b := Button.new()
+		b.toggle_mode = true
+		b.button_group = group
+		b.button_pressed = sk["id"] == GameManager.hero_skin
+		b.custom_minimum_size = Vector2(84, 110)
+		b.focus_mode = Control.FOCUS_NONE
+		b.tooltip_text = sk["name"]
+		var st := UIStyle.hud_panel_style(Color(0.08, 0.07, 0.07, 0.95), 8)
+		st.border_color = Color(0.3, 0.26, 0.2)
+		var on := st.duplicate() as StyleBoxFlat
+		on.border_color = UIStyle.GOLD
+		on.set_border_width_all(3)
+		on.bg_color = Color(0.2, 0.16, 0.08, 0.98)
+		b.add_theme_stylebox_override("normal", st)
+		b.add_theme_stylebox_override("hover", on)
+		b.add_theme_stylebox_override("pressed", on)
+		var c := VBoxContainer.new()
+		c.set_anchors_preset(Control.PRESET_FULL_RECT)
+		c.offset_left = 4
+		c.offset_right = -4
+		c.offset_top = 4
+		c.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var tr := TextureRect.new()
+		tr.texture = HeroSkins.portrait(sk["id"])
+		tr.custom_minimum_size = Vector2(74, 74)
+		tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		tr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		c.add_child(tr)
+		var l := UIStyle.label(sk["name"], 12, Color.WHITE)
+		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		c.add_child(l)
+		b.add_child(c)
+		var id: String = sk["id"]
+		b.pressed.connect(func() -> void:
+			GameManager.hero_skin = id
+			var c2 := ConfigFile.new()
+			c2.load(AudioManager.SETTINGS)
+			c2.set_value("game", "hero_skin", id)
+			c2.save(AudioManager.SETTINGS))
+		row.add_child(b)
+	return row
 
 func _choice_row(options: Dictionary, default_key: String, on_pick: Callable) -> Control:
 	var row := HBoxContainer.new()

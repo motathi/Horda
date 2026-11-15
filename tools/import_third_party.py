@@ -36,6 +36,26 @@ PACKS = {
         "Animations/gltf/Rig_Medium/Rig_Medium_General.glb", "Animations/gltf/Rig_Medium/Rig_Medium_MovementBasic.glb"]),
     "kaykit_animations": ("kaykit-character-animations/KayKit_Character_Animations_1.1/Animations/gltf/Rig_Medium", "Kay Lousberg", "https://kaylousberg.itch.io/kaykit-character-animations", [
         "Rig_Medium_CombatMelee.glb", "Rig_Medium_CombatRanged.glb"]),
+    "kaykit_adventurers": ("kaykit-adventurers/KayKit_Adventurers_2.0_FREE", "Kay Lousberg", "https://kaylousberg.itch.io/kaykit-adventurers", [
+        "Characters/gltf/Knight.glb", "Characters/gltf/Barbarian.glb", "Characters/gltf/Mage.glb", "Characters/gltf/Ranger.glb",
+        "Characters/gltf/Rogue.glb", "Characters/gltf/Rogue_Hooded.glb", "Assets/gltf/sword_1handed.gltf", "Assets/gltf/axe_2handed.gltf",
+        "Assets/gltf/shield_badge_color.gltf", "Assets/gltf/shield_round_barbarian.gltf", "Assets/gltf/staff.gltf",
+        "Assets/gltf/dagger.gltf", "Assets/gltf/spellbook_open.gltf", "Assets/gltf/quiver.gltf", "Assets/gltf/smokebomb.gltf"]),
+    "kaykit_dungeon": ("kaykit-dungeon-pack/KayKit_Dungeon_Pack_1.1_FREE/Assets/gltf", "Kay Lousberg", "https://kaylousberg.itch.io/kaykit-dungeon-pack", [
+        "wall_broken", "wall_cracked", "wall_half", "wall_arched", "wall_corner", "pillar", "pillar_decorated", "column",
+        "rubble_large", "rubble_half", "barrier", "barrier_column", "torch_lit", "torch_mounted", "barrel_large",
+        "barrel_small_stack", "keg", "crates_stacked", "box_stacked", "chest", "chest_gold", "banner_red",
+        "banner_patternA_red", "banner_shield_red", "sword_shield", "sword_shield_broken", "table_long_broken", "stool",
+        "trunk_large_A", "stairs"]),
+    "quaternius_outfits": ("modular-character-outfits-fantasy/Modular Character Outfits - Fantasy[Standard]/Exports/glTF (Godot-Unreal)/Outfits", "Quaternius", "https://quaternius.itch.io/modular-character-outfits-fantasy", [
+        "Male_Peasant", "Female_Peasant", "Male_Ranger", "Female_Ranger"]),
+    "quaternius_base": ("universal-base-characters/Universal Base Characters[Standard]", "Quaternius", "https://quaternius.itch.io/universal-base-characters", [
+        "Base Characters/Godot - UE/Superhero_Male_FullBody", "Base Characters/Godot - UE/Superhero_Female_FullBody",
+        "Hairstyles/Rigged to Head Bone/glTF (Godot -Unreal)/Hair_SimpleParted", "Hairstyles/Rigged to Head Bone/glTF (Godot -Unreal)/Hair_Beard",
+        "Hairstyles/Rigged to Head Bone/glTF (Godot -Unreal)/Hair_Buns", "Hairstyles/Rigged to Head Bone/glTF (Godot -Unreal)/Hair_Long",
+        "Hairstyles/Rigged to Head Bone/glTF (Godot -Unreal)/Eyebrows_Regular", "Hairstyles/Rigged to Head Bone/glTF (Godot -Unreal)/Eyebrows_Female"]),
+    "quaternius_anims": ("universal-animation-library/Universal Animation Library[Standard]/Unreal-Godot", "Quaternius", "https://quaternius.itch.io/universal-animation-library", [
+        "UAL1_Standard.glb"]),
 }
 
 def copy_model(src_dir, rel, dst_dir):
