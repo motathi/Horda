@@ -30,7 +30,10 @@ var _music_i: int = 0
 var _music_id: String = ""
 var _music_mode: String = ""
 var _amb: Dictionary = {}  # "day"/"night"/"dark" -> AudioStreamPlayer
-var _amb_target: Dictionary = {"day": 0.0, "night": 0.0, "dark": 0.0}
+var _amb_target: Dictionary = {"day": 0.0, "night": 0.0, "dark": 0.0, "horror": 0.0, "storm": 0.0}
+## Tempestade em andamento (DayNightVisuals): liga a chuva no ambiente.
+var storm: bool = false
+var _dark: float = 0.0
 var _boss_wave: bool = false
 var _horde_on: bool = false
 
@@ -245,6 +248,10 @@ func _process(_delta: float) -> void:
 			_: play_music(mode)
 	_update_ambient()
 
+## 0..1: quanto o herói está dentro da área contaminada.
+func dark_amount() -> float:
+	return _dark
+
 func _update_ambient() -> void:
 	var playing := GameManager.state == GameManager.State.PLAYING
 	var night := _horde_on or (playing and TimeManager.phase == TimeManager.Phase.NIGHT)
@@ -253,9 +260,13 @@ func _update_ambient() -> void:
 	if playing and hero:
 		var d := Vector2(hero.global_position.x - DARK_CENTER.x, hero.global_position.z - DARK_CENTER.z).length()
 		dark = clampf(1.0 - (d - DARK_RADIUS * 0.6) / (DARK_RADIUS * 0.6), 0.0, 1.0)
-	_amb_target["day"] = 0.0 if not playing or night else 1.0 - dark
-	_amb_target["night"] = 1.0 if playing and night else 0.0
+	_dark = dark
+	_amb_target["day"] = 0.0 if not playing or night else 0.8 - 0.8 * dark
+	_amb_target["night"] = 0.55 if playing and night else 0.0
 	_amb_target["dark"] = dark if playing else 0.0
+	# Zumbido de terror por baixo de tudo à noite (e um pouco na área contaminada).
+	_amb_target["horror"] = (0.9 if night else 0.45 * dark) if playing else 0.0
+	_amb_target["storm"] = 0.75 if playing and storm else 0.0
 	for k: String in _amb:
 		var a: AudioStreamPlayer = _amb[k]
 		if a.stream == null:

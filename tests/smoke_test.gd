@@ -35,6 +35,7 @@ func _ready() -> void:
 	print("Mundo pronto em %d ms" % (Time.get_ticks_msec() - t0))
 	await _test_world()
 	await _test_audio()
+	await _test_atmosphere()
 	await _test_settings_tutorial()
 	await _test_combat()
 	await _test_abilities()
@@ -148,6 +149,48 @@ func _test_audio() -> void:
 	AudioManager.set_volume("Music", 0.5)
 	check(absf(AudioServer.get_bus_volume_db(AudioServer.get_bus_index("Music")) - linear_to_db(0.5)) < 0.01, "volume da música ajustável")
 	AudioManager.set_volume("Music", 0.7)
+
+func _test_atmosphere() -> void:
+	print("[atmosfera]")
+	var missing: Array[String] = []
+	for id in ["thunder", "heartbeat", "heartbeat_fast", "crow", "scream", "ghost", "howl"]:
+		if not AudioManager.has_sound(StringName(id)):
+			missing.append(id)
+	check(missing.is_empty(), "sons de terror presentes (faltando: %s)" % ", ".join(missing))
+	check(ResourceLoader.exists("res://assets/ambient/horror.ogg") and ResourceLoader.exists("res://assets/ambient/storm.ogg"), "ambientes de terror e chuva")
+	var dnv := DayNightVisuals.current
+	check(dnv != null, "controle de atmosfera ativo")
+	if dnv == null:
+		return
+	var horde := world.get(&"horde") as HordeDirector
+	var boss_w := horde.config.boss_every if horde.config.boss_every > 0 else 10
+	var saved_day := TimeManager.day
+	var saved_phase := TimeManager.phase
+	var saved_time := TimeManager.phase_time
+	TimeManager.day = boss_w
+	dnv._roll_night()
+	check(dnv.blood_moon and not dnv.storm, "lua de sangue na rodada do chefe (%d)" % boss_w)
+	TimeManager.day = 1
+	dnv._roll_night()
+	check(dnv.storm and not dnv.blood_moon, "primeira noite tem tempestade")
+	TimeManager.phase = TimeManager.Phase.NIGHT  # sem sinal: não dispara a horda
+	for i in 3:
+		await get_tree().process_frame
+	var lan := get_tree().get_nodes_in_group(&"hero_lantern")
+	check(lan.size() >= 1 and (lan[0] as OmniLight3D).visible and (lan[0] as OmniLight3D).light_energy > 1.0, "lanterna do herói acesa à noite")
+	check(AudioManager.storm, "chuva no ambiente durante a tempestade")
+	var env := (world.get_node("WorldEnvironment") as WorldEnvironment).environment
+	check(env.fog_density > 0.007 and env.adjustment_saturation < 0.7, "noite com neblina e cores apagadas")
+	var hub := EffectsHub.instance()
+	var before := hub._pools.filter(func(m: MeshInstance3D) -> bool: return m.visible).size()
+	EventBus.enemy_killed.emit(world.hero, null, null)
+	var after := hub._pools.filter(func(m: MeshInstance3D) -> bool: return m.visible).size()
+	check(after == before + 1, "zumbi morto deixa poça de sangue")
+	TimeManager.set_state(saved_phase, saved_day, saved_time)
+	dnv._roll_night()
+	for i in 3:
+		await get_tree().process_frame
+	check(not AudioManager.storm, "chuva para quando amanhece")
 
 func _test_settings_tutorial() -> void:
 	print("[configurações e tutorial]")

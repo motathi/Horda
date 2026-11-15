@@ -121,15 +121,17 @@ func _ready() -> void:
 	EventBus.enemy_killed.connect(_on_enemy_killed)
 	for id in ABILITY_IDS:
 		abilities.append(load("res://data/skills/%s.tres" % id) as AbilityDef)
-	# Lanterna: luz quente ao redor do herói durante a noite (grupo night_lights).
+	# Lanterna: círculo de luz quente ao redor do herói na escuridão
+	# (energia e tremulação controladas por DayNightVisuals, grupo hero_lantern).
 	var lantern := OmniLight3D.new()
-	lantern.light_color = Color(1.0, 0.75, 0.45)
-	lantern.light_energy = 1.4
-	lantern.omni_range = 10.0
-	lantern.position = Vector3(0, 2.6, 0)
+	lantern.light_color = Color(1.0, 0.7, 0.4)
+	lantern.light_energy = 0.0
+	lantern.omni_range = 12.0
+	lantern.omni_attenuation = 0.9
+	lantern.position = Vector3(0.3, 2.4, 0)
 	lantern.visible = false
+	lantern.add_to_group(&"hero_lantern")
 	add_child(lantern)
-	add_to_group("night_lights")
 	# Equipamento inicial: um machado comum.
 	var axe := Gear.get_def(&"axe")
 	if axe and equipment.is_empty():

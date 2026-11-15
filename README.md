@@ -121,6 +121,20 @@ Efeitos, músicas e ambientes **CC0** do OpenGameArt (créditos em
 [assets/sounds/CREDITS.md](assets/sounds/CREDITS.md)), com 3 a 17 variações por efeito sorteadas com leve
 variação de tom. Música dinâmica com crossfade: menu, preparação (2 faixas alternadas), horda (2 faixas),
 chefe e derrota; ambiente de pássaros de dia, grilos à noite e um ambiente sombrio perto do cemitério.
+
+### Atmosfera de terror
+
+`scripts/world/day_night_visuals.gd` controla luz, céu e neblina: dia nublado e dessaturado, entardecer cor
+de sangue e noite escura com neblina, onde o herói carrega uma **lanterna** (círculo de luz quente que
+tremula). Na rodada do chefe vem a **lua de sangue** (céu, lua e neblina vermelhos); em parte das noites
+(sempre na primeira) há **tempestade** com chuva, relâmpagos e trovões — sorteada pela rodada, então todos no
+coop veem o mesmo clima. À noite tocam uivos, gemidos, gritos distantes e sussurros (que não param na área
+contaminada); de dia, corvos. Na tela: vinheta escura, granulado de filme, clarão dos relâmpagos e, com a
+vida abaixo de 35%, borda vermelha pulsando com batimento cardíaco. Zumbis mortos deixam poças de sangue.
+O chão é dividido em 8×8 blocos para que a lanterna e as tochas iluminem mesmo no renderizador web (que
+limita as luzes por objeto). Para revisar o visual: `xvfb-run godot res://tests/atmo_probe.tscn -- <pasta>`.
+
+![Lua de sangue](docs/screenshots/07_lua_de_sangue.jpg)
 Volume de Música, Efeitos, Ambiente e Interface no menu de pausa (salvo em `user://settings.cfg`). O "ouvido" do jogo fica
 no herói (não na câmera alta), com limitador no canal principal. Para medir o volume de uma luta:
 `godot --headless --audio-driver Dummy res://tests/audio_capture.tscn -- luta.wav`.

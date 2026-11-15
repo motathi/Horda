@@ -82,7 +82,10 @@ func _make_navmesh() -> NavigationMesh:
 
 # --- Terreno ---------------------------------------------------------------------
 
-var _ground_mesh: MeshInstance3D
+## Chão dividido em blocos: cada bloco só recebe as luzes próximas (o renderizador
+## web limita as luzes por objeto; um chão único perderia a lanterna e as tochas).
+var _ground_chunks: Array[MeshInstance3D] = []
+const GROUND_CHUNKS := 8
 
 func _build_ground() -> void:
 	var body := StaticBody3D.new()
@@ -94,13 +97,17 @@ func _build_ground() -> void:
 	cs.shape = box
 	cs.position.y = -1.0
 	body.add_child(cs)
-	_ground_mesh = MeshInstance3D.new()
+	var full := MAP_HALF * 2 + 40.0
+	var step := full / GROUND_CHUNKS
 	var plane := PlaneMesh.new()
-	plane.size = Vector2(MAP_HALF * 2 + 40, MAP_HALF * 2 + 40)
-	plane.subdivide_width = 8
-	plane.subdivide_depth = 8
-	_ground_mesh.mesh = plane
-	body.add_child(_ground_mesh)
+	plane.size = Vector2(step, step)
+	for gx in GROUND_CHUNKS:
+		for gz in GROUND_CHUNKS:
+			var chunk := MeshInstance3D.new()
+			chunk.mesh = plane
+			chunk.position = Vector3(-full * 0.5 + step * (gx + 0.5), 0, -full * 0.5 + step * (gz + 0.5))
+			body.add_child(chunk)
+			_ground_chunks.append(chunk)
 	nav_region.add_child(body)
 
 func _apply_terrain_material() -> void:
@@ -123,7 +130,8 @@ func _apply_terrain_material() -> void:
 	nt.height = 256
 	mat.set_shader_parameter("noise_tex", nt)
 	mat.set_shader_parameter("map_size", MAP_HALF * 2.0)
-	_ground_mesh.material_override = mat
+	for chunk in _ground_chunks:
+		chunk.material_override = mat
 
 # --- Vegetação decorativa ------------------------------------------------------------
 

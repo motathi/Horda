@@ -34,9 +34,23 @@ func _ready() -> void:
 	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	add_child(bg)
+	# Sombra com vinheta (bordas quase pretas, levemente avermelhadas).
 	var shade := ColorRect.new()
-	shade.color = Color(0, 0, 0, 0.35)
 	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
+	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var sh := Shader.new()
+	sh.code = """
+shader_type canvas_item;
+void fragment() {
+	vec2 q = UV - vec2(0.5);
+	q.x *= 1.3;
+	float v = smoothstep(0.25, 0.85, length(q));
+	COLOR = vec4(mix(vec3(0.0), vec3(0.08, 0.0, 0.0), v), 0.3 + v * 0.6);
+}
+"""
+	var shm := ShaderMaterial.new()
+	shm.shader = sh
+	shade.material = shm
 	add_child(shade)
 	# Layout vertical: título no topo, painéis centralizados na parte de baixo.
 	var margin := MarginContainer.new()
@@ -46,11 +60,24 @@ func _ready() -> void:
 	add_child(margin)
 	var layout := VBoxContainer.new()
 	margin.add_child(layout)
-	var title := UIStyle.label("HORDA", 110, UIStyle.GOLD)
+	var title := UIStyle.label("HORDA", 110, Color(0.62, 0.05, 0.04))
 	title.add_theme_constant_override("outline_size", 18)
+	title.add_theme_color_override("font_outline_color", Color(0.06, 0.0, 0.0))
+	title.add_theme_color_override("font_shadow_color", Color(1.0, 0.1, 0.05, 0.35))
+	title.add_theme_constant_override("shadow_outline_size", 30)
+	title.add_theme_constant_override("shadow_offset_x", 0)
+	title.add_theme_constant_override("shadow_offset_y", 0)
+	# Tremula como luz de tocha.
+	var tw := title.create_tween().set_loops()
+	tw.tween_property(title, "modulate", Color(0.82, 0.78, 0.78), 0.12)
+	tw.tween_property(title, "modulate", Color.WHITE, 0.3)
+	tw.tween_interval(2.6)
+	tw.tween_property(title, "modulate", Color(0.7, 0.66, 0.66), 0.06)
+	tw.tween_property(title, "modulate", Color.WHITE, 0.08)
+	tw.tween_interval(4.0)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	layout.add_child(title)
-	var sub := UIStyle.label("Noites de Sobrevivência", 30, UIStyle.TEXT)
+	var sub := UIStyle.label("Noites de Sobrevivência", 30, Color(0.85, 0.8, 0.75))
 	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	layout.add_child(sub)
 	var spacer := Control.new()

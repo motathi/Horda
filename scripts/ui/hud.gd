@@ -29,6 +29,9 @@ var _pause: Control
 var _help: Control
 var _game_over: Control
 var _vignette: ColorRect
+var _hit_flash: float = 0.0
+var _beat_t: float = 0.0
+var _pulse: float = 0.0
 var _hero: Hero
 
 ## Ancora `c` num canto/borda com deslocamento fixo; o contêiner cresce para dentro da tela.
@@ -377,26 +380,72 @@ func _process(_delta: float) -> void:
 		_death_label.text = "Você caiu!\nRenascendo em %d..." % ceili(_hero.respawn_seconds_left())
 	else:
 		_death_label.visible = false
+	_update_screen_fx(_delta)
+
+## Efeitos de tela de terror: vinheta escura à noite, granulado de filme, borda
+## vermelha na lua de sangue, clarão dos relâmpagos e pulso vermelho com batimento
+## cardíaco quando a vida está baixa.
+func _update_screen_fx(delta: float) -> void:
 	var night := 1.0 - TimeManager.daylight()
 	var mat := _vignette.material as ShaderMaterial
-	var flash: float = mat.get_shader_parameter("flash")
-	mat.set_shader_parameter("flash", maxf(0.0, flash - _delta * 2.0))
-	mat.set_shader_parameter("night", night * 0.55)
+	_hit_flash = maxf(0.0, _hit_flash - delta * 2.0)
+	var dnv := DayNightVisuals.current
+	var low := 0.0
+	if _hero and not _hero.is_dead() and GameManager.is_playing():
+		low = clampf(1.0 - _hero.health.ratio() / 0.35, 0.0, 1.0)
+	# Batimento cardíaco: mais rápido quanto menor a vida.
+	_beat_t -= delta
+	_pulse = maxf(0.0, _pulse - delta * 2.5)
+	if low > 0.0 and _beat_t <= 0.0:
+		_beat_t = lerpf(1.15, 0.55, low)
+		_pulse = 1.0
+		AudioManager.play(&"heartbeat_fast" if low > 0.6 else &"heartbeat", lerpf(-8.0, 0.0, low))
+	mat.set_shader_parameter("flash", _hit_flash)
+	mat.set_shader_parameter("night", 0.2 + night * 0.45)
+	mat.set_shader_parameter("low_hp", low * (0.55 + 0.45 * _pulse))
+	mat.set_shader_parameter("blood", dnv._blood_tint if dnv else 0.0)
+	mat.set_shader_parameter("lightning", dnv.lightning_flash() * 0.35 if dnv else 0.0)
+	mat.set_shader_parameter("grain", 0.05 + night * 0.05 if Settings.quality > 0 else 0.0)
 
 func _flash_vignette() -> void:
-	(_vignette.material as ShaderMaterial).set_shader_parameter("flash", 0.8)
+	_hit_flash = 0.8
 
 func _vignette_material() -> ShaderMaterial:
 	var sh := Shader.new()
 	sh.code = """
 shader_type canvas_item;
-uniform float flash = 0.0;
-uniform float night = 0.0;
+uniform float flash = 0.0;      // dano recebido
+uniform float night = 0.0;      // escuridão das bordas
+uniform float low_hp = 0.0;     // vida baixa (pulsa com o coração)
+uniform float blood = 0.0;      // lua de sangue
+uniform float lightning = 0.0;  // clarão do relâmpago
+uniform float grain = 0.0;      // granulado de filme
+
+float hash(vec2 p) {
+	return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
+}
+
 void fragment() {
-	float d = distance(UV, vec2(0.5));
-	float v = smoothstep(0.35, 0.75, d);
-	vec3 col = mix(vec3(0.0, 0.0, 0.05), vec3(0.6, 0.0, 0.0), clamp(flash, 0.0, 1.0));
-	COLOR = vec4(col, v * clamp(night + flash, 0.0, 0.9));
+	vec2 q = UV - vec2(0.5);
+	q.x *= 1.25;
+	float d = length(q);
+	float v = smoothstep(0.28, 0.78, d);
+	// Escuridão nas bordas (avermelhada na lua de sangue).
+	vec3 col = mix(vec3(0.0, 0.0, 0.02), vec3(0.18, 0.0, 0.0), blood);
+	float a = v * clamp(night, 0.0, 0.92);
+	// Vermelho de dano e de vida baixa por cima.
+	float red = clamp(max(flash, low_hp), 0.0, 1.0);
+	float rv = smoothstep(0.2, 0.7, d);
+	col = mix(col, vec3(0.55, 0.0, 0.0), red * rv);
+	a = max(a, rv * red * 0.85);
+	// Granulado (ruído que muda a cada quadro).
+	float n = hash(floor(FRAGCOORD.xy / 2.0) + fract(TIME * 13.0) * 97.0) - 0.5;
+	col += vec3(n * grain * 4.0);
+	a = max(a, abs(n) * grain * 2.0);
+	// Clarão do relâmpago: branco azulado na tela toda.
+	col = mix(col, vec3(0.85, 0.9, 1.0), lightning);
+	a = max(a, lightning);
+	COLOR = vec4(col, a);
 }
 """
 	var m := ShaderMaterial.new()
@@ -438,7 +487,7 @@ func _on_night_warning(seconds: float) -> void:
 
 func _on_phase_changed(phase: int, day: int) -> void:
 	if phase == TimeManager.Phase.DUSK:
-		_on_message("O sol está se pondo... volte e prepare as defesas.", Color(1.0, 0.6, 0.3))
+		_on_message("O sol está morrendo... algo se move na névoa. Volte e prepare as defesas.", Color(1.0, 0.45, 0.3))
 	elif phase == TimeManager.Phase.DAWN and day > 1:
 		_on_message("Preparação: a horda %d chega em 2 minutos. Colete, construa e melhore!" % day, Color(1.0, 0.9, 0.5))
 

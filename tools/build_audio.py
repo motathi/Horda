@@ -48,7 +48,18 @@ SFX = {
     "leap": ["rpg-sound-pack/**/misc/wolfman.wav", "80-cc0-rpg-sfx/**/creature_misc_0[1-4].ogg"],
     "build": ["100-cc0-sfx/**/tools_0*.ogg", "35-wooden-crackshitsdestructions/**/impactwood1[0-4].mp3.flac"],
     "upgrade": ["80-cc0-rpg-sfx/**/metal_0*.ogg", "100-cc0-sfx/**/metal_0[1-4].ogg"],
+    # Atmosfera de terror
+    "crow": ["crow/crow_0.ogg", "crow-caw/crow_caw.wav"],
+    "scream": ["female-scream-1/*.ogg", "80-cc0-creature-sfx/**/scream_0[1-2].ogg"],
+    "ghost": ["ghost-breath/*.flac", "ghost-monster-voice-moaning-growling/**/qubodup-GhostMoan0[1-5].wav"],
+    "howl": ["80-cc0-creature-sfx/**/howl.ogg"],
+    "heartbeat": ["heartbeat-sounds/heartbeat_slow_0.wav"],
+    "heartbeat_fast": ["heartbeat-sounds/heartbeat_fast_0.wav"],
     "fuse": ["rpg-sound-pack/**/slime/slime10.wav", "80-cc0-rpg-sfx/**/creature_monster_0[1-2].ogg"],
+}
+# Efeitos longos (sem o corte de 4 s): id -> [(padrão, início s, duração s), ...]
+LONG_SFX = {
+    "thunder": [("rain-long-thunder/rain-thunder.ogg", 21.0, 14.0), ("rain-long-thunder/rain-thunder.ogg", 25.2, 9.0)],
 }
 # id -> (padrão, início s, duração s ou 0 = inteiro)
 MUSIC = {
@@ -64,6 +75,8 @@ AMBIENT = {
     "day": ("amb-morning-sounds-perfect-loop/amb_morning_0.ogg", 0, 0),
     "night": ("crickets-ambient-noise-loopable/*.mp3", 0, 0),
     "dark": ("dark-ambiences/**/ambience-3.wav", 0, 0),
+    "horror": ("ambient-horror/ambient_horror_0.ogg", 0, 0),
+    "storm": ("rain-long-thunder/rain-thunder.ogg", 0, 20.5),
 }
 
 def ff(args):
@@ -106,6 +119,15 @@ def main(base):
                 ff(["-i", f, "-t", "4", "-af", SFX_FILTER, "-ac", "1", "-ar", "32000", "-c:a", "libvorbis", "-q:a", "3", os.path.join(out_s, f"{sid}_{n}.ogg")])
         total += n
         print(f"{sid}: {n} variações", flush=True)
+    for sid, parts in LONG_SFX.items():
+        for old in glob.glob(os.path.join(out_s, sid + "_*.ogg")):
+            os.remove(old)
+        for n, (pat, st, du) in enumerate(parts, 1):
+            src = find(base, pat)[0]
+            ff(["-ss", str(st), "-t", str(du), "-i", src, "-af", f"afade=t=in:d=0.15,afade=t=out:st={du - 3.0}:d=3,loudnorm=I=-16:TP=-1.5",
+                "-ac", "1", "-ar", "32000", "-c:a", "libvorbis", "-q:a", "2", os.path.join(out_s, f"{sid}_{n}.ogg")])
+        total += len(parts)
+        print(f"{sid}: {len(parts)} variações (longas)", flush=True)
     for folder, table, lufs in (("music", MUSIC, -18), ("ambient", AMBIENT, -24)):
         od = os.path.join(ROOT, "assets", folder)
         os.makedirs(od, exist_ok=True)
@@ -119,6 +141,9 @@ def main(base):
     for pats in SFX.values():
         for p in pats:
             used.add(p.replace("@split:", "").split("/")[0])
+    for parts in LONG_SFX.values():
+        for pat, _, _ in parts:
+            used.add(pat.split("/")[0])
     for pat, _, _ in list(MUSIC.values()) + list(AMBIENT.values()):
         used.add(pat.split("/")[0])
     lines = ["# Créditos de áudio", "", "Todos os sons e músicas são **CC0 1.0** (domínio público), do OpenGameArt.org.",

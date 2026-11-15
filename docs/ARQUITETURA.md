@@ -144,6 +144,24 @@ no mesmo instante. A música é escolhida a cada quadro pelo estado (`GameManage
 (dia, noite, área sombria por distância ao cemitério). Todo `BaseButton` criado ganha som de clique/hover via
 `SceneTree.node_added`. Os sons vêm de `tools/oga_fetch.py` + `tools/build_audio.py` (manifesto id → arquivos).
 
+## Atmosfera de terror
+
+- `DayNightVisuals` (no mundo, acesso por `DayNightVisuals.current`) calcula todo quadro sol, céu, neblina e
+  ajustes de cor a partir de `TimeManager.daylight()`, mais a lua de sangue (`blood_moon`, rodadas de chefe) e a
+  tempestade (`storm`). Os dois são sorteados por `_roll_night()` só a partir do número da rodada, então anfitrião
+  e convidados chegam ao mesmo resultado sem RPC.
+- Relâmpago: `_flash` (0..1) soma energia ao sol e à luz ambiente; o HUD lê `lightning_flash()` para clarear a tela.
+  Trovão com atraso aleatório. Chuva: `GPUParticles3D` que segue o herói (200/450/900 gotas por qualidade; nada na Baixa).
+- Lanternas: `OmniLight3D` no grupo `hero_lantern` (criada em `Hero._ready`), energia e tremulação definidas aqui.
+- O chão é dividido em `GROUND_CHUNKS`² blocos (`WorldBuilder._build_ground`). O renderizador Compatibility (web)
+  aplica no máximo `limits/opengl/max_lights_per_object` (12) luzes por objeto; num chão único, tochas e brilhos de
+  saque ocupavam as vagas e a lanterna sumia. O shader do terreno usa coordenadas de mundo, então os blocos não têm emenda.
+- Tela (`HUD._update_screen_fx`): um `ColorRect` com shader faz vinheta noturna, granulado, borda vermelha na lua de
+  sangue, flash de dano e pulso de vida baixa sincronizado com o som do coração. Não lê a textura da tela (barato no celular).
+- Áudio: camadas de ambiente `horror` (noite e área contaminada) e `storm` (chuva) no `AudioManager`; efeitos
+  `thunder`, `howl`, `scream`, `ghost`, `crow`, `heartbeat(_fast)` gerados por `tools/build_audio.py`.
+- Sangue: `EffectsHub.spawn_blood_pool()` em `enemy_killed`; 48 manchas recicladas que somem em 40 s.
+
 ## Cenário de terceiros (CC0)
 
 `ThirdParty` (`scripts/world/third_party.gd`) carrega os modelos de `assets/third_party/` (escala por altura,

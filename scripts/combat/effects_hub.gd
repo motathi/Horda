@@ -14,6 +14,12 @@ var _pickups: ObjectPool
 var _arrows: ObjectPool
 var _marker: MeshInstance3D
 var _marker_t: float = 0.0
+## Poças de sangue no chão (onde zumbis morreram), recicladas em anel.
+const POOL_LIFE := 40.0
+const POOL_COUNT := 48
+var _pools: Array[MeshInstance3D] = []
+var _pool_age: PackedFloat32Array = []
+var _pool_i: int = 0
 
 func _enter_tree() -> void:
 	_inst = self
@@ -39,6 +45,10 @@ func _ready() -> void:
 	_marker.visible = false
 	add_child(_marker)
 	EventBus.damage_dealt.connect(_on_damage_dealt)
+	_build_pools.call_deferred()
+	EventBus.enemy_killed.connect(func(e: Node3D, _d: EnemyDef, _k: Node) -> void:
+		if is_instance_valid(e):
+			spawn_blood_pool(e.global_position))
 
 func _make_pool(n: String, f: Callable, pre: int) -> ObjectPool:
 	var p := ObjectPool.new()
@@ -379,7 +389,79 @@ func pickups_to_save() -> Array:
 static func instance() -> EffectsHub:
 	return _inst
 
+## Mancha de sangue no chão que some devagar.
+static func spawn_blood_pool(pos: Vector3, size: float = 1.0) -> void:
+	if _inst == null:
+		return
+	var h := _inst
+	if h._pools.is_empty():
+		h._build_pools()
+	var m := h._pools[h._pool_i]
+	h._pool_age[h._pool_i] = 0.0
+	h._pool_i = (h._pool_i + 1) % POOL_COUNT
+	m.visible = true
+	m.global_position = Vector3(pos.x, pos.y + 0.04 + randf() * 0.01, pos.z)
+	m.rotation = Vector3(0, randf() * TAU, 0)
+	m.scale = Vector3.ONE * size * randf_range(1.4, 2.4)
+	(m.material_override as StandardMaterial3D).albedo_color.a = 0.92
+
+func _build_pools() -> void:
+	var tex := ImageTexture.create_from_image(_splat_image())
+	var mesh := PlaneMesh.new()
+	mesh.size = Vector2.ONE
+	for i in POOL_COUNT:
+		var m := MeshInstance3D.new()
+		m.mesh = mesh
+		m.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		var mat := StandardMaterial3D.new()
+		mat.albedo_texture = tex
+		mat.albedo_color = Color(0.32, 0.02, 0.02, 0.0)
+		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		mat.roughness = 0.25  # molhado: brilha com a lanterna e as tochas
+		mat.metallic_specular = 0.7
+		m.material_override = mat
+		m.visible = false
+		add_child(m)
+		_pools.append(m)
+	_pool_age.resize(POOL_COUNT)
+	_pool_age.fill(POOL_LIFE)
+
+## Textura de respingo: mancha irregular com gotas ao redor (gerada uma vez).
+static func _splat_image() -> Image:
+	var n := 96
+	var img := Image.create(n, n, false, Image.FORMAT_RGBA8)
+	var noise := FastNoiseLite.new()
+	noise.seed = 7
+	noise.frequency = 0.06
+	var drops: Array[Vector3] = []
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 11
+	for i in 9:
+		var a := rng.randf() * TAU
+		var r := rng.randf_range(0.3, 0.44) * n
+		drops.append(Vector3(n * 0.5 + cos(a) * r, n * 0.5 + sin(a) * r, rng.randf_range(2.0, 4.5)))
+	for y in n:
+		for x in n:
+			var c := Vector2(x, y) - Vector2(n, n) * 0.5
+			var d := c.length() / (n * 0.5)
+			var edge := 0.62 + noise.get_noise_2d(x, y) * 0.35
+			var alpha := clampf((edge - d) * 6.0, 0.0, 1.0)
+			for dr in drops:
+				var dd := Vector2(x, y).distance_to(Vector2(dr.x, dr.y))
+				alpha = maxf(alpha, clampf((dr.z - dd) * 0.8, 0.0, 1.0))
+			var shade := 0.75 + 0.25 * noise.get_noise_2d(x * 3.0, y * 3.0)
+			img.set_pixel(x, y, Color(shade, shade, shade, alpha))
+	return img
+
 func _process(delta: float) -> void:
+	for i in _pools.size():
+		if _pool_age[i] < POOL_LIFE:
+			_pool_age[i] += delta
+			var left := POOL_LIFE - _pool_age[i]
+			if left < 8.0:
+				(_pools[i].material_override as StandardMaterial3D).albedo_color.a = 0.92 * maxf(0.0, left / 8.0)
+				if left <= 0.0:
+					_pools[i].visible = false
 	if _marker_t > 0.0:
 		_marker_t -= delta
 		_marker.scale = Vector3.ONE * (0.5 + _marker_t)
