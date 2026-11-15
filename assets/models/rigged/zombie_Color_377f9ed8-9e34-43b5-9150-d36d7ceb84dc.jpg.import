@@ -1,0 +1,37 @@
+[remap]
+
+importer="texture"
+type="CompressedTexture2D"
+uid="uid://djng3ail82c3v"
+path="res://.godot/imported/zombie_Color_377f9ed8-9e34-43b5-9150-d36d7ceb84dc.jpg-070e6ecd840b8d41d78113cd7aec96d8.ctex"
+metadata={
+"vram_texture": false
+}
+generator_parameters={
+"md5": "59ca3bb0f97a9de1adfa3c61147c44fe"
+}
+
+[deps]
+
+source_file="res://assets/models/rigged/zombie_Color_377f9ed8-9e34-43b5-9150-d36d7ceb84dc.jpg"
+dest_files=["res://.godot/imported/zombie_Color_377f9ed8-9e34-43b5-9150-d36d7ceb84dc.jpg-070e6ecd840b8d41d78113cd7aec96d8.ctex"]
+
+[params]
+
+compress/mode=0
+compress/high_quality=false
+compress/lossy_quality=0.7
+compress/hdr_compression=1
+compress/normal_map=0
+compress/channel_pack=0
+mipmaps/generate=true
+mipmaps/limit=-1
+roughness/mode=0
+roughness/src_normal=""
+process/fix_alpha_border=true
+process/premult_alpha=false
+process/normal_map_invert_y=false
+process/hdr_as_srgb=false
+process/hdr_clamp_exposure=false
+process/size_limit=0
+detect_3d/compress_to=1

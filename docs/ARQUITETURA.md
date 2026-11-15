@@ -72,10 +72,13 @@ carroça) seguem um pipeline reprodutível:
 5. **Uso** — `ModelLibrary` instancia os modelos já escalados; se um modelo não existir, o jogo usa
    automaticamente o visual procedural antigo (nada quebra).
 
-Os modelos não têm esqueleto: `CharacterModel` anima o corpo inteiro por código (balanço da passada,
-inclinação, respiração, investida no ataque, queda na morte) e o machado do herói é uma peça separada
-que gira no golpe. Para animação com esqueleto, o próximo passo é rigar (Meshy rigging ou ativar o
-Hyper3D/Hitem3D na ARK) e trocar os `.res` por cenas com `AnimationPlayer`.
+**Personagens com esqueleto (Tripo API):** `tools/tripo_pipeline.py` envia o conceito do herói e dos
+zumbis para a Tripo (imagem → modelo → pré-checagem → rig bípede → 5 animações: idle, walk, run,
+slash, hurt) e salva `assets/models/rigged/<nome>.glb` (~105 créditos ≈ US$ 1,05 por personagem).
+A chave vai no header `Authorization`; nesta nuvem ela é injetada pelo proxy do ambiente — localmente,
+exporte `TRIPO_API_KEY`. `CharacterModel` usa o GLB rigado quando existe (máquina de estados
+idle/walk/run/slash; `hurt` vira a queda da morte; animação pausada fora da tela) e cai para a malha
+estática animada por código ou para o visual procedural se o arquivo faltar.
 
 ## Roteiro
 

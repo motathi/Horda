@@ -34,9 +34,20 @@ var _body_base_scale: Vector3 = Vector3.ONE
 var _weapon_pivot: Node3D
 var _height: float = 2.0
 var _lean: float = 0.0
+# Modo "personagem rigado": cena GLB com esqueleto + AnimationPlayer (Tripo).
+const RIGGED_DIR := "res://assets/models/rigged/"
+var _rigged: bool = false
+var _anim: AnimationPlayer
+var _anim_names: Dictionary = {}  # "walk" -> nome real da animação
+var _skinned: Array[MeshInstance3D] = []
+var _current: String = ""
+var _run_threshold: float = 0.7
 
 func build_hero() -> void:
 	kind = Kind.HERO
+	if ResourceLoader.exists(RIGGED_DIR + "hero.glb"):
+		_build_rigged("hero", 2.2)
+		return
 	if ModelLibrary.has("hero"):
 		_build_from_model("hero", 2.2, Color.WHITE)
 		_attach_axe(Vector3(0.42, 1.45, 0.0))
@@ -79,6 +90,10 @@ func build_hero() -> void:
 func build_zombie(def: EnemyDef) -> void:
 	kind = Kind.ZOMBIE
 	hunch = def.hunch
+	if ResourceLoader.exists(RIGGED_DIR + String(def.id) + ".glb"):
+		_build_rigged(String(def.id), 2.0 * def.model_scale)
+		_run_threshold = 0.85 if def.behavior != EnemyDef.Behavior.CHARGER else 0.5
+		return
 	if ModelLibrary.has(String(def.id)):
 		# Tons diferentes por indivíduo para a horda não parecer clonada.
 		var v := randf_range(0.85, 1.05)
@@ -109,6 +124,71 @@ func build_zombie(def: EnemyDef) -> void:
 	_head.rotation.x = hunch * 0.6
 	_rest_arm_angle = deg_to_rad(75.0)
 	scale = Vector3.ONE * def.model_scale * MODEL_SCALE
+
+func _build_rigged(model_name: String, height: float) -> void:
+	_rigged = true
+	_rig = Node3D.new()
+	add_child(_rig)
+	var inst := (load(RIGGED_DIR + model_name + ".glb") as PackedScene).instantiate() as Node3D
+	_rig.add_child(inst)
+	var aabb := AABB()
+	var first := true
+	for mi: MeshInstance3D in inst.find_children("*", "MeshInstance3D", true, false):
+		_skinned.append(mi)
+		_meshes.append(mi)
+		var b := mi.get_aabb()
+		aabb = b if first else aabb.merge(b)
+		first = false
+	var s := height / maxf(0.01, aabb.size.y)
+	inst.scale = Vector3.ONE * s
+	inst.position.y = -aabb.position.y * s
+	inst.rotation.y = PI * 0.5  # modelos Tripo olham para +X; o jogo usa -Z
+	var players := inst.find_children("*", "AnimationPlayer", true, false)
+	if players.is_empty():
+		return
+	_anim = players[0] as AnimationPlayer
+	for n in _anim.get_animation_list():
+		var key := String(n).to_lower().get_slice("|", String(n).get_slice_count("|") - 1)
+		for k: String in ["idle", "walk", "run", "slash", "hurt"]:
+			if key.ends_with(k):
+				_anim_names[k] = n
+				if k in ["idle", "walk", "run"]:
+					_anim.get_animation(n).loop_mode = Animation.LOOP_LINEAR
+	# Pausa a animação quando fora da tela (hordas grandes).
+	var vis := VisibleOnScreenNotifier3D.new()
+	vis.aabb = AABB(Vector3(-1, 0, -1), Vector3(2, height, 2))
+	add_child(vis)
+	vis.screen_entered.connect(func() -> void: _anim.process_mode = Node.PROCESS_MODE_INHERIT)
+	vis.screen_exited.connect(func() -> void: _anim.process_mode = Node.PROCESS_MODE_DISABLED)
+	_play("idle", 0.0)
+
+func _play(key: String, blend: float = 0.15, speed: float = 1.0) -> void:
+	if _anim == null or not _anim_names.has(key):
+		return
+	_anim.speed_scale = speed
+	if _current == key:
+		return
+	_current = key
+	_anim.play(_anim_names[key], blend)
+
+func _animate_rigged(delta: float, speed_ratio: float) -> void:
+	if _attack_t >= 0.0:
+		_attack_t += delta
+		if _attack_t >= _attack_dur:
+			_attack_t = -1.0
+			_current = ""
+		else:
+			return
+	if speed_ratio > _run_threshold and _anim_names.has("run"):
+		_play("run", 0.15, clampf(speed_ratio, 0.8, 1.4))
+	elif speed_ratio > 0.05:
+		_play("walk", 0.15, clampf(speed_ratio / maxf(0.1, _run_threshold), 0.6, 1.5))
+	else:
+		_play("idle", 0.25)
+	if _flash_t > 0.0:
+		_flash_t -= delta
+		if _flash_t <= 0.0:
+			_set_overlay(null)
 
 func _build_from_model(model_name: String, height: float, tint: Color) -> void:
 	_model_mode = true
@@ -226,6 +306,9 @@ func _capsule(parent: Node3D, r: float, h: float, pos: Vector3, mat: Material) -
 func animate(delta: float, speed_ratio: float) -> void:
 	if _dead or _rig == null:
 		return
+	if _rigged:
+		_animate_rigged(delta, speed_ratio)
+		return
 	if _model_mode:
 		_animate_model(delta, speed_ratio)
 		return
@@ -269,6 +352,12 @@ func animate(delta: float, speed_ratio: float) -> void:
 func play_attack(duration: float) -> void:
 	_attack_dur = maxf(0.15, duration)
 	_attack_t = 0.0
+	if _rigged and _anim and _anim_names.has("slash"):
+		var a := _anim.get_animation(_anim_names["slash"])
+		_current = "slash"
+		_anim.play(_anim_names["slash"], 0.08)
+		_anim.seek(0.0, true)
+		_anim.speed_scale = a.length / _attack_dur
 
 func flash() -> void:
 	_flash_t = 0.09
@@ -281,6 +370,17 @@ func _set_overlay(m: Material) -> void:
 func play_death() -> void:
 	_dead = true
 	_set_overlay(null)
+	if _rigged and _anim and _anim_names.has("hurt"):
+		# "hurt" do Tripo é uma queda completa: serve como animação de morte.
+		_current = "hurt"
+		_anim.speed_scale = 1.3
+		_anim.get_animation(_anim_names["hurt"]).loop_mode = Animation.LOOP_NONE
+		_anim.play(_anim_names["hurt"], 0.05)
+		_anim.process_mode = Node.PROCESS_MODE_INHERIT
+		var t2 := create_tween()
+		t2.tween_interval(2.0)
+		t2.tween_property(_rig, "position:y", -1.6, 1.0)
+		return
 	var tw := create_tween()
 	tw.tween_property(_rig, "rotation:x", deg_to_rad(85.0), 0.45).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
 	tw.parallel().tween_property(_rig, "position:y", -0.15, 0.45)
@@ -294,3 +394,6 @@ func reset_pose() -> void:
 	_attack_t = -1.0
 	if _body_mesh:
 		_body_mesh.scale = _body_base_scale
+	if _rigged:
+		_current = ""
+		_play("idle", 0.0)

@@ -1,0 +1,22 @@
+{
+ "hero": {
+  "model": "d40b2b4c-b071-48ee-b056-62a939a25081",
+  "rig": "5ad48b9a-1a87-49c5-940e-c06967b84f88",
+  "anim": "8153ebd1-236f-43ed-b268-e81157d98240"
+ },
+ "zombie": {
+  "model": "377f9ed8-9e34-43b5-9150-d36d7ceb84dc",
+  "rig": "9593d52c-fe5e-4b45-af52-7ae604bb5a10",
+  "anim": "93258dbd-0f1e-49d0-a03c-8f709584a666"
+ },
+ "zombie_fast": {
+  "model": "6f21cf5e-7131-465d-963b-c8e15601876b",
+  "rig": "d159fb3d-714c-4454-b833-4287e71db29d",
+  "anim": "425eeaf3-9b8c-4cf4-a0bc-7960072a5447"
+ },
+ "zombie_brute": {
+  "model": "2eedf0d5-80cd-48d9-a0c7-c9dab101fa5e",
+  "rig": "cee9930e-034b-48f9-a9b4-e81153d08d2e",
+  "anim": "75299549-4c40-4436-a94f-d072b9760abf"
+ }
+}
