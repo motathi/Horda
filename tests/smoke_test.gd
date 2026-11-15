@@ -78,6 +78,10 @@ func _test_combat() -> void:
 		swings += 1
 	check(e.is_dead(), "herói mata zumbi em %d golpes" % swings)
 	check(GameManager.stats.kills == kills_before + 1, "abate contabilizado")
+	check(hero.xp > 0 or hero.level > 1, "herói ganhou experiência (%d XP, nível %d)" % [hero.xp, hero.level])
+	var lvl := hero.level
+	hero.add_xp(hero.xp_to_next())
+	check(hero.level == lvl + 1 and hero.health.max_health > hero.max_health, "subiu de nível: vida máx. %d" % int(hero.health.max_health))
 	# Zumbi persegue e ataca o herói
 	var e2 := (load("res://scenes/enemies/zombie.tscn") as PackedScene).instantiate() as Enemy
 	world.enemies_root.add_child(e2)

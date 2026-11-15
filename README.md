@@ -12,9 +12,10 @@ inspirado em *Night of the Dead: Aftermath* (Warcraft III). Feito em **Godot 4.3
 **https://horda-five.vercel.app** — abra no celular na horizontal. No Android (Chrome), use
 "Adicionar à tela inicial" para jogar em tela cheia como app.
 
-Celular: joystick à esquerda para andar, botão grande para atacar (mira automática), toque no chão
-para ir até lá ou num inimigo para atacá-lo, **E** saqueia, **1/2** curam, **I/B** inventário e base,
-pinça para zoom. Parâmetros úteis: `?touch=1` força os controles de toque no PC, `?dbg=1` mostra FPS no console.
+Celular: joystick à esquerda para andar, hexágono das espadas para atacar (mira automática), toque no
+chão para ir até lá ou num inimigo para atacá-lo, **E** saqueia, **1/2** curam, pinça para zoom.
+Retrato do herói = inventário • **+** nos recursos = menu da base • painel do dia = pausar
+(no PC também valem as teclas I, B e Esc). Parâmetros úteis: `?touch=1` força os controles de toque no PC, `?dbg=1` mostra FPS no console.
 
 Cada push no GitHub recompila automaticamente no Vercel (`tools/vercel_build.sh`, ~1 min).
 

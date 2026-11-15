@@ -108,3 +108,98 @@ static func item_slot(id: StringName, count: int, size: float = 48.0) -> Control
 	if def:
 		holder.tooltip_text = "%s\n%s" % [def.display_name, def.description]
 	return holder
+
+# --- HUD estilo "mobile strategy" (layout da referência) ----------------------
+
+const HUD_ICONS := "res://assets/ui/hud/"
+const GOLD_EDGE := Color(0.86, 0.66, 0.3)
+const GOLD_DARK := Color(0.42, 0.29, 0.12)
+const PANEL_BG := Color(0.07, 0.07, 0.09, 0.86)
+
+static var _theme: Theme
+
+## Tema com fonte em negrito e contorno (textos legíveis sobre o cenário).
+static func theme() -> Theme:
+	if _theme == null:
+		_theme = Theme.new()
+		var f := FontVariation.new()
+		f.base_font = ThemeDB.fallback_font
+		f.variation_embolden = 0.55
+		_theme.default_font = f
+		_theme.default_font_size = 16
+	return _theme
+
+static func hud_icon(icon_name: String) -> Texture2D:
+	var path := HUD_ICONS + icon_name + ".png"
+	return load(path) as Texture2D if ResourceLoader.exists(path) else null
+
+## Painel escuro com borda dourada dupla e cantos levemente arredondados.
+static func hud_panel_style(bg: Color = PANEL_BG, radius: int = 10) -> StyleBoxFlat:
+	var s := StyleBoxFlat.new()
+	s.bg_color = bg
+	s.border_color = GOLD_EDGE
+	s.set_border_width_all(3)
+	s.set_corner_radius_all(radius)
+	s.shadow_color = Color(0, 0, 0, 0.55)
+	s.shadow_size = 8
+	s.shadow_offset = Vector2(0, 3)
+	s.set_content_margin_all(10)
+	s.anti_aliasing = true
+	return s
+
+## Barra com cantos arredondados (vida, mochila).
+static func hud_bar(fill: Color, height: float = 26.0) -> ProgressBar:
+	var pb := ProgressBar.new()
+	pb.show_percentage = false
+	pb.custom_minimum_size = Vector2(0, height)
+	var bg := StyleBoxFlat.new()
+	bg.bg_color = Color(0.03, 0.03, 0.04, 0.95)
+	bg.border_color = Color(0.0, 0.0, 0.0, 1.0)
+	bg.set_border_width_all(2)
+	bg.set_corner_radius_all(int(height * 0.3))
+	var fg := StyleBoxFlat.new()
+	fg.bg_color = fill
+	fg.set_corner_radius_all(int(height * 0.3))
+	fg.border_color = fill.lightened(0.35)
+	fg.border_width_top = 3
+	fg.border_width_bottom = 2
+	fg.border_color = fill.lightened(0.35)
+	pb.add_theme_stylebox_override("background", bg)
+	pb.add_theme_stylebox_override("fill", fg)
+	return pb
+
+## Vértices de um hexágono "em pé" (ponta para cima).
+static func hex_points(c: Vector2, r: float) -> PackedVector2Array:
+	var pts := PackedVector2Array()
+	for i in 6:
+		var a := deg_to_rad(60.0 * i - 90.0)
+		pts.append(c + Vector2(cos(a), sin(a)) * r)
+	return pts
+
+## Botão hexagonal: aura (opcional), borda dourada em degraus, fundo escuro e ícone.
+static func draw_hex_button(ci: CanvasItem, c: Vector2, r: float, tex: Texture2D, pressed: bool, glow: float = 0.0, dim: bool = false) -> void:
+	if glow > 0.0:
+		for k in 3:
+			ci.draw_colored_polygon(hex_points(c, r + 8.0 + k * 5.0), Color(1.0, 0.75, 0.25, glow * (0.22 - k * 0.06)))
+	ci.draw_colored_polygon(hex_points(c + Vector2(0, 4), r + 4.0), Color(0, 0, 0, 0.55))
+	ci.draw_colored_polygon(hex_points(c, r + 3.0), GOLD_DARK)
+	ci.draw_colored_polygon(hex_points(c, r), GOLD_EDGE.lightened(0.25) if pressed else GOLD_EDGE)
+	ci.draw_colored_polygon(hex_points(c, r - 5.0), Color(0.16, 0.12, 0.08))
+	var inner := hex_points(c, r - 8.0)
+	var cols := PackedColorArray()
+	for i in 6:
+		cols.append(Color(0.2, 0.17, 0.16) if i in [0, 1, 5] else Color(0.05, 0.05, 0.07))
+	ci.draw_polygon(inner, cols)
+	if tex:
+		var s := r * (1.25 if pressed else 1.18)
+		ci.draw_texture_rect(tex, Rect2(c - Vector2(s, s) * 0.5, Vector2(s, s)), false, Color(0.45, 0.45, 0.45, 0.8) if dim else Color.WHITE)
+	ci.draw_polyline(hex_points(c, r - 8.0) + PackedVector2Array([hex_points(c, r - 8.0)[0]]), Color(0, 0, 0, 0.6), 2.0, true)
+
+## Selo circular com número (atalho de teclado / contagem).
+static func draw_badge(ci: CanvasItem, c: Vector2, r: float, text: String, size: int = 18) -> void:
+	ci.draw_circle(c, r + 2.0, GOLD_EDGE)
+	ci.draw_circle(c, r, Color(0.05, 0.05, 0.06))
+	var f := theme().default_font
+	var w := f.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x
+	ci.draw_string_outline(f, c + Vector2(-w * 0.5, size * 0.36), text, HORIZONTAL_ALIGNMENT_LEFT, -1, size, 4, Color.BLACK)
+	ci.draw_string(f, c + Vector2(-w * 0.5, size * 0.36), text, HORIZONTAL_ALIGNMENT_LEFT, -1, size, Color.WHITE)

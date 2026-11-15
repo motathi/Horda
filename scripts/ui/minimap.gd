@@ -8,7 +8,8 @@ var lootables: Dictionary = {}
 var _t: float = 0.0
 
 func _ready() -> void:
-	custom_minimum_size = Vector2(220, 220)
+	if custom_minimum_size == Vector2.ZERO:
+		custom_minimum_size = Vector2(220, 220)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 func _process(delta: float) -> void:

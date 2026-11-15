@@ -14,8 +14,8 @@ func _ready() -> void:
 	touch = _detect_touch()
 	low_end = OS.has_feature("web") or OS.has_feature("mobile") or "--lowend" in OS.get_cmdline_user_args()
 	if touch:
-		# Interface ~60% maior em telas pequenas (base virtual menor).
-		get_window().content_scale_size = Vector2i(960, 540)
+		# Mesma base virtual do layout de referência (1280x720).
+		get_window().content_scale_size = Vector2i(1280, 720)
 	if low_end:
 		get_viewport().msaa_3d = Viewport.MSAA_DISABLED
 		RenderingServer.directional_shadow_atlas_set_size(2048, true)

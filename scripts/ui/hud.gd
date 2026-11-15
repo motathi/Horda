@@ -3,13 +3,14 @@ extends CanvasLayer
 ## Interface do jogo: monta e coordena barras, painéis, avisos e menus.
 
 var top_bar: TopBar
-var bottom_bar: BottomBar
+var hero_panel: HeroPanel
 var selection: SelectionPanel
 var minimap: Minimap
 var time_panel: TimePanel
 var objectives_panel: ObjectivesPanel
 var inventory: InventoryPanel
 var base_panel: BasePanel
+var actions: HudActions
 var _feed: VBoxContainer
 var _banner: VBoxContainer
 var _banner_title: Label
@@ -25,7 +26,16 @@ var _help: Control
 var _game_over: Control
 var _vignette: ColorRect
 var _hero: Hero
-var touch_controls: TouchControls
+
+## Ancora `c` num canto/borda com deslocamento fixo; o contêiner cresce para dentro da tela.
+func _anchor(c: Control, preset: Control.LayoutPreset, off: Vector2, gh: Control.GrowDirection, gv: Control.GrowDirection) -> void:
+	c.set_anchors_preset(preset)
+	c.offset_left = off.x
+	c.offset_right = off.x
+	c.offset_top = off.y
+	c.offset_bottom = off.y
+	c.grow_horizontal = gh
+	c.grow_vertical = gv
 
 func _ready() -> void:
 	layer = 10
@@ -33,6 +43,7 @@ func _ready() -> void:
 	var root := Control.new()
 	root.set_anchors_preset(Control.PRESET_FULL_RECT)
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.theme = UIStyle.theme()
 	add_child(root)
 	# Vinheta vermelha ao sofrer dano / à noite
 	_vignette = ColorRect.new()
@@ -41,56 +52,64 @@ func _ready() -> void:
 	_vignette.material = _vignette_material()
 	root.add_child(_vignette)
 
-	top_bar = TopBar.new()
-	top_bar.set_anchors_preset(Control.PRESET_CENTER_TOP)
-	top_bar.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	top_bar.position.y = 8
-	root.add_child(top_bar)
+	# Botões de ação (e joystick no celular) ficam atrás dos painéis/menus.
+	actions = HudActions.new()
+	actions.touch_enabled = Platform.touch
+	root.add_child(actions)
 
-	time_panel = TimePanel.new()
-	time_panel.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	time_panel.grow_horizontal = Control.GROW_DIRECTION_BEGIN
-	time_panel.position = Vector2(-12, 8)
-	root.add_child(time_panel)
+	# Canto superior esquerdo: herói + objetivos
+	hero_panel = HeroPanel.new()
+	hero_panel.position = Vector2(12, 10)
+	root.add_child(hero_panel)
+	hero_panel.portrait_pressed.connect(_toggle_inventory)
 
 	objectives_panel = ObjectivesPanel.new()
-	objectives_panel.position = Vector2(12, 10)
+	_anchor(objectives_panel, Control.PRESET_TOP_LEFT, Vector2(16, 134), Control.GROW_DIRECTION_END, Control.GROW_DIRECTION_END)
 	root.add_child(objectives_panel)
 
-	var mm_frame := UIStyle.panel()
-	mm_frame.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
-	mm_frame.grow_vertical = Control.GROW_DIRECTION_BEGIN
-	mm_frame.position = Vector2(12, -34)
-	minimap = Minimap.new()
-	minimap.custom_minimum_size = Vector2(250, 250)
-	mm_frame.add_child(minimap)
-	root.add_child(mm_frame)
+	# Topo central: recursos
+	top_bar = TopBar.new()
+	_anchor(top_bar, Control.PRESET_TOP_LEFT, Vector2(354, 10), Control.GROW_DIRECTION_END, Control.GROW_DIRECTION_END)
+	root.add_child(top_bar)
+	top_bar.plus_pressed.connect(_toggle_base)
 
-	bottom_bar = BottomBar.new()
-	bottom_bar.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
-	bottom_bar.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	bottom_bar.grow_vertical = Control.GROW_DIRECTION_BEGIN
-	bottom_bar.position.y = -8
-	root.add_child(bottom_bar)
+	# Canto superior direito: ciclo dia/noite + minimapa
+	time_panel = TimePanel.new()
+	_anchor(time_panel, Control.PRESET_TOP_RIGHT, Vector2(-14, 10), Control.GROW_DIRECTION_BEGIN, Control.GROW_DIRECTION_END)
+	root.add_child(time_panel)
+	time_panel.pressed.connect(_toggle_pause)
+
+	var mm_holder := Control.new()
+	mm_holder.custom_minimum_size = Vector2(196, 196)
+	_anchor(mm_holder, Control.PRESET_TOP_RIGHT, Vector2(-14, 158), Control.GROW_DIRECTION_BEGIN, Control.GROW_DIRECTION_END)
+	mm_holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(mm_holder)
+	var mm_frame := PanelContainer.new()
+	var mm_style := UIStyle.hud_panel_style(Color(0.04, 0.05, 0.03, 0.92), 8)
+	mm_style.set_content_margin_all(6)
+	mm_frame.add_theme_stylebox_override("panel", mm_style)
+	mm_frame.position = Vector2(0, 12)
+	mm_frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	minimap = Minimap.new()
+	minimap.custom_minimum_size = Vector2(172, 172)
+	mm_frame.add_child(minimap)
+	mm_holder.add_child(mm_frame)
+	var north := _NorthBadge.new()
+	north.position = Vector2(92, 12)
+	mm_holder.add_child(north)
 
 	selection = SelectionPanel.new()
-	selection.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
-	selection.grow_horizontal = Control.GROW_DIRECTION_BEGIN
-	selection.grow_vertical = Control.GROW_DIRECTION_BEGIN
-	selection.position = Vector2(-12, -12)
+	_anchor(selection, Control.PRESET_CENTER_BOTTOM, Vector2(0, -14), Control.GROW_DIRECTION_BOTH, Control.GROW_DIRECTION_BEGIN)
 	root.add_child(selection)
 
 	_feed = VBoxContainer.new()
-	_feed.set_anchors_preset(Control.PRESET_CENTER_LEFT)
-	_feed.position = Vector2(14, -110)
-	_feed.custom_minimum_size = Vector2(460, 0)
+	_anchor(_feed, Control.PRESET_TOP_LEFT, Vector2(16, 300), Control.GROW_DIRECTION_END, Control.GROW_DIRECTION_END)
+	_feed.custom_minimum_size = Vector2(440, 0)
 	_feed.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(_feed)
 
 	_banner = VBoxContainer.new()
-	_banner.set_anchors_preset(Control.PRESET_CENTER_TOP)
-	_banner.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	_banner.position.y = 150
+	_anchor(_banner, Control.PRESET_CENTER_TOP, Vector2(0, 150), Control.GROW_DIRECTION_BOTH, Control.GROW_DIRECTION_END)
 	_banner.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_banner_title = UIStyle.label("", 54, UIStyle.RED)
 	_banner_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -103,9 +122,7 @@ func _ready() -> void:
 	root.add_child(_banner)
 
 	_interact_box = VBoxContainer.new()
-	_interact_box.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
-	_interact_box.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	_interact_box.position.y = -190
+	_anchor(_interact_box, Control.PRESET_CENTER_BOTTOM, Vector2(0, -150), Control.GROW_DIRECTION_BOTH, Control.GROW_DIRECTION_BEGIN)
 	_interact_box.custom_minimum_size = Vector2(300, 0)
 	_interact_label = UIStyle.label("", 16)
 	_interact_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -115,18 +132,15 @@ func _ready() -> void:
 	_interact_box.visible = false
 	root.add_child(_interact_box)
 
-	_hint = UIStyle.label("F1: Controles   •   I: Inventário   •   B: Base   •   Esc: Menu", 14, UIStyle.TEXT_DIM)
-	_hint.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
-	_hint.grow_vertical = Control.GROW_DIRECTION_BEGIN
-	_hint.position = Vector2(14, -14)
+	_hint = UIStyle.label("F1: Controles  •  I: Inventário  •  B: Base  •  Esc: Menu", 14, UIStyle.TEXT_DIM)
+	_anchor(_hint, Control.PRESET_BOTTOM_LEFT, Vector2(14, -10), Control.GROW_DIRECTION_END, Control.GROW_DIRECTION_BEGIN)
+	_hint.visible = not Platform.touch
 	root.add_child(_hint)
 
 	_death_label = UIStyle.label("", 30, UIStyle.RED)
-	_death_label.set_anchors_preset(Control.PRESET_CENTER)
-	_death_label.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_anchor(_death_label, Control.PRESET_CENTER, Vector2(0, 110), Control.GROW_DIRECTION_BOTH, Control.GROW_DIRECTION_BOTH)
 	_death_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_death_label.visible = false
-	_death_label.position.y = 110
 	root.add_child(_death_label)
 
 	inventory = InventoryPanel.new()
@@ -140,9 +154,6 @@ func _ready() -> void:
 	_game_over = _build_game_over()
 	_center(_game_over, root)
 
-	if Platform.touch:
-		_setup_touch(root, mm_frame)
-
 	EventBus.message.connect(_on_message)
 	EventBus.banner.connect(show_banner)
 	EventBus.interaction_progress.connect(_on_interaction)
@@ -152,41 +163,18 @@ func _ready() -> void:
 	TimeManager.night_warning.connect(_on_night_warning)
 	TimeManager.phase_changed.connect(_on_phase_changed)
 
-## Layout para celular: joystick/botões, painéis reposicionados e menores.
-func _setup_touch(root: Control, mm_frame: Control) -> void:
-	_hint.visible = false
-	bottom_bar.set_compact()
-	minimap.custom_minimum_size = Vector2(112, 112)
-	time_panel.set_compact()
-	mm_frame.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	mm_frame.grow_horizontal = Control.GROW_DIRECTION_BEGIN
-	mm_frame.grow_vertical = Control.GROW_DIRECTION_END
-	mm_frame.offset_right = -12
-	mm_frame.offset_left = -12 - 134
-	mm_frame.offset_top = 124
-	mm_frame.offset_bottom = 124 + 130
-	objectives_panel.position = Vector2(8, 64)
-	objectives_panel.scale = Vector2.ONE * 0.85
-	selection.set_anchors_preset(Control.PRESET_CENTER_TOP)
-	selection.grow_vertical = Control.GROW_DIRECTION_END
-	selection.position.y = 64
-	_feed.position = Vector2(10, -60)
-	touch_controls = TouchControls.new()
-	root.add_child(touch_controls)
-	root.move_child(touch_controls, 1)
-	touch_controls.toggle_inventory.connect(func() -> void:
-		inventory.visible = not inventory.visible
-		base_panel.visible = false)
-	touch_controls.toggle_base.connect(func() -> void:
-		base_panel.visible = not base_panel.visible
-		inventory.visible = false)
-	var menu_btn := UIStyle.button("II", 24)
-	menu_btn.custom_minimum_size = Vector2(58, 58)
-	menu_btn.set_anchors_preset(Control.PRESET_TOP_LEFT)
-	menu_btn.position = Vector2(8, 4)
-	menu_btn.pressed.connect(_toggle_pause)
-	root.add_child(menu_btn)
-	objectives_panel.position = Vector2(8, 66)
+func _toggle_inventory() -> void:
+	inventory.visible = not inventory.visible
+	base_panel.visible = false
+
+func _toggle_base() -> void:
+	base_panel.visible = not base_panel.visible
+	inventory.visible = false
+
+## Selo "N" (norte) no topo do minimapa.
+class _NorthBadge extends Control:
+	func _draw() -> void:
+		UIStyle.draw_badge(self, Vector2.ZERO, 12.0, "N", 15)
 
 func is_menu_paused() -> bool:
 	return _pause.visible
@@ -200,9 +188,8 @@ func _center(c: Control, root: Control) -> void:
 func bind(hero: Hero, services: BaseServices, regions: Array[Dictionary], lootables: Dictionary, objectives: DailyObjectives) -> void:
 	_hero = hero
 	objectives_panel.bind(objectives)
-	if touch_controls:
-		touch_controls.hero = hero
-	bottom_bar.bind(hero)
+	actions.hero = hero
+	hero_panel.hero = hero
 	base_panel.services = services
 	base_panel.hero = hero
 	minimap.regions = regions
@@ -223,12 +210,10 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not GameManager.is_playing() or get_tree().paused:
 		return
 	if event.is_action_pressed("inventory"):
-		inventory.visible = not inventory.visible
-		base_panel.visible = false
+		_toggle_inventory()
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("base_menu"):
-		base_panel.visible = not base_panel.visible
-		inventory.visible = false
+		_toggle_base()
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("help"):
 		_help.visible = not _help.visible
@@ -390,7 +375,8 @@ func _build_help() -> Control:
 	col.add_child(grid)
 	col.add_child(HSeparator.new())
 	if Platform.touch:
-		col.add_child(UIStyle.label("Celular: joystick à esquerda para andar • botão grande para atacar (mira automática)\nToque no chão para ir até lá, num inimigo para atacá-lo • E saqueia • pinça = zoom", 15, UIStyle.GOLD))
+		col.add_child(UIStyle.label("Celular: joystick à esquerda para andar • botão das espadas ataca (mira automática)\nToque no chão para ir até lá, num inimigo para atacá-lo • E saqueia • 1/2 curam • pinça = zoom", 15, UIStyle.GOLD))
+	col.add_child(UIStyle.label("Retrato do herói = inventário • \"+\" nos recursos = menu da base • painel do dia = pausar", 15, UIStyle.GOLD))
 	var goal := UIStyle.label("Objetivo: explore de dia, colete recursos e volte antes do anoitecer.\nÀ noite a horda ataca a base — proteja o Núcleo até o amanhecer.", 15, UIStyle.TEXT_DIM)
 	col.add_child(goal)
 	var close := UIStyle.button("Fechar")

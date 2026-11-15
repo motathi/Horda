@@ -5,6 +5,7 @@ extends CharacterBody3D
 
 signal attack_cooldown_changed(ratio: float)
 signal stats_changed
+signal leveled_up(level: int)
 
 @export_group("Atributos")
 @export var max_health: float = 220.0
@@ -21,6 +22,12 @@ signal stats_changed
 @export var respawn_time: float = 10.0
 
 const SHARPEN_BONUS := 4.0
+## Ganho por nível (a árvore de atributos completa vem na Fase 2).
+const LEVEL_HP := 25.0
+const LEVEL_DAMAGE := 3.0
+
+var level: int = 1
+var xp: int = 0
 
 var weapon_level: int = 0
 ## Modo toque (celular): ataque pelo botão, mira automática, toque no mundo = mover/atacar.
@@ -59,6 +66,7 @@ func _ready() -> void:
 	_home = global_position
 	GameManager.hero = self
 	touch_mode = Platform.touch
+	EventBus.enemy_killed.connect(_on_enemy_killed)
 	# Lanterna: luz quente ao redor do herói durante a noite (grupo night_lights).
 	var lantern := OmniLight3D.new()
 	lantern.light_color = Color(1.0, 0.75, 0.45)
@@ -76,7 +84,26 @@ func set_home(p: Vector3) -> void:
 	_home = p
 
 func damage() -> float:
-	return base_damage + weapon_level * SHARPEN_BONUS
+	return base_damage + weapon_level * SHARPEN_BONUS + (level - 1) * LEVEL_DAMAGE
+
+func xp_to_next() -> int:
+	return 60 + (level - 1) * 45
+
+func add_xp(amount: int) -> void:
+	xp += amount
+	while xp >= xp_to_next():
+		xp -= xp_to_next()
+		level += 1
+		health.max_health = max_health + (level - 1) * LEVEL_HP
+		health.heal(health.max_health)
+		leveled_up.emit(level)
+		EventBus.banner.emit("NÍVEL %d!" % level, "+%d de vida máxima • +%d de dano" % [int(LEVEL_HP), int(LEVEL_DAMAGE)], UIStyle.GOLD)
+		AudioManager.play(&"dawn")
+	stats_changed.emit()
+
+func _on_enemy_killed(_e: Node3D, def: EnemyDef, killer: Node) -> void:
+	if killer == self and def:
+		add_xp(def.xp_reward)
 
 func is_dead() -> bool:
 	return health.dead
@@ -103,6 +130,9 @@ func _physics_process(delta: float) -> void:
 	else:
 		_update_aim()
 		want_attack = Input.is_action_pressed("attack") and not _mouse_over_ui()
+		if touch_attack_held:
+			want_attack = true
+			_auto_aim(dir)
 	if want_attack:
 		_target_enemy = null
 		_has_move_target = false
@@ -444,11 +474,14 @@ func _raycast_mouse(mask: int) -> Node:
 # --- Salvamento -----------------------------------------------------------
 
 func to_save() -> Dictionary:
-	return {"pos": [global_position.x, global_position.y, global_position.z], "hp": health.current, "weapon_level": weapon_level}
+	return {"pos": [global_position.x, global_position.y, global_position.z], "hp": health.current, "weapon_level": weapon_level, "level": level, "xp": xp}
 
 func from_save(d: Dictionary) -> void:
 	var p: Array = d.get("pos", [0, 0, 0])
 	global_position = Vector3(p[0], p[1], p[2])
+	level = int(d.get("level", 1))
+	xp = int(d.get("xp", 0))
+	health.max_health = max_health + (level - 1) * LEVEL_HP
 	health.current = clampf(float(d.get("hp", max_health)), 1.0, health.max_health)
 	health.changed.emit(health.current, health.max_health)
 	weapon_level = int(d.get("weapon_level", 0))

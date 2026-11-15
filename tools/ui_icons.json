@@ -1,0 +1,86 @@
+[
+ {
+  "name": "ui_sun",
+  "out": "assets/ui/hud/src/sun.jpg",
+  "size": "1024x1024",
+  "prompt": "Game UI icon of a bright golden cartoon sun with pointed rays, glossy stylized hand-painted mobile strategy game UI icon, chunky readable shape, vibrant saturated colors, soft specular highlights, thick dark outline, centered, isolated on pure solid black background, no frame, no border, no text, no ground shadow"
+ },
+ {
+  "name": "ui_moon",
+  "out": "assets/ui/hud/src/moon.jpg",
+  "size": "1024x1024",
+  "prompt": "Game UI icon of a glowing pale blue crescent moon with small stars, glossy stylized hand-painted mobile strategy game UI icon, chunky readable shape, vibrant saturated colors, soft specular highlights, thick dark outline, centered, isolated on pure solid black background, no frame, no border, no text, no ground shadow"
+ },
+ {
+  "name": "ui_heart",
+  "out": "assets/ui/hud/src/heart.jpg",
+  "size": "1024x1024",
+  "prompt": "Game UI icon of a shiny red heart, glossy stylized hand-painted mobile strategy game UI icon, chunky readable shape, vibrant saturated colors, soft specular highlights, thick dark outline, centered, isolated on pure solid black background, no frame, no border, no text, no ground shadow"
+ },
+ {
+  "name": "ui_backpack",
+  "out": "assets/ui/hud/src/backpack.jpg",
+  "size": "1024x1024",
+  "prompt": "Game UI icon of a brown leather adventurer backpack with straps, glossy stylized hand-painted mobile strategy game UI icon, chunky readable shape, vibrant saturated colors, soft specular highlights, thick dark outline, centered, isolated on pure solid black background, no frame, no border, no text, no ground shadow"
+ },
+ {
+  "name": "ui_swords",
+  "out": "assets/ui/hud/src/swords.jpg",
+  "size": "1024x1024",
+  "prompt": "Game UI icon of two crossed steel swords with golden hilts, glowing golden edges, glossy stylized hand-painted mobile strategy game UI icon, chunky readable shape, vibrant saturated colors, soft specular highlights, thick dark outline, centered, isolated on pure solid black background, no frame, no border, no text, no ground shadow"
+ },
+ {
+  "name": "ui_meat",
+  "out": "assets/ui/hud/src/meat.jpg",
+  "size": "1024x1024",
+  "prompt": "Game UI icon of a raw red steak meat chunk with bone, glossy stylized hand-painted mobile strategy game UI icon, chunky readable shape, vibrant saturated colors, soft specular highlights, thick dark outline, centered, isolated on pure solid black background, no frame, no border, no text, no ground shadow"
+ },
+ {
+  "name": "ui_potion",
+  "out": "assets/ui/hud/src/potion.jpg",
+  "size": "1024x1024",
+  "prompt": "Game UI icon of a round glass bottle of glowing green healing potion with cork, glossy stylized hand-painted mobile strategy game UI icon, chunky readable shape, vibrant saturated colors, soft specular highlights, thick dark outline, centered, isolated on pure solid black background, no frame, no border, no text, no ground shadow"
+ },
+ {
+  "name": "ui_loot",
+  "out": "assets/ui/hud/src/loot.jpg",
+  "size": "1024x1024",
+  "prompt": "Game UI icon of a pile of wooden planks and a small open wooden crate with loot, glossy stylized hand-painted mobile strategy game UI icon, chunky readable shape, vibrant saturated colors, soft specular highlights, thick dark outline, centered, isolated on pure solid black background, no frame, no border, no text, no ground shadow"
+ },
+ {
+  "name": "ui_wood",
+  "out": "assets/ui/hud/src/wood.jpg",
+  "size": "1024x1024",
+  "prompt": "Game UI icon of a bundle of three chopped wooden logs, glossy stylized hand-painted mobile strategy game UI icon, chunky readable shape, vibrant saturated colors, soft specular highlights, thick dark outline, centered, isolated on pure solid black background, no frame, no border, no text, no ground shadow"
+ },
+ {
+  "name": "ui_stone",
+  "out": "assets/ui/hud/src/stone.jpg",
+  "size": "1024x1024",
+  "prompt": "Game UI icon of a pile of grey stone blocks, glossy stylized hand-painted mobile strategy game UI icon, chunky readable shape, vibrant saturated colors, soft specular highlights, thick dark outline, centered, isolated on a completely black #000000 background, dark night backdrop, the background must be pitch black, no frame, no border, no text, no ground shadow"
+ },
+ {
+  "name": "ui_scrap",
+  "out": "assets/ui/hud/src/scrap.jpg",
+  "size": "1024x1024",
+  "prompt": "Game UI icon of a pile of rusty metal scrap gears and bolts, glossy stylized hand-painted mobile strategy game UI icon, chunky readable shape, vibrant saturated colors, soft specular highlights, thick dark outline, centered, isolated on pure solid black background, no frame, no border, no text, no ground shadow"
+ },
+ {
+  "name": "ui_cloth",
+  "out": "assets/ui/hud/src/cloth.jpg",
+  "size": "1024x1024",
+  "prompt": "Game UI icon of a folded roll of tan cloth fabric, glossy stylized hand-painted mobile strategy game UI icon, chunky readable shape, vibrant saturated colors, soft specular highlights, thick dark outline, centered, isolated on pure solid black background, no frame, no border, no text, no ground shadow"
+ },
+ {
+  "name": "ui_herbs",
+  "out": "assets/ui/hud/src/herbs.jpg",
+  "size": "1024x1024",
+  "prompt": "Game UI icon of a bunch of green medicinal herb leaves, glossy stylized hand-painted mobile strategy game UI icon, chunky readable shape, vibrant saturated colors, soft specular highlights, thick dark outline, centered, isolated on a completely black #000000 background, dark night backdrop, the background must be pitch black, no frame, no border, no text, no ground shadow"
+ },
+ {
+  "name": "ui_alert",
+  "out": "assets/ui/hud/src/alert.jpg",
+  "size": "1024x1024",
+  "prompt": "Game UI icon of a round golden yellow badge with a bold black exclamation mark, glossy stylized hand-painted mobile strategy game UI icon, chunky readable shape, vibrant saturated colors, soft specular highlights, thick dark outline, centered, isolated on pure solid black background, no frame, no border, no text, no ground shadow"
+ }
+]
