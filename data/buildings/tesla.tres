@@ -1,0 +1,31 @@
+[gd_resource type="Resource" script_class="BuildingDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/building/building_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"tesla"
+display_name = "Torre Elétrica"
+description = "Descarga elétrica que salta de zumbi em zumbi e os paralisa por um instante."
+icon_name = "b_tesla"
+category = 1
+cost = {
+&"scrap": 40,
+&"stone": 16,
+&"cloth": 6
+}
+max_health = 600.0
+armor = 4.0
+footprint = Vector2(2.4, 2.4)
+height = 5.5
+max_level = 3
+upgrade_cost_mult = 1.0
+refund = 0.5
+unlock_wave = 10
+tower_range = 13.0
+tower_damage = 24.0
+attacks_per_second = 0.9
+projectile_speed = 0.0
+tower_kind = 3
+chain_count = 5
+stun_time = 0.5

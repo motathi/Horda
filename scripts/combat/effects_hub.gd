@@ -192,6 +192,96 @@ static func spawn_explosion(pos: Vector3, radius: float, color: Color = Color(0.
 	for i in 4:
 		spawn_debris(pos + Vector3(randf_range(-radius, radius) * 0.5, 0.6, randf_range(-radius, radius) * 0.5), true)
 
+## Virote da balista: voa em linha reta (efeito visual; o dano é aplicado pela torre).
+static func spawn_bolt(from: Vector3, to: Vector3, speed: float) -> void:
+	if _inst == null:
+		return
+	var bolt := MeshInstance3D.new()
+	var c := CylinderMesh.new()
+	c.top_radius = 0.06
+	c.bottom_radius = 0.06
+	c.height = 1.8
+	c.radial_segments = 5
+	bolt.mesh = c
+	bolt.material_override = MaterialLib.flat(Color(0.45, 0.3, 0.18))
+	bolt.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var trail := MeshInstance3D.new()
+	var q := BoxMesh.new()
+	q.size = Vector3(0.06, 2.6, 0.06)
+	trail.mesh = q
+	trail.position.y = -2.0
+	trail.material_override = MaterialLib.unshaded(Color(1.0, 0.95, 0.75, 0.4))
+	bolt.add_child(trail)
+	_inst.add_child(bolt)
+	bolt.global_position = from
+	var dir := (to - from).normalized()
+	# O cilindro aponta em +Y: alinha +Y com a direção do voo.
+	bolt.global_basis = Basis(Quaternion(Vector3.UP, dir))
+	var tw := bolt.create_tween()
+	tw.tween_property(bolt, "global_position", to, from.distance_to(to) / maxf(1.0, speed))
+	tw.tween_callback(bolt.queue_free)
+
+## Projétil em arco (bala de canhão). on_land é chamado no impacto.
+static func spawn_lob(from: Vector3, to: Vector3, duration: float, arc: float, on_land: Callable) -> void:
+	if _inst == null:
+		return
+	var ball := MeshInstance3D.new()
+	var sph := SphereMesh.new()
+	sph.radius = 0.32
+	sph.height = 0.64
+	sph.radial_segments = 10
+	sph.rings = 6
+	ball.mesh = sph
+	ball.material_override = MaterialLib.flat(Color(0.12, 0.12, 0.14), 0.4)
+	ball.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_inst.add_child(ball)
+	ball.global_position = from
+	var tw := ball.create_tween()
+	tw.tween_method(func(t: float) -> void:
+		var p := from.lerp(to, t)
+		p.y += sin(t * PI) * arc
+		ball.global_position = p, 0.0, 1.0, duration)
+	tw.tween_callback(func() -> void:
+		ball.queue_free()
+		on_land.call())
+
+## Raio elétrico entre os pontos (segmentos brilhantes que somem rápido).
+static func spawn_lightning(points: PackedVector3Array, color: Color = Color(0.55, 0.8, 1.0)) -> void:
+	if _inst == null or points.size() < 2:
+		return
+	var root := Node3D.new()
+	_inst.add_child(root)
+	var mat := MaterialLib.unshaded(Color(color.r, color.g, color.b, 0.9))
+	for i in points.size() - 1:
+		var a := points[i]
+		var b := points[i + 1]
+		# Zigue-zague: dois segmentos por salto com um ponto deslocado no meio.
+		var mid := (a + b) * 0.5 + Vector3(randf_range(-0.5, 0.5), randf_range(-0.3, 0.6), randf_range(-0.5, 0.5))
+		for seg: Array in [[a, mid], [mid, b]]:
+			var p0: Vector3 = seg[0]
+			var p1: Vector3 = seg[1]
+			var m := MeshInstance3D.new()
+			var box := BoxMesh.new()
+			box.size = Vector3(0.09, p0.distance_to(p1), 0.09)
+			m.mesh = box
+			m.material_override = mat
+			m.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			root.add_child(m)
+			m.global_position = (p0 + p1) * 0.5
+			var dir := (p1 - p0).normalized()
+			if dir.length() > 0.0:
+				m.global_basis = Basis(Quaternion(Vector3.UP, dir))
+	var light := OmniLight3D.new()
+	light.light_color = color
+	light.light_energy = 2.5
+	light.omni_range = 6.0
+	root.add_child(light)
+	light.global_position = points[0]
+	var tw := root.create_tween()
+	tw.tween_property(mat, "albedo_color:a", 0.0, 0.18)
+	tw.parallel().tween_property(light, "light_energy", 0.0, 0.18)
+	tw.tween_callback(root.queue_free)
+
 ## Fogo preso a um nó (zumbis queimando ao amanhecer).
 static func attach_fire(target: Node3D) -> Node3D:
 	var f := make_fire_particles(0.8)

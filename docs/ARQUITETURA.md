@@ -105,7 +105,10 @@ Modelos riggados gerados pelo `tools/tripo_pipeline.py`.
 - **Fase 3 — Construção (núcleo pronto)**: `BuildManager` (prévia transparente, grade de 0,5 m, rotação,
   validação por área da base/espaço livre/recursos), `Building` (estende `Structure`: níveis 1–3, torre que
   dispara `Projectile` com pool, armadilha que fere e se desgasta, demolição com reembolso) e dados em
-  `data/buildings/*.tres` (`BuildingDef`). Falta: muros de ferro, mais torres (balista, canhão, elétrica),
-  portões construíveis, fundações e custo de manutenção.
+  `data/buildings/*.tres` (`BuildingDef`). Defesas avançadas prontas: `BuildingDef.TowerKind`
+  (`ARROW`, `PIERCE`, `SPLASH`, `CHAIN`) com `splash_radius`, `chain_count`, `stun_time` e `unlock_wave`;
+  `Building._fire_bolt/_fire_cannon/_fire_chain` e efeitos `EffectsHub.spawn_bolt/spawn_lob/spawn_lightning`;
+  modelos estáticos via `tools/tripo_pipeline.py --static` + `tools/build_models.sh`. Falta: portões
+  construíveis, fundações e custo de manutenção.
 - **Fase 4 — Exército**, **Fase 5 — Conteúdo** (ferro, couro, eletrônicos, pólvora, combustível e cristais
   — ícones já gerados — entram junto com os sistemas que os usam), **Fase 6 — Polimento**.

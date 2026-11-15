@@ -129,6 +129,8 @@ func _update_preview() -> void:
 
 ## Retorna "" se pode construir; senão o motivo.
 func check(d: BuildingDef, pos: Vector3, rot: float) -> String:
+	if not d.is_unlocked():
+		return "%s libera na horda %d" % [d.display_name, d.unlock_wave]
 	var core := GameManager.base_core
 	var center := core.global_position if core else Vector3.ZERO
 	var dist := Vector2(pos.x - center.x, pos.z - center.z).length()

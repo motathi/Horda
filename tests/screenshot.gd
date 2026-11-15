@@ -96,6 +96,25 @@ func _ready() -> void:
 		z.global_position = hero.global_position + offs[id]
 	await get_tree().create_timer(1.1).timeout
 	await _shot("14_especiais")
+	for z in Enemy.all.duplicate():
+		z.queue_free()
+	TimeManager.day = 10
+	var bm2 := world.build_manager
+	var base := GameManager.base_core.global_position
+	var placed: Array[Building] = []
+	placed.append(bm2.place(Building.load_def(&"ballista"), base + Vector3(-9, 0, 9), 0.0, false))
+	placed.append(bm2.place(Building.load_def(&"cannon"), base + Vector3(-3, 0, 10), 0.0, false))
+	placed.append(bm2.place(Building.load_def(&"tesla"), base + Vector3(3, 0, 10), 0.0, false))
+	placed.append(bm2.place(Building.load_def(&"iron_wall"), base + Vector3(9, 0, 10), 0.0, false))
+	hero.global_position = base + Vector3(0, 0, 13)
+	await _frames(30)
+	await _shot("15_defesas")
+	world.hud.build_panel.visible = true
+	await _frames(6)
+	await _shot("16_menu_construir")
+	world.hud.build_panel.visible = false
+	for b in placed:
+		b.queue_free()
 	# Cidade
 	hero.global_position = Vector3(70, 0, 8)
 	world.camera_rig.global_position = hero.global_position

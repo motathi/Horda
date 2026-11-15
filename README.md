@@ -34,7 +34,7 @@ Cada push no GitHub recompila automaticamente no Vercel (`tools/vercel_build.sh`
 | P (ou toque no retrato) | Personagem: distribuir pontos de atributo |
 | I ou Tab | Inventário (mochila + armazém) |
 | B | Base: reparar muros/núcleo, afiar arma, fabricar curativos |
-| G | Construir: barricada, muro de pedra, torre de arqueiros, armadilha de espinhos (T gira, clique constrói, botão direito cancela) |
+| G | Construir: barricada, muros de pedra e de ferro, espinhos, torre de arqueiros, balista, canhão e torre elétrica (T gira, clique constrói, botão direito cancela) |
 | Q / F / R / T | Habilidades: Golpe Giratório (nv 1), Investida (nv 2), Grito de Guerra (nv 3), Explosão Arcana (nv 5) |
 | Roda / Z, X / C | Zoom / girar câmera / centralizar |
 | F5 | Salvar (somente de dia; também salva sozinho a cada amanhecer) |
@@ -44,6 +44,10 @@ Cada push no GitHub recompila automaticamente no Vercel (`tools/vercel_build.sh`
 **100 hordas:** antes de cada horda há **2 minutos de preparação** (ou toque em "Chamar agora"). A horda
 termina quando o último zumbi cai — e já começa a próxima preparação. Elites a cada 5 hordas, **chefe** a
 cada 10 (atacando de todas as direções). Vencer a horda 100 = vitória.
+
+**Defesas:** *Balista* (horda 3) atravessa a fila inteira com virotes de 22 m; *Muro de Ferro* (horda 5)
+tem 1600 de vida e armadura 9; *Torre de Canhão* (horda 6) lança balas em arco que explodem em área e
+atordoam; *Torre Elétrica* (horda 10) dispara um raio que salta por 5 zumbis e os paralisa.
 
 **Inimigos especiais:** a partir da horda 4 surge o *Zumbi Explosivo* (incha e explode ao alcançar o alvo,
 arrasando muros; abatido, explode ferindo os zumbis ao redor), na 7 o *Cuspidor* (cospe ácido de 10 m,

@@ -48,9 +48,10 @@ func _rebuild() -> void:
 		_grid.add_child(_card(d))
 
 func _card(d: BuildingDef) -> Control:
-	var afford := ResourceManager.can_afford(d.cost)
+	var unlocked := d.is_unlocked()
+	var afford := unlocked and ResourceManager.can_afford(d.cost)
 	var b := Button.new()
-	b.custom_minimum_size = Vector2(190, 250)
+	b.custom_minimum_size = Vector2(190, 218)
 	b.focus_mode = Control.FOCUS_NONE
 	var st := UIStyle.hud_panel_style(Color(0.1, 0.09, 0.08, 0.95), 10)
 	st.border_color = UIStyle.GOLD_EDGE if afford else Color(0.35, 0.3, 0.25)
@@ -71,7 +72,7 @@ func _card(d: BuildingDef) -> Control:
 	col.add_theme_constant_override("separation", 4)
 	col.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	b.add_child(col)
-	var ic := UIStyle.icon(d.icon(), 96)
+	var ic := UIStyle.icon(d.icon(), 76)
 	ic.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	ic.modulate = Color.WHITE if afford else Color(0.55, 0.55, 0.55)
 	col.add_child(ic)
@@ -79,7 +80,7 @@ func _card(d: BuildingDef) -> Control:
 	n.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	n.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	col.add_child(n)
-	var stats := UIStyle.label(d.stats_text(), 12, UIStyle.TEXT_DIM)
+	var stats := UIStyle.label(d.stats_text() if unlocked else "Libera na horda %d" % d.unlock_wave, 12, UIStyle.TEXT_DIM if unlocked else UIStyle.GOLD)
 	stats.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	stats.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	col.add_child(stats)
@@ -94,6 +95,8 @@ func _card(d: BuildingDef) -> Control:
 		cost.add_child(ci)
 		cost.add_child(UIStyle.label(str(need), 15, UIStyle.GREEN if have >= need else UIStyle.RED))
 	col.add_child(cost)
+	b.disabled = not unlocked
+	b.add_theme_stylebox_override("disabled", st)
 	b.pressed.connect(func() -> void:
 		visible = false
 		chosen.emit(d))

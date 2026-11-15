@@ -184,5 +184,29 @@
   "out": "assets/ui/hud/src/attr_eng.jpg",
   "size": "1024x1024",
   "prompt": "Game ability icon of a crossed wrench and hammer over a brass gear, glossy stylized hand-painted MOBA ability icon in the style of Dota 2, dynamic composition, glowing magical effects, vibrant saturated colors, thick dark outline, centered, isolated on a completely black #000000 background, the background must be pitch black, no frame, no border, no text"
+ },
+ {
+  "name": "ui_b_ballista",
+  "out": "assets/ui/hud/src/b_ballista.jpg",
+  "size": "1024x1024",
+  "prompt": "Game UI icon of a heavy wooden siege ballista turret loaded with a giant bolt, glossy stylized hand-painted mobile strategy game UI icon, chunky readable shape, vibrant saturated colors, soft specular highlights, thick dark outline, centered, isolated on a completely black #000000 background, the background must be pitch black, no frame, no border, no text"
+ },
+ {
+  "name": "ui_b_cannon",
+  "out": "assets/ui/hud/src/b_cannon.jpg",
+  "size": "1024x1024",
+  "prompt": "Game UI icon of a round stone tower with a big black iron cannon on top, glossy stylized hand-painted mobile strategy game UI icon, chunky readable shape, vibrant saturated colors, soft specular highlights, thick dark outline, centered, isolated on a completely black #000000 background, the background must be pitch black, no frame, no border, no text"
+ },
+ {
+  "name": "ui_b_tesla",
+  "out": "assets/ui/hud/src/b_tesla.jpg",
+  "size": "1024x1024",
+  "prompt": "Game UI icon of a copper coil lightning tower with a glowing blue orb crackling with electricity, glossy stylized hand-painted mobile strategy game UI icon, chunky readable shape, vibrant saturated colors, soft specular highlights, thick dark outline, centered, isolated on a completely black #000000 background, the background must be pitch black, no frame, no border, no text"
+ },
+ {
+  "name": "ui_b_iron_wall",
+  "out": "assets/ui/hud/src/b_iron_wall.jpg",
+  "size": "1024x1024",
+  "prompt": "Game UI icon of a riveted dark iron plated wall segment with spikes on top, glossy stylized hand-painted mobile strategy game UI icon, chunky readable shape, vibrant saturated colors, soft specular highlights, thick dark outline, centered, isolated on a completely black #000000 background, the background must be pitch black, no frame, no border, no text"
  }
 ]

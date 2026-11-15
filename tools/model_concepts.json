@@ -88,5 +88,29 @@
   "out": "assets/concepts/zombie_leaper.jpg",
   "size": "2048x2048",
   "prompt": "A-pose front view of a wiry agile leaper zombie, long powerful digitigrade legs, sharp long claws, exposed ribs, pale bluish skin, tattered bandages, glowing cyan eyes, stylized hand-painted 3D game character in the art style of Dota 2 and Warcraft III, chunky heroic proportions, clean readable silhouette, painterly textures, full body visible head to feet, centered, plain flat light grey background, soft even studio lighting, no shadows on background, no text, single character only"
+ },
+ {
+  "name": "m_ballista",
+  "out": "assets/concepts/ballista.jpg",
+  "size": "2048x2048",
+  "prompt": "a heavy wooden siege ballista turret on a square stone and timber base, giant crossbow with iron fittings loaded with a huge bolt, rope and brass details, stylized hand-painted 3D game asset in the art style of Dota 2 and Warcraft III, isometric three-quarter view from slightly above, entire object visible and centered, plain flat light grey background, soft even lighting, no text, single object only, no ground plane"
+ },
+ {
+  "name": "m_cannon",
+  "out": "assets/concepts/cannon.jpg",
+  "size": "2048x2048",
+  "prompt": "a squat round stone defense tower with a big black iron cannon on top, brass bands, stacked cannonballs, small red banner, stylized hand-painted 3D game asset in the art style of Dota 2 and Warcraft III, isometric three-quarter view from slightly above, entire object visible and centered, plain flat light grey background, soft even lighting, no text, single object only, no ground plane"
+ },
+ {
+  "name": "m_tesla",
+  "out": "assets/concepts/tesla.jpg",
+  "size": "2048x2048",
+  "prompt": "a tall arcane lightning tower made of copper coils and dark iron frame on a stone base, a glowing blue crystal sphere on top crackling with electricity, stylized hand-painted 3D game asset in the art style of Dota 2 and Warcraft III, isometric three-quarter view from slightly above, entire object visible and centered, plain flat light grey background, soft even lighting, no text, single object only, no ground plane"
+ },
+ {
+  "name": "m_iron_wall",
+  "out": "assets/concepts/iron_wall.jpg",
+  "size": "2048x2048",
+  "prompt": "a straight section of heavy fortified wall made of riveted dark iron plates over stone blocks, metal spikes on top, long horizontal rectangular wall segment seen from the front, stylized hand-painted 3D game asset in the art style of Dota 2 and Warcraft III, isometric three-quarter view from slightly above, entire object visible and centered, plain flat light grey background, soft even lighting, no text, single object only, no ground plane"
  }
 ]

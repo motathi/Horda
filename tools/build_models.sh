@@ -10,7 +10,8 @@ cd "$(dirname "$0")/.."
 GODOT="${GODOT:-godot}"
 TMP="$(mktemp -d)"
 declare -A TRIS=([hero]=14000 [zombie]=5000 [zombie_fast]=5000 [zombie_brute]=7000 [wall]=6000 [gate]=3000 \
-  [tree]=2500 [rock]=1500 [house]=9000 [cart]=4000 [tower]=9000 [keep]=20000)
+  [tree]=2500 [rock]=1500 [house]=9000 [cart]=4000 [tower]=9000 [keep]=20000 \
+  [ballista]=7000 [cannon]=7000 [tesla]=7000 [iron_wall]=5000)
 JOBS=()
 for n in "${!TRIS[@]}"; do
   [ -f "assets/models/raw/$n.glb" ] || continue

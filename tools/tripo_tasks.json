@@ -33,5 +33,17 @@
   "model": "b2c2c73f-b1bb-4550-bd31-d30dc2cbe56e",
   "rig": "4697713a-4d3b-4f9a-91da-dab9c1aa5739",
   "anim": "c8d34beb-ed3e-4e88-8168-15995969459d"
+ },
+ "ballista": {
+  "model": "d2ad3318-64ec-4327-8a92-975837591ad6"
+ },
+ "cannon": {
+  "model": "43550ba9-4389-42e5-baa3-cc55f8275260"
+ },
+ "tesla": {
+  "model": "82c0345a-dd91-4aba-9520-b9a57b5a1583"
+ },
+ "iron_wall": {
+  "model": "56276710-6d20-417e-a1a1-8bcbaec4bf90"
  }
 }

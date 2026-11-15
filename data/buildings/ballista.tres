@@ -1,0 +1,30 @@
+[gd_resource type="Resource" script_class="BuildingDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/building/building_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"ballista"
+display_name = "Balista"
+description = "Dispara virotes pesados de longo alcance que atravessam todos os zumbis em linha."
+icon_name = "b_ballista"
+category = 1
+cost = {
+&"wood": 34,
+&"stone": 10,
+&"scrap": 14
+}
+max_health = 520.0
+armor = 3.0
+footprint = Vector2(2.6, 2.6)
+height = 3.2
+max_level = 3
+upgrade_cost_mult = 1.0
+refund = 0.5
+unlock_wave = 3
+tower_range = 22.0
+tower_damage = 48.0
+attacks_per_second = 0.45
+projectile_speed = 48.0
+tower_kind = 1
+splash_radius = 0.9

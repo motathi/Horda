@@ -16,7 +16,7 @@ static func load_def(id: StringName) -> BuildingDef:
 
 static func all_defs() -> Array[BuildingDef]:
 	var out: Array[BuildingDef] = []
-	for id in [&"barricade", &"stone_wall", &"archer_tower", &"spikes"]:
+	for id in [&"barricade", &"stone_wall", &"iron_wall", &"spikes", &"archer_tower", &"ballista", &"cannon", &"tesla"]:
 		out.append(load_def(id))
 	return out
 
@@ -94,6 +94,30 @@ static func make_visual(d: BuildingDef, lvl: int = 1) -> Node3D:
 				root.add_child(ModelLibrary.instance_width("wall", d.footprint.x * 1.05))
 			else:
 				_box(root, Vector3(d.footprint.x, d.height, d.footprint.y), Vector3(0, d.height * 0.5, 0), MaterialLib.textured("rock", Color.WHITE, 0.6))
+		&"ballista", &"cannon", &"tesla":
+			if ModelLibrary.has(String(d.id)):
+				root.add_child(ModelLibrary.instance_height(String(d.id), d.height))
+			else:
+				_box(root, Vector3(d.footprint.x, d.height * 0.5, d.footprint.y), Vector3(0, d.height * 0.25, 0), MaterialLib.textured("rock", Color.WHITE, 0.6))
+				_box(root, Vector3(d.footprint.x * 0.5, d.height * 0.5, d.footprint.y * 0.5), Vector3(0, d.height * 0.75, 0), MaterialLib.textured("metal", Color(0.6, 0.6, 0.65), 1.0, true, 0.4))
+			if d.id == &"tesla":
+				var orb := MeshInstance3D.new()
+				var sph := SphereMesh.new()
+				sph.radius = 0.3
+				sph.height = 0.6
+				orb.mesh = sph
+				orb.material_override = MaterialLib.flat(Color(0.4, 0.75, 1.0), 0.3, 3.0)
+				orb.position.y = d.height + 0.2
+				root.add_child(orb)
+		&"iron_wall":
+			if ModelLibrary.has("iron_wall"):
+				# A malha gerada é comprida no eixo Z: gira 90° e ajusta a altura à do muro.
+				var iw := ModelLibrary.instance_footprint("iron_wall", d.footprint.x * 1.05)
+				iw.rotation.y = PI * 0.5
+				iw.scale.y = d.height / ModelLibrary.size_of("iron_wall").y
+				root.add_child(iw)
+			else:
+				_box(root, Vector3(d.footprint.x, d.height, d.footprint.y), Vector3(0, d.height * 0.5, 0), MaterialLib.textured("metal", Color(0.45, 0.45, 0.5), 1.0, true, 0.4))
 		&"archer_tower":
 			if ModelLibrary.has("tower"):
 				root.add_child(ModelLibrary.instance_height("tower", d.height))
@@ -187,11 +211,97 @@ func _process_tower(delta: float) -> void:
 		return
 	_cooldown = 1.0 / (def.attacks_per_second * (1.0 + 0.15 * (level - 1)))
 	var from := global_position + Vector3(0, def.height * 0.85, 0)
-	var info := DamageInfo.make(tower_damage(), self, _rng.randf() < 0.1)
-	if info.is_crit:
-		info.amount *= 1.8
-	EffectsHub.spawn_arrow(from, target, info, def.projectile_speed)
-	AudioManager.play_3d(&"swing", from, -10.0)
+	match def.tower_kind:
+		BuildingDef.TowerKind.PIERCE:
+			_fire_bolt(from, target)
+		BuildingDef.TowerKind.SPLASH:
+			_fire_cannon(from, target)
+		BuildingDef.TowerKind.CHAIN:
+			_fire_chain(from, target)
+		_:
+			var info := DamageInfo.make(tower_damage(), self, _rng.randf() < 0.1)
+			if info.is_crit:
+				info.amount *= 1.8
+			EffectsHub.spawn_arrow(from, target, info, def.projectile_speed)
+			AudioManager.play_3d(&"swing", from, -10.0)
+
+## Balista: virote em linha reta que fere todos os inimigos no caminho.
+func _fire_bolt(from: Vector3, target: Enemy) -> void:
+	var aim := target.global_position + Vector3.UP
+	var dir := aim - from
+	dir.y = 0.0
+	dir = dir.normalized()
+	var reach := tower_range() + 2.0
+	var to := Vector3(from.x, 1.0, from.z) + dir * reach
+	EffectsHub.spawn_bolt(from, to, def.projectile_speed)
+	AudioManager.play_3d(&"chop", from, -4.0)
+	var origin := Vector2(global_position.x, global_position.z)
+	var d2 := Vector2(dir.x, dir.z)
+	var hits: Array[Enemy] = []
+	for e in Enemy.all:
+		if not is_instance_valid(e) or e.is_dead():
+			continue
+		var rel := Vector2(e.global_position.x, e.global_position.z) - origin
+		var along := rel.dot(d2)
+		if along < 0.0 or along > reach:
+			continue
+		if absf(rel.cross(d2)) <= def.splash_radius + e.get_radius():
+			hits.append(e)
+	var dmg := tower_damage()
+	get_tree().create_timer(0.12).timeout.connect(func() -> void:
+		for e in hits:
+			if is_instance_valid(e) and not e.is_dead():
+				e.take_damage(DamageInfo.make(dmg, self))
+				EffectsHub.spawn_debris(e.global_position + Vector3.UP, true))
+
+## Canhão: bala em arco até a posição do alvo; explode em área e atordoa.
+func _fire_cannon(from: Vector3, target: Enemy) -> void:
+	var to := target.global_position
+	to.y = 0.2
+	var dur := clampf(from.distance_to(to) / maxf(1.0, def.projectile_speed), 0.4, 1.4)
+	var dmg := tower_damage()
+	var r := def.splash_radius * (1.0 + 0.1 * (level - 1))
+	var stun_t := def.stun_time
+	AudioManager.play_3d(&"break", from, -2.0)
+	EffectsHub.spawn_debris(from, false)
+	EffectsHub.spawn_lob(from, to, dur, 4.0, func() -> void:
+		EffectsHub.spawn_explosion(to, r, Color(1.0, 0.55, 0.15))
+		AudioManager.play_3d(&"break", to, 2.0)
+		for e: Enemy in Enemy.all.duplicate():
+			if is_instance_valid(e) and not e.is_dead():
+				var dd: Vector3 = e.global_position - to
+				if Vector2(dd.x, dd.z).length() <= r + e.get_radius():
+					e.take_damage(DamageInfo.make(dmg, self if is_instance_valid(self) else null))
+					if stun_t > 0.0:
+						e.stun(stun_t))
+
+## Torre elétrica: raio que salta para os inimigos mais próximos, atordoando.
+func _fire_chain(from: Vector3, target: Enemy) -> void:
+	var pts := PackedVector3Array([from])
+	var hit := {}
+	var cur := target
+	var dmg := tower_damage()
+	var n := def.chain_count + (level - 1)
+	for i in n:
+		if cur == null:
+			break
+		hit[cur] = true
+		pts.append(cur.global_position + Vector3.UP * 1.1 * cur.def.model_scale)
+		cur.take_damage(DamageInfo.make(dmg * pow(0.85, i), self))
+		if def.stun_time > 0.0:
+			cur.stun(def.stun_time)
+		var nxt: Enemy = null
+		var best := 5.5
+		for e in Enemy.all:
+			if not is_instance_valid(e) or e.is_dead() or hit.has(e):
+				continue
+			var dd := e.global_position.distance_to(cur.global_position)
+			if dd < best:
+				best = dd
+				nxt = e
+		cur = nxt
+	EffectsHub.spawn_lightning(pts)
+	AudioManager.play_3d(&"swing", from, -2.0)
 
 func _find_target(radius: float) -> Enemy:
 	var best: Enemy = null

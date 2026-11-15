@@ -40,6 +40,7 @@ func _ready() -> void:
 	await _test_harvest_and_loot()
 	await _test_base_services()
 	await _test_building()
+	await _test_defenses()
 	await _test_night()
 	await _test_save()
 	await _test_wave_flow()
@@ -351,7 +352,9 @@ func _test_harvest_and_loot() -> void:
 	await wait(car.duration + 0.5)
 	check(car.looted, "carro saqueado com E")
 	check(ResourceManager.hero_inventory.count(&"scrap") > scrap0, "saque rende sucata")
-	# Itens no chão são atraídos e coletados
+	# Itens no chão são atraídos e coletados (mochila esvaziada antes: os testes anteriores a enchem)
+	print("    mochila: %d / %d" % [ResourceManager.hero_inventory.used_weight(), ResourceManager.hero_inventory.capacity])
+	ResourceManager.deposit_all()
 	var cloth0 := ResourceManager.hero_inventory.count(&"cloth")
 	EffectsHub.drop_item(hero.global_position + Vector3(1, 0, 0), &"cloth", 3)
 	await wait(1.5)
@@ -446,6 +449,85 @@ func _test_building() -> void:
 	for n in get_tree().get_nodes_in_group("buildings"):
 		n.queue_free()
 	await wait(0.1)
+
+func _test_defenses() -> void:
+	print("[defesas]")
+	var bm := world.build_manager
+	var tesla := Building.load_def(&"tesla")
+	var day0 := TimeManager.day
+	check(Building.all_defs().size() == 8, "8 construções no menu")
+	if day0 < tesla.unlock_wave:
+		check(bm.check(tesla, Vector3(6, 0, 6), 0.0).contains("horda"), "Torre Elétrica bloqueada antes da horda %d" % tesla.unlock_wave)
+	TimeManager.day = 10
+	check(Building.load_def(&"iron_wall").is_unlocked() and tesla.is_unlocked(), "defesas liberadas na horda 10")
+	await _clear_enemies()
+	var origin := Vector3(60, 0, -40)
+	# Balista atravessa a fila.
+	var bal := bm.place(Building.load_def(&"ballista"), origin, 0.0, false)
+	var line: Array[Enemy] = []
+	for k in 3:
+		var z := _spawn_def("zombie_brute", origin + Vector3(6 + k * 3, 0, 0))
+		z.health.invulnerable = false
+		line.append(z)
+	await wait(0.05)
+	for z in line:
+		z.set_physics_process(false)
+	var hp_before := line.map(func(z: Enemy) -> float: return z.health.current)
+	bal._fire_bolt(bal.global_position + Vector3.UP * 2.5, line[0])
+	await wait(0.3)
+	var pierced := 0
+	for i in line.size():
+		if line[i].health.current < hp_before[i]:
+			pierced += 1
+	check(pierced == 3, "Balista atravessa a fila (%d de 3)" % pierced)
+	bal.queue_free()
+	await _clear_enemies()
+	# Canhão explode em área e atordoa.
+	var can := bm.place(Building.load_def(&"cannon"), origin, 0.0, false)
+	var group: Array[Enemy] = []
+	for k in 3:
+		var z := _spawn_def("zombie_brute", origin + Vector3(10, 0, -1.2 + k * 1.2))
+		group.append(z)
+	await wait(0.05)
+	for z in group:
+		z.set_physics_process(false)
+	var hp2 := group.map(func(z: Enemy) -> float: return z.health.current)
+	can._fire_cannon(can.global_position + Vector3.UP * 3.0, group[1])
+	await wait(1.6)
+	var hit2 := 0
+	for i in group.size():
+		if group[i].health.current < hp2[i]:
+			hit2 += 1
+	check(hit2 == 3 and group[0].is_stunned(), "Canhão atinge o grupo inteiro (%d de 3) e atordoa" % hit2)
+	can.queue_free()
+	await _clear_enemies()
+	# Torre elétrica: raio em cadeia.
+	var tes := bm.place(tesla, origin, 0.0, false)
+	var chain: Array[Enemy] = []
+	for k in 4:
+		var z := _spawn_def("zombie_brute", origin + Vector3(6 + k * 2.5, 0, 0))
+		chain.append(z)
+	await wait(0.05)
+	for z in chain:
+		z.set_physics_process(false)
+	var hp3 := chain.map(func(z: Enemy) -> float: return z.health.current)
+	tes._fire_chain(tes.global_position + Vector3.UP * 5.0, chain[0])
+	var hit3 := 0
+	for i in chain.size():
+		if chain[i].health.current < hp3[i]:
+			hit3 += 1
+	check(hit3 == 4 and chain[3].is_stunned(), "raio salta por 4 zumbis e paralisa (%d)" % hit3)
+	tes.queue_free()
+	await _clear_enemies()
+	# Muro de ferro é o mais resistente.
+	var iw := bm.place(Building.load_def(&"iron_wall"), origin, 0.0, false)
+	var sw := bm.place(Building.load_def(&"stone_wall"), origin + Vector3(0, 0, 6), 0.0, false)
+	await wait(0.05)
+	check(iw.health.max_health > sw.health.max_health * 2.0 and iw.health.armor > sw.health.armor, "Muro de Ferro: %d de vida (pedra: %d)" % [int(iw.health.max_health), int(sw.health.max_health)])
+	iw.queue_free()
+	sw.queue_free()
+	TimeManager.day = day0
+	await wait(0.05)
 
 func _test_night() -> void:
 	print("[noite e horda]")

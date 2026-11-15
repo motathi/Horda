@@ -4,6 +4,8 @@ imagem -> modelo 3D -> verificação -> rig -> animações (retarget) -> GLB.
 A chave vai no header Authorization (TRIPO_API_KEY; num ambiente com proxy
 que injeta a credencial, qualquer valor serve).
 Uso: python3 tools/tripo_pipeline.py nome:imagem.jpg [...]
+     python3 tools/tripo_pipeline.py --static nome:imagem.jpg [...]  (só a malha, sem rig,
+     salva em assets/models/raw/<nome>.glb para o tools/build_models.sh)
 Saída: assets/models/rigged/<nome>.glb (+ log de tarefas em tools/tripo_tasks.json)"""
 import json, os, sys, time, urllib.request, uuid
 
@@ -65,6 +67,23 @@ def log(name, key, value):
     logd.setdefault(name, {})[key] = value
     json.dump(logd, open(LOG, "w"), indent=1)
 
+def run_static(name, image):
+    raw = os.path.join(ROOT, "assets/models/raw")
+    os.makedirs(raw, exist_ok=True)
+    prev = (json.load(open(LOG)) if os.path.exists(LOG) else {}).get(name, {})
+    print(f"[{name}] (estático)", flush=True)
+    model_tid = prev.get("model")
+    if not model_tid:
+        tok = upload(image)
+        model_tid = task({"type": "image_to_model", "file": {"type": "jpg", "file_token": tok},
+                          "texture": True, "pbr": False, "face_limit": 10000})
+        log(name, "model", model_tid)
+    d = wait(model_tid, "modelo")
+    url = model_url(d)
+    with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": UA}), timeout=300) as r:
+        open(os.path.join(raw, name + ".glb"), "wb").write(r.read())
+    print(f"  -> assets/models/raw/{name}.glb", flush=True)
+
 def run(name, image):
     os.makedirs(OUT, exist_ok=True)
     prev = (json.load(open(LOG)) if os.path.exists(LOG) else {}).get(name, {})
@@ -99,10 +118,11 @@ def run(name, image):
     print(f"  -> assets/models/rigged/{name}.glb", flush=True)
 
 if __name__ == "__main__":
-    for job in sys.argv[1:]:
+    static = "--static" in sys.argv
+    for job in [a for a in sys.argv[1:] if a != "--static"]:
         n, img = job.split(":", 1)
         try:
-            run(n, img)
+            (run_static if static else run)(n, img)
         except Exception as e:
             print(f"  ERRO {n}: {e}", flush=True)
     print("saldo:", req("GET", "/user/balance")["data"], flush=True)

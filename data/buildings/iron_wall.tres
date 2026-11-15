@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="BuildingDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/building/building_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"iron_wall"
+display_name = "Muro de Ferro"
+description = "Placas de ferro rebitadas sobre pedra: o muro mais resistente da base."
+icon_name = "b_iron_wall"
+category = 0
+cost = {
+&"stone": 20,
+&"scrap": 24
+}
+max_health = 1600.0
+armor = 9.0
+footprint = Vector2(4.0, 1.1)
+height = 2.9
+max_level = 3
+upgrade_cost_mult = 0.9
+refund = 0.5
+unlock_wave = 5

@@ -1,0 +1,31 @@
+[gd_resource type="Resource" script_class="BuildingDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/building/building_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"cannon"
+display_name = "Torre de Canhão"
+description = "Bala de canhão em arco que explode no meio da horda, atordoando quem sobreviver."
+icon_name = "b_cannon"
+category = 1
+cost = {
+&"stone": 36,
+&"wood": 10,
+&"scrap": 22
+}
+max_health = 800.0
+armor = 5.0
+footprint = Vector2(2.8, 2.8)
+height = 3.6
+max_level = 3
+upgrade_cost_mult = 1.0
+refund = 0.5
+unlock_wave = 6
+tower_range = 17.0
+tower_damage = 38.0
+attacks_per_second = 0.4
+projectile_speed = 20.0
+tower_kind = 2
+splash_radius = 3.2
+stun_time = 0.4
