@@ -7,7 +7,18 @@ inspirado em *Night of the Dead: Aftermath* (Warcraft III). Feito em **Godot 4.3
 > Arte gerada por IA no estilo Dota 2 / Warcraft III: texturas, retratos, ícones e conceitos na BytePlus ARK (Seedream);
 > **modelos 3D texturizados** (herói, zumbis, fortaleza, muralhas, torres, árvores, casas...) via image-to-3D. Veja o pipeline em docs/ARQUITETURA.md.
 
-## Como jogar
+## Jogar no navegador / celular
+
+**https://horda-five.vercel.app** — abra no celular na horizontal. No Android (Chrome), use
+"Adicionar à tela inicial" para jogar em tela cheia como app.
+
+Celular: joystick à esquerda para andar, botão grande para atacar (mira automática), toque no chão
+para ir até lá ou num inimigo para atacá-lo, **E** saqueia, **1/2** curam, **I/B** inventário e base,
+pinça para zoom. Parâmetros úteis: `?touch=1` força os controles de toque no PC, `?dbg=1` mostra FPS no console.
+
+Cada push no GitHub recompila automaticamente no Vercel (`tools/vercel_build.sh`, ~1 min).
+
+## Como jogar (PC)
 
 1. Abra a pasta no Godot 4.3 (ou mais novo) e pressione **F5**.
 2. *Novo jogo* → escolha dificuldade e duração do ciclo (Normal 22 min / Rápido 11 min).
