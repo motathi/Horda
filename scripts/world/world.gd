@@ -33,8 +33,14 @@ func _ready() -> void:
 
 	hero = HERO_SCENE.instantiate() as Hero
 	add_child(hero)
-	hero.global_position = HERO_SPAWN
-	hero.set_home(HERO_SPAWN)
+	var spawn := HERO_SPAWN
+	if Net.in_game:
+		# Coop: cada jogador nasce um pouco ao lado do outro.
+		var ids := Net.players.keys()
+		ids.sort()
+		spawn += Vector3((ids.find(Net.my_id()) - (ids.size() - 1) * 0.5) * 1.6, 0, 0)
+	hero.global_position = spawn
+	hero.set_home(spawn)
 	hero.set_camera(camera_rig.camera)
 	camera_rig.set_target(hero)
 
@@ -55,11 +61,14 @@ func _ready() -> void:
 	builder.nav_region.bake_navigation_mesh(true)
 	await builder.nav_region.bake_finished
 	spawner.populate_initial()
+	Coop.attach(self)
 	TimeManager.phase_changed.connect(_on_phase_changed)
 	GameManager.world_ready(self)
 	loading.visible = false
 	hud.visible = true
-	if TimeManager.day == 1 and TimeManager.phase == TimeManager.Phase.DAWN and TimeManager.phase_time < 1.0:
+	if Net.in_game:
+		EventBus.banner.emit("COOP — %d JOGADORES" % Net.players.size(), "Base, recursos e pesquisas são compartilhados. Defendam a fortaleza juntos!", Color(0.55, 0.85, 1.0))
+	elif TimeManager.day == 1 and TimeManager.phase == TimeManager.Phase.DAWN and TimeManager.phase_time < 1.0:
 		EventBus.banner.emit("100 HORDAS", "Você tem 2 minutos antes de cada horda. Colete, construa e defenda a fortaleza!", Color(1.0, 0.85, 0.4))
 		EventBus.notify("Dica: pressione F1 para ver os controles.", UIStyle.TEXT_DIM)
 

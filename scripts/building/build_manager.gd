@@ -128,7 +128,7 @@ func _update_preview() -> void:
 	preview_changed.emit()
 
 ## Retorna "" se pode construir; senão o motivo.
-func check(d: BuildingDef, pos: Vector3, rot: float) -> String:
+func check(d: BuildingDef, pos: Vector3, rot: float, _remote: bool = false) -> String:
 	if not d.is_unlocked():
 		return "%s libera na horda %d" % [d.display_name, d.unlock_wave]
 	var core := GameManager.base_core
@@ -164,6 +164,11 @@ func confirm() -> bool:
 		EventBus.notify(reason, Color(1, 0.55, 0.4))
 		AudioManager.play(&"ui_error")
 		return false
+	if Coop.is_client():
+		# Coop: o anfitrião valida, constrói e replica para todos.
+		Coop.request("build", [String(active_def.id), _ghost.global_position, rotation_y], func(msg: String) -> void:
+			EventBus.notify(msg, UIStyle.GREEN if msg.ends_with("construída.") else Color(1, 0.55, 0.4)))
+		return true
 	var b := place(active_def, _ghost.global_position, rotation_y)
 	if b and not ResourceManager.can_afford(active_def.cost):
 		cancel()
@@ -184,4 +189,5 @@ func place(d: BuildingDef, pos: Vector3, rot: float, pay: bool = true, lvl: int 
 		AudioManager.play_3d(&"build", b.global_position)
 		EventBus.notify("%s construída." % d.display_name, UIStyle.GREEN)
 		EventBus.building_placed.emit(b)
+		Coop.building_placed(b)
 	return b

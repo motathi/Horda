@@ -33,6 +33,8 @@ func _ready() -> void:
 	TimeManager.phase_changed.connect(_on_phase_changed)
 
 func _on_phase_changed(phase: int, _day: int) -> void:
+	if Coop.is_client():
+		return  # no coop só o anfitrião comanda as hordas
 	match phase:
 		TimeManager.Phase.NIGHT:
 			start_night(TimeManager.night_number())
@@ -70,7 +72,7 @@ func start_night(night: int) -> void:
 		subtitle = "CHEFE! " + subtitle + " de todas as direções"
 	elif _elites_left > 0:
 		subtitle += " — um ELITE lidera a horda!"
-	EventBus.banner.emit("HORDA %d / %d" % [night, TimeManager.TOTAL_WAVES], subtitle, Color(0.9, 0.15, 0.1))
+	Coop.banner_all("HORDA %d / %d" % [night, TimeManager.TOTAL_WAVES], subtitle, Color(0.9, 0.15, 0.1))
 	EventBus.horde_started.emit(night, _grand_total)
 	AudioManager.play(&"gong", -2.0, 0.8)
 	_announce_new_enemies(night)
@@ -82,7 +84,7 @@ func _announce_new_enemies(night: int) -> void:
 		if e.unlock_night == night and night > 1 and e.enemy:
 			var d := e.enemy
 			get_tree().create_timer(delay).timeout.connect(func() -> void:
-				EventBus.banner.emit("NOVO INIMIGO: " + d.display_name.to_upper(), d.description, d.special_color if d.special_radius > 0.0 else Color(1.0, 0.6, 0.2)))
+				Coop.banner_all("NOVO INIMIGO: " + d.display_name.to_upper(), d.description, d.special_color if d.special_radius > 0.0 else Color(1.0, 0.6, 0.2)))
 			delay += 4.0
 
 func end_night() -> void:
@@ -106,9 +108,11 @@ func end_night() -> void:
 		GameManager.victory()
 		return
 	var sub := "O sol queimou os mortos-vivos restantes." if burned > 0 else "Prepare-se: a próxima horda chega em 2 minutos."
-	EventBus.banner.emit("HORDA %d VENCIDA" % wave, sub, Color(1.0, 0.8, 0.3))
+	Coop.banner_all("HORDA %d VENCIDA" % wave, sub, Color(1.0, 0.8, 0.3))
 
 func _process(delta: float) -> void:
+	if Coop.is_client():
+		return
 	if not _night_active or not GameManager.is_playing():
 		return
 	_prune()
@@ -164,7 +168,7 @@ func _spawn(def: EnemyDef, night: int, kind: int) -> void:
 		EventBus.notify("Um %s de elite surgiu!" % def.display_name, Color(1.0, 0.6, 0.2))
 	elif kind == 2:
 		e.make_boss()
-		EventBus.banner.emit("CHEFE!", "%s gigante ataca a base" % def.display_name, Color(1.0, 0.25, 0.1))
+		Coop.banner_all("CHEFE!", "%s gigante ataca a base" % def.display_name, Color(1.0, 0.25, 0.1))
 	e.start_siege()
 	_alive.append(e)
 

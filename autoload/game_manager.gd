@@ -23,6 +23,8 @@ var world_seed: int = 1337
 var load_from_save: bool = false
 ## Aparência do herói (HeroSkins); lembrada em user://settings.cfg e gravada no save.
 var hero_skin: String = "hunter"
+## Mensagem mostrada no menu ao voltar (ex.: conexão coop perdida).
+var menu_message: String = ""
 
 var hero: Node3D = null
 var base_core: Node3D = null
@@ -36,6 +38,10 @@ func _ready() -> void:
 	EventBus.enemy_killed.connect(func(_e: Node3D, _d: EnemyDef, _k: Node) -> void: stats.kills += 1)
 	EventBus.night_survived.connect(func(n: int) -> void: stats.nights_survived = maxi(stats.nights_survived, n))
 	EventBus.item_picked_up.connect(func(_id: StringName, amt: int) -> void: stats.items_collected += amt)
+	Net.connection_lost.connect(func(reason: String) -> void:
+		if state != State.MENU:
+			menu_message = reason
+			return_to_menu())
 
 func diff_value(key: String) -> float:
 	return float(DIFFICULTIES.get(difficulty, DIFFICULTIES.normal)[key])
@@ -52,6 +58,20 @@ func start_new_game(diff: String, cycle: String = "normal") -> void:
 	for id: StringName in STARTER_KIT:
 		ResourceManager.storage.add(id, STARTER_KIT[id])
 	TimeManager.setup(cycle)
+	_change_to_world()
+
+## Partida cooperativa: todos usam a mesma semente e dificuldade (sem carregar save).
+func start_coop_game(diff: String, seed_value: int) -> void:
+	difficulty = diff
+	cycle_preset = "normal"
+	world_seed = seed_value
+	load_from_save = false
+	stats = {"kills": 0, "nights_survived": 0, "items_collected": 0}
+	ResourceManager.reset()
+	Tech.reset()
+	for id: StringName in STARTER_KIT:
+		ResourceManager.storage.add(id, STARTER_KIT[id] * maxi(1, Net.players.size()))
+	TimeManager.setup("normal")
 	_change_to_world()
 
 func continue_game() -> void:
@@ -81,9 +101,12 @@ func world_ready(w: Node3D) -> void:
 		SaveManager.apply_loaded_state()
 		load_from_save = false
 	state = State.PLAYING
-	TimeManager.running = true
+	TimeManager.running = not (Net.is_client() and Net.in_game)
 
 func return_to_menu() -> void:
+	if Net.is_online():
+		Net.leave()
+	Coop.detach()
 	state = State.MENU
 	TimeManager.running = false
 	hero = null
@@ -98,6 +121,8 @@ func is_playing() -> bool:
 func set_paused(p: bool) -> void:
 	if state != State.PLAYING and p:
 		return
+	if Coop.active():
+		return  # no coop o jogo não pausa (o menu abre por cima)
 	get_tree().paused = p
 
 ## Horda 100 vencida.
@@ -106,7 +131,8 @@ func victory() -> void:
 		return
 	state = State.VICTORY
 	TimeManager.running = false
-	SaveManager.delete_save()
+	if not Coop.is_client():
+		SaveManager.delete_save()
 	EventBus.banner.emit("VITÓRIA!", "Você sobreviveu às %d hordas!" % TimeManager.TOTAL_WAVES, Color(1.0, 0.85, 0.3))
 	EventBus.victory.emit()
 
@@ -115,5 +141,6 @@ func _on_base_core_destroyed() -> void:
 		return
 	state = State.GAME_OVER
 	TimeManager.running = false
-	SaveManager.delete_save()
+	if not Coop.is_client():
+		SaveManager.delete_save()
 	EventBus.banner.emit("A BASE CAIU", "Você sobreviveu a %d de %d hordas." % [stats.nights_survived, TimeManager.TOTAL_WAVES], Color(0.9, 0.2, 0.15))

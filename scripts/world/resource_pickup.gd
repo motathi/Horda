@@ -15,6 +15,7 @@ var _vel: Vector3 = Vector3.ZERO
 var _sprite: Sprite3D
 var _gem: MeshInstance3D
 var _label: Label3D
+var _claimed: bool = false
 
 func _ready() -> void:
 	_gem = MeshInstance3D.new()
@@ -41,6 +42,10 @@ func _ready() -> void:
 	add_child(_label)
 
 func activate(pos: Vector3, id: StringName, amt: int) -> void:
+	if has_meta(&"net_id"):
+		remove_meta(&"net_id")
+	visible = true
+	_claimed = false
 	item_id = id
 	amount = amt
 	_t = 0.0
@@ -67,6 +72,8 @@ func _process(delta: float) -> void:
 	if _t > LIFETIME:
 		_release()
 		return
+	if _claimed:
+		return
 	var hero := GameManager.hero as Hero
 	if hero == null or hero.is_dead():
 		return
@@ -82,6 +89,13 @@ func _process(delta: float) -> void:
 			return
 		_flying = true
 		global_position += to.normalized() * minf(d, delta * 14.0)
+		if d < COLLECT_RANGE and has_meta(&"net_id"):
+			# Coop: saque compartilhado — o anfitrião decide quem leva.
+			if not _claimed:
+				_claimed = true
+				visible = false
+				Coop.claim_pickup(self)
+			return
 		if d < COLLECT_RANGE:
 			var got := ResourceManager.give_hero(item_id, amount)
 			if got > 0:
@@ -93,6 +107,12 @@ func _process(delta: float) -> void:
 			else:
 				_label.text = "x%d" % amount
 				_flying = false
+
+## Coop: removido pelo anfitrião (alguém pegou).
+func release_net() -> void:
+	if has_meta(&"net_id"):
+		remove_meta(&"net_id")
+	_release()
 
 func _release() -> void:
 	var pool := get_meta("pool", null) as ObjectPool

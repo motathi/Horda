@@ -70,7 +70,7 @@ func _progress(kind: String, item: String, amount: int) -> void:
 func _reward(o: Dictionary) -> void:
 	var r: Dictionary = o.reward
 	for id in r:
-		ResourceManager.storage.add(StringName(id), int(r[id]))
+		ResourceManager.store(StringName(id), int(r[id]))
 	EventBus.notify("Objetivo concluído: %s! Recompensa no armazém: %s" % [o.text, ResourceManager.cost_to_string(r)], UIStyle.GOLD)
 	AudioManager.play(&"objective")
 

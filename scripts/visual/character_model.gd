@@ -43,9 +43,9 @@ var _skinned: Array[MeshInstance3D] = []
 var _current: String = ""
 var _run_threshold: float = 0.7
 
-func build_hero() -> void:
+func build_hero(skin_id: String = "") -> void:
 	kind = Kind.HERO
-	var sk := HeroSkins.get_skin(GameManager.hero_skin)
+	var sk := HeroSkins.get_skin(skin_id if skin_id != "" else GameManager.hero_skin)
 	if sk["id"] != HeroSkins.DEFAULT and rigged_path(sk["model"]) != "":
 		_build_rigged(sk["model"], sk["height"])
 		return

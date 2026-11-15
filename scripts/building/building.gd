@@ -186,8 +186,8 @@ func trap_damage() -> float:
 	return def.trap_damage * (1.0 + 0.4 * (level - 1)) * _eng_dmg() * (1.0 + Tech.bonus("tower_damage_pct"))
 
 func _process(delta: float) -> void:
-	if health.dead or def == null:
-		return
+	if health.dead or def == null or Coop.is_client():
+		return  # no coop, torres e armadilhas só agem no anfitrião
 	match def.category:
 		BuildingDef.Category.TOWER:
 			_process_tower(delta)
@@ -216,6 +216,7 @@ func _process_tower(delta: float) -> void:
 			if info.is_crit:
 				info.amount *= 1.8
 			EffectsHub.spawn_arrow(from, target, info, def.projectile_speed)
+			Coop.fx("arrow", from, target.global_position + Vector3.UP)
 			AudioManager.play_3d(&"arrow", from, -12.0, 1.35, 90)
 
 ## Balista: virote em linha reta que fere todos os inimigos no caminho.
@@ -227,6 +228,7 @@ func _fire_bolt(from: Vector3, target: Enemy) -> void:
 	var reach := tower_range() + 2.0
 	var to := Vector3(from.x, 1.0, from.z) + dir * reach
 	EffectsHub.spawn_bolt(from, to, def.projectile_speed)
+	Coop.fx("bolt", from, to, def.projectile_speed)
 	AudioManager.play_3d(&"bolt", from, -2.0)
 	var origin := Vector2(global_position.x, global_position.z)
 	var d2 := Vector2(dir.x, dir.z)
@@ -257,6 +259,7 @@ func _fire_cannon(from: Vector3, target: Enemy) -> void:
 	var stun_t := def.stun_time
 	AudioManager.play_3d(&"cannon", from, 0.0, 0.7)
 	EffectsHub.spawn_debris(from, false)
+	Coop.fx("lob", from, to, dur)
 	EffectsHub.spawn_lob(from, to, dur, 4.0, func() -> void:
 		EffectsHub.spawn_explosion(to, r, Color(1.0, 0.55, 0.15))
 		AudioManager.play_3d(&"explosion", to, 0.0)
@@ -294,6 +297,8 @@ func _fire_chain(from: Vector3, target: Enemy) -> void:
 				nxt = e
 		cur = nxt
 	EffectsHub.spawn_lightning(pts)
+	for k in pts.size() - 1:
+		Coop.fx("lightning", pts[k], pts[k + 1])
 	AudioManager.play_3d(&"zap", from, -3.0)
 
 func _find_target(radius: float) -> Enemy:
@@ -337,6 +342,9 @@ func next_upgrade_cost() -> Dictionary:
 	return def.upgrade_cost(level + 1)
 
 func upgrade() -> String:
+	if Coop.is_client():
+		Coop.request("upgrade", [String(name)])
+		return "Pedido de melhoria enviado ao anfitrião."
 	if not can_upgrade():
 		return "Nível máximo." if level >= def.max_level else "Repare antes de melhorar."
 	var cost := next_upgrade_cost()
@@ -354,7 +362,22 @@ func upgrade() -> String:
 	EffectsHub.spawn_heal(global_position)
 	AudioManager.play_3d(&"upgrade", global_position)
 	EventBus.building_changed.emit(self)
+	Coop.building_changed(self, false)
 	return "%s melhorada para o nível %d!" % [def.display_name, level]
+
+## Coop (cliente): aplica o nível vindo do anfitrião (sem custo).
+func apply_level(lvl: int) -> void:
+	if lvl == level:
+		return
+	level = lvl
+	health.max_health = _max_hp()
+	health.armor = _armor()
+	health.changed.emit(health.current, health.max_health)
+	for c in _visual.get_children():
+		c.queue_free()
+	_visual.add_child(Building.make_visual(def, level))
+	EffectsHub.spawn_heal(global_position)
+	AudioManager.play_3d(&"upgrade", global_position)
 
 ## Total investido (construção + melhorias) — base do reembolso.
 func invested() -> Dictionary:
@@ -366,6 +389,9 @@ func invested() -> Dictionary:
 	return total
 
 func demolish() -> Dictionary:
+	if Coop.is_client():
+		Coop.request("demolish", [String(name)])
+		return {}
 	var back := {}
 	var inv := invested()
 	var factor := def.refund * (health.ratio() if not health.dead else 0.25)
@@ -377,6 +403,7 @@ func demolish() -> Dictionary:
 	EffectsHub.spawn_debris(global_position + Vector3.UP, false)
 	AudioManager.play_3d(&"break", global_position)
 	EventBus.building_changed.emit(self)
+	Coop.building_changed(self, true)
 	queue_free()
 	return back
 

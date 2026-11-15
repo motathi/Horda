@@ -55,6 +55,8 @@ func harvest(hero: Hero) -> void:
 	EffectsHub.spawn_debris(global_position + Vector3.UP * 1.2, kind == Kind.ROCK)
 	if _hits_left <= 0:
 		_deplete(true)
+	if Coop.active():
+		Coop.harvest(node_id)
 
 func _deplete(animated: bool) -> void:
 	respawn_day = TimeManager.day + RESPAWN_DAYS
@@ -93,3 +95,28 @@ func _process(delta: float) -> void:
 	if _shake > 0.0 and _visual:
 		_shake -= delta
 		_visual.rotation.z = sin(_shake * 60.0) * 0.04 * (_shake / 0.25) if _hits_left > 0 else _visual.rotation.z
+
+# --- Coop -------------------------------------------------------------------
+
+func hits_left() -> int:
+	return _hits_left
+
+## Anfitrião: golpe de outro jogador (sem dar recursos aqui; quem golpeou já recebeu).
+func remote_hit() -> void:
+	if _hits_left <= 0:
+		return
+	_hits_left -= 1
+	_shake = 0.25
+	if _hits_left <= 0:
+		_deplete(true)
+
+## Estado autoritativo vindo do anfitrião.
+func set_hits_left(n: int) -> void:
+	if n == _hits_left:
+		return
+	var was := _hits_left
+	_hits_left = n
+	if n <= 0 and was > 0:
+		_deplete(true)
+	elif n < was:
+		_shake = 0.25

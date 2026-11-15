@@ -68,6 +68,8 @@ func interact(_hero: Hero) -> void:
 	EventBus.container_looted.emit(self)
 	_set_looted(true)
 	restock_day = TimeManager.day + restock_days if restock_days > 0 else -1
+	if Coop.active():
+		Coop.looted(node_id, restock_day)
 
 func _set_looted(v: bool) -> void:
 	looted = v

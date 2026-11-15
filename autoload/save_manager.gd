@@ -19,7 +19,8 @@ func delete_save() -> void:
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(SAVE_PATH))
 
 func can_save() -> bool:
-	return GameManager.is_playing() and not TimeManager.is_night() and GameManager.world != null
+	# Partidas cooperativas não são salvas (o mundo pertence à sala).
+	return GameManager.is_playing() and not TimeManager.is_night() and GameManager.world != null and not Coop.active()
 
 func save_game() -> bool:
 	if not can_save():

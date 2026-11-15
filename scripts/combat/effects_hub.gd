@@ -101,13 +101,32 @@ static func spawn_heal(pos: Vector3) -> void:
 		(_inst._heal.acquire() as BurstEffect).activate(pos + Vector3.UP * 0.5, Color(0.4, 1.0, 0.45))
 
 static func drop_item(pos: Vector3, id: StringName, amount: int) -> void:
-	if _inst and amount > 0:
-		(_inst._pickups.acquire() as ResourcePickup).activate(pos, id, amount)
+	if _inst == null or amount <= 0:
+		return
+	if Coop.is_host():
+		Coop.host_drop(pos, id, amount)  # saque compartilhado: todos veem
+	else:
+		spawn_pickup_local(pos, id, amount)
+
+## Saque só deste jogador (ou base para o compartilhado do coop).
+static func spawn_pickup_local(pos: Vector3, id: StringName, amount: int) -> ResourcePickup:
+	if _inst == null:
+		return null
+	var p := _inst._pickups.acquire() as ResourcePickup
+	p.activate(pos, id, amount)
+	return p
 
 ## Equipamento no chão (GearPickup).
 static func drop_gear(pos: Vector3, item: GearItem) -> void:
-	if _inst and item:
-		GearPickup.spawn(_inst, pos, item)
+	if _inst == null or item == null:
+		return
+	if Coop.is_host():
+		Coop.host_drop_gear(pos, item)
+	else:
+		spawn_gear_local(pos, item)
+
+static func spawn_gear_local(pos: Vector3, item: GearItem) -> GearPickup:
+	return GearPickup.spawn(_inst, pos, item) if _inst else null
 
 static func spawn_arrow(from: Vector3, target: Enemy, info: DamageInfo, speed: float) -> void:
 	if _inst:

@@ -19,6 +19,8 @@ ResourceManager="*res://autoload/resource_manager.gd"
 SaveManager="*res://autoload/save_manager.gd"
 AudioManager="*res://autoload/audio_manager.gd"
 Tech="*res://autoload/tech_manager.gd"
+Net="*res://autoload/net.gd"
+Coop="*res://autoload/coop.gd"
 
 [display]
 

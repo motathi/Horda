@@ -21,12 +21,14 @@ func _ready() -> void:
 	_parent = get_node(enemies_parent)
 
 func populate_initial() -> void:
+	if Coop.is_client():
+		return  # inimigos vêm do anfitrião
 	for r in regions:
 		for i in int(r.max * 0.7):
 			_spawn_in(r, true)
 
 func _process(delta: float) -> void:
-	if not GameManager.is_playing() or TimeManager.is_night():
+	if Coop.is_client() or not GameManager.is_playing() or TimeManager.is_night():
 		return
 	_t -= delta
 	if _t > 0.0:

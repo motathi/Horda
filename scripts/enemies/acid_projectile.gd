@@ -12,6 +12,8 @@ var structure_mult: float = 1.0
 var puddle_radius: float = 1.8
 var puddle_time: float = 4.0
 var color: Color = Color(0.5, 1.0, 0.2)
+## Coop (cliente): só o efeito visual; o dano é do anfitrião.
+var visual_only: bool = false
 var _from: Vector3
 var _to: Vector3
 var _t: float = 0.0
@@ -31,6 +33,13 @@ static func launch(parent: Node, from: Vector3, to: Vector3, src: Node3D, dmg: f
 	p._dur = clampf(from.distance_to(to) / FLIGHT_SPEED, 0.25, 1.2)
 	p.global_position = from
 	return p
+
+## Define a trajetória (uso direto, sem launch).
+func setup(from: Vector3, to: Vector3) -> void:
+	_from = from
+	_to = Vector3(to.x, 0.05, to.z)
+	_dur = clampf(from.distance_to(to) / FLIGHT_SPEED, 0.25, 1.2)
+	global_position = from
 
 func _ready() -> void:
 	var mi := MeshInstance3D.new()
@@ -61,6 +70,10 @@ func _physics_process(delta: float) -> void:
 func _impact() -> void:
 	set_physics_process(false)
 	AudioManager.play_3d(&"acid", _to, -2.0)
+	if visual_only:
+		AcidPuddle.spawn(get_parent(), _to, puddle_radius, 4.0, 0.0, color, null)
+		queue_free()
+		return
 	# Estruturas atingidas diretamente.
 	for n: Node in get_tree().get_nodes_in_group("structures"):
 		var s := n as Structure

@@ -58,7 +58,7 @@ func deposit_all() -> Dictionary:
 		if def and def.is_usable():
 			continue
 		var n := hero_inventory.count(id)
-		storage.add(id, n)
+		store(id, n)
 		hero_inventory.remove(id, n)
 		summary[id] = n
 	if not summary.is_empty():
@@ -86,12 +86,25 @@ func can_afford(cost: Dictionary) -> bool:
 func spend(cost: Dictionary) -> bool:
 	if not can_afford(cost):
 		return false
+	var from_storage := {}
 	for id: StringName in cost:
 		var left := int(cost[id])
-		left -= storage.remove(id, left)
+		var took := storage.remove(id, left)
+		left -= took
+		if took > 0:
+			from_storage[id] = took
 		if left > 0:
 			hero_inventory.remove(id, left)
+	# Coop: o armazém é do anfitrião — ele desconta a mesma parte.
+	Coop.sync_spend(from_storage)
 	return true
+
+## Coloca recursos no armazém (no coop, o anfitrião recebe também).
+func store(id: StringName, n: int) -> void:
+	if n <= 0:
+		return
+	storage.add(id, n)
+	Coop.sync_store(id, n)
 
 func cost_to_string(cost: Dictionary) -> String:
 	var parts: PackedStringArray = []

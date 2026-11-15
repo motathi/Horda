@@ -13,6 +13,7 @@ var _vel: Vector3
 var _flying: bool = false
 var _warned: float = 0.0
 var _icon: Sprite3D
+var _claimed: bool = false
 
 static func spawn(parent: Node, pos: Vector3, it: GearItem) -> GearPickup:
 	var p := GearPickup.new()
@@ -72,6 +73,8 @@ func _process(delta: float) -> void:
 	if _t > LIFETIME:
 		queue_free()
 		return
+	if _claimed:
+		return
 	var hero := GameManager.hero as Hero
 	if hero == null or hero.is_dead():
 		return
@@ -87,6 +90,12 @@ func _process(delta: float) -> void:
 			return
 		_flying = true
 		global_position += to.normalized() * minf(d, delta * 12.0)
+		if d < COLLECT_RANGE and has_meta(&"net_id"):
+			if not _claimed:
+				_claimed = true
+				visible = false
+				Coop.claim_pickup(self)
+			return
 		if d < COLLECT_RANGE and hero.add_gear(item):
 			EffectsHub.float_text(hero.global_position + Vector3.UP * 2.6, "%s %s" % [item.display_name(), item.rarity_name()], item.color(), 40)
 			EventBus.notify("Novo equipamento: %s (%s) — veja no personagem (P)." % [item.display_name(), item.rarity_name()], item.color())

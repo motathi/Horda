@@ -559,6 +559,8 @@ func _test_harvest_and_loot() -> void:
 			break
 	hero.global_position = car.global_position + Vector3(2.4, 0, 0)
 	await wait(0.2)
+	print("    mochila antes do saque: %d / %d" % [ResourceManager.hero_inventory.used_weight(), ResourceManager.hero_inventory.capacity])
+	ResourceManager.deposit_all()
 	var scrap0 := ResourceManager.hero_inventory.count(&"scrap")
 	hero._try_interact()
 	await wait(car.duration + 0.5)

@@ -322,6 +322,23 @@ func _on_destroyed(_info: DamageInfo) -> void:
 	else:
 		EventBus.notify("%s foi destruída!" % display_name(), Color(1, 0.45, 0.3))
 
+## Coop (cliente): vida autoritativa vinda do anfitrião.
+func apply_net_hp(hp: float) -> void:
+	if hp <= 0.0:
+		if not health.dead:
+			health.current = 0.0
+			health.dead = true
+			_set_destroyed(true)
+			AudioManager.play_3d(&"break", global_position)
+			if kind != Kind.CORE:
+				EventBus.notify("%s foi destruída!" % display_name(), Color(1, 0.45, 0.3))
+	else:
+		if health.dead:
+			health.revive(0.0)
+			_set_destroyed(false)
+		health.current = minf(hp, health.max_health)
+	health.changed.emit(health.current, health.max_health)
+
 func _set_destroyed(d: bool) -> void:
 	_visual.visible = not d
 	_rubble.visible = d

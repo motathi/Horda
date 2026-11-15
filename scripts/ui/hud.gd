@@ -402,6 +402,10 @@ func _on_phase_changed(phase: int, day: int) -> void:
 # --- Menus -------------------------------------------------------------------
 
 func _toggle_pause() -> void:
+	if Coop.active():
+		# Coop: o menu abre por cima, mas o mundo continua (os outros jogadores seguem).
+		_pause.visible = not _pause.visible
+		return
 	var p := not get_tree().paused
 	GameManager.set_paused(p)
 	_pause.visible = get_tree().paused
@@ -422,11 +426,12 @@ func _build_pause() -> Control:
 	var save := UIStyle.button("Salvar jogo (F5)")
 	save.pressed.connect(func() -> void:
 		var ok := SaveManager.can_save()
+		var was := get_tree().paused
 		get_tree().paused = false
 		if ok:
 			SaveManager.save_game()
-		get_tree().paused = true
-		_on_message("Jogo salvo." if ok else "Não é possível salvar durante a noite.", UIStyle.GREEN if ok else UIStyle.RED))
+		get_tree().paused = was
+		_on_message("Jogo salvo." if ok else ("Partidas coop não são salvas." if Coop.active() else "Não é possível salvar durante a noite."), UIStyle.GREEN if ok else UIStyle.RED))
 	col.add_child(save)
 	var help := UIStyle.button("Controles (F1)")
 	help.pressed.connect(func() -> void: _help.visible = not _help.visible)

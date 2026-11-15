@@ -140,6 +140,6 @@ func _on_upgrade() -> void:
 func _on_demolish() -> void:
 	if _target is Building:
 		var back := (_target as Building).demolish()
-		EventBus.notify("Demolido. Devolvido ao armazém: " + (ResourceManager.cost_to_string(back) if not back.is_empty() else "nada"), UIStyle.TEXT)
+		EventBus.notify("Pedido de demolição enviado ao anfitrião." if Coop.is_client() else "Demolido. Devolvido ao armazém: " + (ResourceManager.cost_to_string(back) if not back.is_empty() else "nada"), UIStyle.TEXT)
 		_target = null
 		visible = false

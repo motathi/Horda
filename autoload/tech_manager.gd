@@ -78,8 +78,14 @@ func block_reason(d: TechDef) -> String:
 		return "Faltam recursos: " + ResourceManager.cost_to_string(d.cost)
 	return ""
 
-func start(d: TechDef) -> String:
-	if not BaseZone.hero_inside:
+func start(d: TechDef, remote: bool = false) -> String:
+	if Coop.is_client():
+		var why0 := block_reason(d)
+		if why0 != "":
+			return why0
+		Coop.request("research", [String(d.id)])
+		return "Pedido de pesquisa enviado ao anfitrião."
+	if not remote and not BaseZone.hero_inside:
 		return "Volte para a base para pesquisar."
 	var why := block_reason(d)
 	if why != "":
@@ -93,6 +99,9 @@ func start(d: TechDef) -> String:
 
 ## Cancela e devolve metade do custo.
 func cancel() -> String:
+	if Coop.is_client():
+		Coop.request("cancel_research")
+		return "Pedido de cancelamento enviado."
 	var d := active_def()
 	if d == null:
 		return ""
@@ -127,6 +136,11 @@ func _process(delta: float) -> void:
 	if not GameManager.is_playing():
 		return
 	var d := active_def()
+	if Coop.is_client():
+		# Cliente: só mostra o progresso; quem conclui é o anfitrião.
+		if d:
+			progress = minf(progress + delta, d.research_time - 0.05)
+		return
 	if d:
 		progress += delta
 		if progress >= d.research_time:

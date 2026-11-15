@@ -57,6 +57,18 @@ var attr_points: int = 0
 
 # Equipamento: espaço (EquipmentDef.Slot) -> GearItem, e bolsa de itens não equipados.
 var equipment: Dictionary = {}
+
+# Coop: herói de outro jogador (movido pelo estado recebido pela rede).
+var is_puppet: bool = false
+var net_peer: int = 1
+var skin_override: String = ""
+## Conta golpes/habilidades: os outros jogadores tocam a animação quando muda.
+var net_attack_count: int = 0
+var _net_target: Vector3
+var _net_yaw: float = 0.0
+var _net_speed: float = 0.0
+var _net_atk: int = 0
+var _net_has_state: bool = false
 var gear_bag: Array[GearItem] = []
 ## Modo toque (celular): ataque pelo botão, mira automática, toque no mundo = mover/atacar.
 var touch_mode: bool = false
@@ -95,10 +107,14 @@ func _ready() -> void:
 	health.died.connect(_on_died)
 	health.damaged.connect(_on_damaged)
 	model = $Model as CharacterModel
-	model.build_hero()
+	model.build_hero(skin_override)
 	($HealthBar as HealthBar3D).bind(health)
 	_home = global_position
-	GameManager.hero = self
+	if is_puppet:
+		_setup_puppet()
+	else:
+		GameManager.hero = self
+		net_peer = Net.my_id()
 	touch_mode = Platform.touch
 	EventBus.enemy_killed.connect(_on_enemy_killed)
 	for id in ABILITY_IDS:
@@ -189,7 +205,7 @@ func salvage(item: GearItem) -> String:
 	gear_bag.erase(item)
 	var got := item.salvage_value()
 	for id: StringName in got:
-		ResourceManager.storage.add(id, int(got[id]))
+		ResourceManager.store(id, int(got[id]))
 	AudioManager.play(&"break", -4.0)
 	gear_changed.emit()
 	return "Desmontado: %s → %s" % [item.display_name(), ResourceManager.cost_to_string(got)]
@@ -300,6 +316,8 @@ func _recalc_stats(keep_ratio: bool) -> void:
 	max_energy = 100.0 + attr(&"intelligence") * attr_cfg.int_energy + gear(&"energy")
 	energy_regen = 6.0 + attr(&"intelligence") * attr_cfg.int_energy_regen + Tech.bonus("energy_regen")
 	energy = minf(energy, max_energy)
+	if is_puppet:
+		return
 	ResourceManager.hero_inventory.capacity = carry_capacity()
 	if is_inside_tree():
 		get_tree().call_group("buildings", "refresh_stats")
@@ -322,7 +340,7 @@ func add_xp(amount: int) -> void:
 	stats_changed.emit()
 
 func _on_enemy_killed(_e: Node3D, def: EnemyDef, killer: Node) -> void:
-	if killer == self and def:
+	if killer == self and def and not is_puppet:
 		var mult := 1
 		if _e is Enemy:
 			mult = 15 if (_e as Enemy).is_boss else (4 if (_e as Enemy).is_elite else 1)
@@ -332,6 +350,9 @@ func is_dead() -> bool:
 	return health.dead
 
 func _physics_process(delta: float) -> void:
+	if is_puppet:
+		_puppet_process(delta)
+		return
 	if health.dead:
 		_process_respawn(delta)
 		return
@@ -422,7 +443,7 @@ func _input_direction() -> Vector3:
 	return (right * v.x - fwd * v.y).normalized()
 
 func _unhandled_input(event: InputEvent) -> void:
-	if health.dead or not GameManager.is_playing() or build_mode:
+	if is_puppet or health.dead or not GameManager.is_playing() or build_mode:
 		return
 	if event.is_action_pressed("command") or (touch_mode and event.is_action_pressed("attack")):
 		# No celular, tocar no mundo funciona como o clique direito do PC.
@@ -508,6 +529,7 @@ func _footsteps(delta: float, planar_speed: float) -> void:
 # --- Combate -------------------------------------------------------------
 
 func _start_attack() -> void:
+	net_attack_count += 1
 	var dur := 1.0 / attack_speed()
 	_attack_timer = dur
 	_pending_hit = dur * 0.3
@@ -550,6 +572,11 @@ func _in_arc(p: Vector3, fwd: Vector3, half_arc: float, reach: float) -> bool:
 	return fwd.angle_to(to / dist) <= half_arc
 
 func take_damage(info: DamageInfo) -> void:
+	if is_puppet:
+		# O dono deste herói aplica o dano (armadura e vida são dele).
+		if not health.dead:
+			Coop.forward_hero_hit(net_peer, info)
+		return
 	health.take_damage(info)
 
 func get_radius() -> float:
@@ -649,6 +676,7 @@ func cast_ability(i: int) -> String:
 		AbilityDef.Kind.WARCRY: _cast_warcry(a)
 		AbilityDef.Kind.NOVA: _cast_nova(a)
 	ability_cast.emit(i)
+	net_attack_count += 1
 	return ""
 
 func _enemies_in_radius(center: Vector3, r: float) -> Array[Enemy]:
@@ -889,3 +917,55 @@ func from_save(d: Dictionary) -> void:
 	_recalc_stats(false)
 	health.current = clampf(float(d.get("hp", health.max_health)), 1.0, health.max_health)
 	health.changed.emit(health.current, health.max_health)
+
+# --- Coop: fantoche -------------------------------------------------------
+
+func _setup_puppet() -> void:
+	collision_layer = 0
+	collision_mask = 0
+	health.regen_per_second = 0.0
+	var tag := Label3D.new()
+	tag.text = Net.player_name(net_peer)
+	tag.font_size = 36
+	tag.outline_size = 10
+	tag.pixel_size = 0.006
+	tag.modulate = Color(0.55, 0.85, 1.0)
+	tag.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	tag.no_depth_test = true
+	tag.position.y = 3.1
+	add_child(tag)
+
+func apply_net_state(pos: Vector3, yaw: float, speed: float, hp: float, max_hp: float, dead: bool, atk: int, lvl: int) -> void:
+	if not _net_has_state:
+		global_position = pos
+		_net_has_state = true
+	_net_target = pos
+	_net_yaw = yaw
+	_net_speed = speed
+	level = lvl
+	health.max_health = max_hp
+	health.current = clampf(hp, 0.0, max_hp)
+	health.changed.emit(health.current, health.max_health)
+	if dead != health.dead:
+		health.dead = dead
+		if dead:
+			model.play_death()
+		else:
+			model.reset_pose()
+	if atk != _net_atk:
+		_net_atk = atk
+		if not dead:
+			model.play_attack(0.4)
+			AudioManager.play_3d(&"swing", global_position, -10.0)
+
+func _puppet_process(delta: float) -> void:
+	if not _net_has_state:
+		return
+	var d := _net_target - global_position
+	if d.length() > 8.0:
+		global_position = _net_target
+	else:
+		global_position = global_position.lerp(_net_target, clampf(delta * 12.0, 0.0, 1.0))
+	model.rotation.y = lerp_angle(model.rotation.y, _net_yaw, clampf(delta * 12.0, 0.0, 1.0))
+	if not health.dead:
+		model.animate(delta, _net_speed)

@@ -42,6 +42,14 @@ const LEAP_HEIGHT := 2.6
 const LEAP_MIN := 3.5
 const LEAP_WINDUP := 0.3
 var _special_cd: float = 0.0
+
+# Coop: no cliente o inimigo é um "fantoche" movido pelo estado do anfitrião.
+var puppet: bool = false
+var puppet_target: Vector3
+var net_attack_count: int = 0
+var _puppet_yaw: float = 0.0
+var _puppet_speed: float = 0.0
+var _puppet_atk: int = 0
 var _exploded: bool = false
 var _leap_wind: float = -1.0
 var _leap_t: float = -1.0
@@ -106,6 +114,9 @@ var _stun_left: float = 0.0
 func stun(seconds: float) -> void:
 	if state == State.DEAD or _leap_t >= 0.0:
 		return
+	if puppet:
+		Coop.hit_enemy(self, 0.0, false, seconds)
+		return
 	_stun_left = maxf(_stun_left, seconds * (0.35 if is_boss else 1.0))
 
 func is_stunned() -> bool:
@@ -144,6 +155,14 @@ func get_radius() -> float:
 func take_damage(info: DamageInfo) -> void:
 	if state == State.DEAD:
 		return
+	if puppet:
+		# Cliente: o anfitrião aplica o dano; aqui só o retorno visual imediato.
+		if info.source is Hero and not (info.source as Hero).is_puppet:
+			Coop.hit_enemy(self, info.amount, info.is_crit)
+			model.flash()
+			EffectsHub.spawn_blood(global_position + Vector3.UP * 1.1 * def.model_scale, info.is_crit)
+			EffectsHub.float_text(global_position + Vector3.UP * 2.4 * def.model_scale, str(int(info.amount)), Color(1.0, 0.85, 0.3) if info.is_crit else Color.WHITE, 40 if info.is_crit else 32)
+		return
 	health.take_damage(info)
 	# Revida contra quem o atacou (se for o herói/aliado e estiver perto).
 	if state != State.DEAD and info.source is Node3D and (info.source as Node3D).is_in_group("allies"):
@@ -158,6 +177,9 @@ func take_damage(info: DamageInfo) -> void:
 func _physics_process(delta: float) -> void:
 	if state == State.DEAD:
 		return
+	if puppet:
+		_puppet_process(delta)
+		return
 	if _burning >= 0.0:
 		_process_burn(delta)
 	if _stun_left > 0.0:
@@ -166,7 +188,7 @@ func _physics_process(delta: float) -> void:
 		_windup = -1.0
 		model.animate(delta, 0.0)
 		return
-	var hero := GameManager.hero
+	var hero := nearest_hero()
 	# Inimigos diurnos muito longe do herói "dormem" (economia de CPU).
 	if not is_horde and hero and hero.global_position.distance_to(global_position) > SLEEP_DISTANCE:
 		return
@@ -240,9 +262,9 @@ func _think() -> void:
 	_update_separation()
 	if (state == State.CHASE or state == State.SIEGE) and _rng.randf() < 0.025:
 		var h := GameManager.hero as Node3D
-		if h and h.global_position.distance_to(global_position) < 22.0:
+		if h and h.global_position.distance_to(global_position) < 22.0 and not Coop.is_host():
 			AudioManager.play_3d(&"skeleton" if _is_skeleton() else &"groan", global_position, -8.0, 1.0 / maxf(0.7, def.model_scale), 600)
-	var hero := GameManager.hero as Hero
+	var hero := nearest_hero()
 	var hero_ok := hero != null and not hero.is_dead()
 	var hero_d := _dist_to(hero) if hero_ok else INF
 
@@ -294,10 +316,12 @@ func _try_attack() -> void:
 		return
 	if def.behavior == EnemyDef.Behavior.EXPLODER:
 		_start_fuse()
+		net_attack_count += 1
 		return
 	_attack_cd = def.attack_cooldown
 	_windup = minf(0.45, def.attack_cooldown * 0.4)
 	model.play_attack(_windup + 0.2)
+	net_attack_count += 1
 
 func _resolve_attack() -> void:
 	if def.behavior == EnemyDef.Behavior.EXPLODER:
@@ -313,6 +337,7 @@ func _resolve_attack() -> void:
 		fwd.y = 0.0
 		var from := global_position + Vector3.UP * 1.6 * def.model_scale + fwd.normalized() * 0.5
 		AcidProjectile.launch(get_parent(), from, to, self, damage_value * def.special_mult, def)
+		Coop.fx("acid", from, to, def.special_radius, def.special_color)
 		AudioManager.play_3d(&"spit", global_position, -2.0)
 		return
 	var info := DamageInfo.make(damage_value, self)
@@ -391,7 +416,7 @@ func _update_separation() -> void:
 		if l < r and l > 0.001:
 			push += d / l * (1.0 - l / r)
 	# Não entra "dentro" do herói: mantém o raio dele + o próprio.
-	var hero := GameManager.hero as Hero
+	var hero := nearest_hero()
 	if hero and not hero.is_dead():
 		var dh := p - hero.global_position
 		dh.y = 0.0
@@ -430,6 +455,7 @@ func _on_damaged(info: DamageInfo, _amount: float) -> void:
 	EffectsHub.spawn_blood(global_position + Vector3.UP * 1.1 * def.model_scale, info.is_crit)
 
 func _on_died(info: DamageInfo) -> void:
+	Coop.enemy_died(self, info.source if info else null)
 	var was_leaping := _leap_t >= 0.0
 	state = State.DEAD
 	_leap_wind = -1.0
@@ -500,6 +526,7 @@ func _explode(full: bool, credit: Node) -> void:
 	var center := global_position
 	center.y = 0.0
 	EffectsHub.spawn_explosion(center, r, def.special_color)
+	Coop.fx("explosion", center, Vector3.ZERO, r, def.special_color)
 	AudioManager.play_3d(&"explosion", center, 4.0)
 	var dmg := damage_value * def.special_mult * (1.0 if full else 0.6)
 	for n: Node in get_tree().get_nodes_in_group("allies"):
@@ -575,6 +602,7 @@ func _process_leap(delta: float) -> void:
 	global_position.y = 0.0
 	collision_mask = Layers.WORLD | Layers.STRUCTURES | Layers.GATE
 	EffectsHub.spawn_ring(global_position + Vector3.UP * 0.1, def.special_radius, def.special_color, 0.35)
+	Coop.fx("ring", global_position + Vector3.UP * 0.1, Vector3.ZERO, def.special_radius, def.special_color)
 	EffectsHub.spawn_debris(global_position + Vector3.UP * 0.3, false)
 	for n: Node in get_tree().get_nodes_in_group("allies"):
 		var a := n as Node3D
@@ -585,3 +613,51 @@ func _process_leap(delta: float) -> void:
 
 func _is_skeleton() -> bool:
 	return def != null and String(def.id).begins_with("skeleton")
+
+# --- Coop -------------------------------------------------------------------
+
+## Herói vivo mais próximo (local ou de outro jogador); senão qualquer um.
+func nearest_hero() -> Hero:
+	var best: Hero = null
+	var bd := INF
+	for n in get_tree().get_nodes_in_group("hero"):
+		var h := n as Hero
+		if h == null:
+			continue
+		var d := h.global_position.distance_squared_to(global_position) + (1.0e6 if h.is_dead() else 0.0)
+		if d < bd:
+			bd = d
+			best = h
+	return best
+
+func apply_net_state(pos: Vector3, yaw: float, hp: float, speed: float, atk: int) -> void:
+	puppet_target = pos
+	_puppet_yaw = yaw
+	_puppet_speed = speed
+	health.current = clampf(hp, 1.0, health.max_health)
+	health.changed.emit(health.current, health.max_health)
+	if atk != _puppet_atk:
+		_puppet_atk = atk
+		model.play_attack(0.55)
+
+func _puppet_process(delta: float) -> void:
+	var d := puppet_target - global_position
+	if d.length() > 10.0:
+		global_position = puppet_target
+	else:
+		global_position = global_position.lerp(puppet_target, clampf(delta * 10.0, 0.0, 1.0))
+	model.rotation.y = lerp_angle(model.rotation.y, _puppet_yaw, clampf(delta * 10.0, 0.0, 1.0))
+	model.animate(delta, _puppet_speed)
+
+## Cliente: o anfitrião avisou que morreu (sem saque; o anfitrião replica os itens).
+func puppet_die(killer: Node) -> void:
+	if state == State.DEAD:
+		return
+	state = State.DEAD
+	collision_layer = 0
+	remove_from_group("enemies")
+	($HealthBar as HealthBar3D).visible = false
+	model.play_death()
+	AudioManager.play_3d(&"skeleton" if _is_skeleton() else &"zombie_death", global_position, -3.0)
+	EventBus.enemy_killed.emit(self, def, killer)
+	get_tree().create_timer(3.0).timeout.connect(queue_free)

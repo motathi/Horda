@@ -39,6 +39,10 @@ func _draw() -> void:
 	for e in Enemy.all:
 		if is_instance_valid(e) and not e.is_dead():
 			draw_circle(_to_map(e.global_position), 2.2 if not e.is_horde else 2.6, Color(1, 0.2, 0.15) if e.is_horde else Color(0.85, 0.35, 0.3))
+	# Coop: aliados em azul-claro.
+	for ally: Node in Coop.remote_heroes.values():
+		if is_instance_valid(ally):
+			draw_circle(_to_map((ally as Node3D).global_position), 3.6, Color(0.45, 0.85, 1.0))
 	var hero := GameManager.hero
 	if hero:
 		var hp := _to_map(hero.global_position)

@@ -5,6 +5,7 @@ var _diff: String = "normal"
 var _cycle: String = "normal"
 var _new_panel: Control
 var _main_panel: Control
+var _coop_panel: CoopPanel
 
 func _ready() -> void:
 	GameManager.state = GameManager.State.MENU
@@ -12,6 +13,20 @@ func _ready() -> void:
 	if OS.has_feature("web") and str(JavaScriptBridge.eval("window.location.search", true)).contains("autostart=1"):
 		GameManager.start_new_game.call_deferred("normal", "normal")
 		return
+	# Depuração do coop no navegador: ?autocoop=host  ou  ?autocoop=join&sala=CODIGO
+	if OS.has_feature("web"):
+		var q := str(JavaScriptBridge.eval("window.location.search", true))
+		if q.contains("autocoop=host"):
+			Net.host_room.call_deferred("Anfitriao")
+			Net.status_changed.connect(func(t: String) -> void: print("[coop-ui] ", t))
+			Net.lobby_changed.connect(func() -> void:
+				print("[coop-ui] jogadores: ", Net.players.size())
+				if Net.players.size() >= 2 and not Net.in_game:
+					Net.start_game.call_deferred("normal"))
+		elif q.contains("autocoop=join"):
+			var i := q.find("sala=")
+			Net.join_room.call_deferred(q.substr(i + 5, 5), "Convidado")
+			Net.status_changed.connect(func(t: String) -> void: print("[coop-ui] ", t))
 	var bg := TextureRect.new()
 	bg.texture = load("res://assets/ui/menu_background.jpg")
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -44,6 +59,23 @@ func _ready() -> void:
 	layout.add_child(_main_panel)
 	_new_panel = _build_new_game()
 	layout.add_child(_new_panel)
+	_coop_panel = CoopPanel.new()
+	_coop_panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	layout.add_child(_coop_panel)
+	_coop_panel.add_hero_picker(_hero_picker())
+	_coop_panel.back_pressed.connect(func() -> void:
+		_coop_panel.visible = false
+		_main_panel.visible = true)
+	if _coop_panel.open_with_code():
+		_main_panel.visible = false
+		_coop_panel.visible = true
+	if GameManager.menu_message != "":
+		EventBus.notify(GameManager.menu_message, UIStyle.RED)
+		var msg := UIStyle.label(GameManager.menu_message, 18, UIStyle.RED)
+		msg.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		layout.add_child(msg)
+		layout.move_child(msg, 2)
+		GameManager.menu_message = ""
 	var ver := UIStyle.label("Protótipo — Fase 1", 14, UIStyle.TEXT_DIM)
 	ver.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
 	ver.grow_horizontal = Control.GROW_DIRECTION_BEGIN
@@ -72,6 +104,11 @@ func _build_main() -> Control:
 		_main_panel.visible = false
 		_new_panel.visible = true)
 	col.add_child(new)
+	var coop := UIStyle.button("Jogar em grupo (coop)", 22)
+	coop.pressed.connect(func() -> void:
+		_main_panel.visible = false
+		_coop_panel.visible = true)
+	col.add_child(coop)
 	if OS.has_feature("web"):
 		var fs := UIStyle.button("Tela cheia", 22)
 		fs.pressed.connect(func() -> void: Platform.toggle_fullscreen())
@@ -126,7 +163,7 @@ func _hero_picker() -> Control:
 		b.toggle_mode = true
 		b.button_group = group
 		b.button_pressed = sk["id"] == GameManager.hero_skin
-		b.custom_minimum_size = Vector2(84, 110)
+		b.custom_minimum_size = Vector2(84, 98)
 		b.focus_mode = Control.FOCUS_NONE
 		b.tooltip_text = sk["name"]
 		var st := UIStyle.hud_panel_style(Color(0.08, 0.07, 0.07, 0.95), 8)
@@ -146,7 +183,7 @@ func _hero_picker() -> Control:
 		c.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		var tr := TextureRect.new()
 		tr.texture = HeroSkins.portrait(sk["id"])
-		tr.custom_minimum_size = Vector2(74, 74)
+		tr.custom_minimum_size = Vector2(74, 64)
 		tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		tr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 		tr.mouse_filter = Control.MOUSE_FILTER_IGNORE

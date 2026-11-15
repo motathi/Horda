@@ -80,6 +80,23 @@ exporte `TRIPO_API_KEY`. `CharacterModel` usa o GLB rigado quando existe (máqui
 idle/walk/run/slash; `hurt` vira a queda da morte; animação pausada fora da tela) e cai para a malha
 estática animada por código ou para o visual procedural se o arquivo faltar.
 
+## Coop online
+
+- `Net` (autoload): salas e lobby. No navegador, `WebRTCMultiplayerPeer` com uma `WebRTCPeerConnection` por
+  convidado; SDP/ICE trafegam por `PeerJSSignal` (WebSocket no servidor público 0.peerjs.com — o servidor só
+  repassa mensagens `CANDIDATE` no formato do PeerJS, então nossos dados vão como JSON em
+  `candidate.candidate`). No PC/testes, `ENetMultiplayerPeer`. Lobby por RPC (`_register`, `_lobby`, `_start`).
+- `Coop` (autoload): anfitrião autoritativo. Heróis: o dono envia estado a 15 Hz; os outros são
+  `Hero.is_puppet` (sem colisão, com nome); dano de zumbi num fantoche é repassado ao dono. Inimigos: o
+  anfitrião numera (`net_id`), anuncia e envia instantâneos a 10 Hz; no cliente são `Enemy.puppet` (sem IA),
+  golpes e atordoamentos vão ao anfitrião (`_hit_enemy`) e a morte volta com o matador (XP local).
+  Saques no chão compartilhados com reivindicação (`claim_pickup`). Coleta/saque de contêineres, construções
+  (pedido → anfitrião constrói e replica), vida das estruturas (2 Hz), armazém (debounce), tempo, pesquisas,
+  eventos da horda e banners. Ações compartilhadas do cliente usam `Coop.request()`; gastos e depósitos no
+  armazém são espelhados por `ResourceManager.spend/store`.
+- Teste: `tools/run_coop_test.sh` (dois processos com ENet). Depuração no navegador: `?autocoop=host` e
+  `?autocoop=join&sala=CODIGO`.
+
 ## Tecnologias
 
 Autoload `Tech` (`autoload/tech_manager.gd`) com `TechDef` (`data/tech`): custo, tempo, pré-requisitos,

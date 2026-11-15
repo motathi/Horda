@@ -39,8 +39,11 @@ func wall_repair_cost() -> Dictionary:
 	return {&"wood": wood} if wood > 0 else {}
 
 ## Repara o máximo possível com a madeira disponível (prioriza muros destruídos/mais danificados).
-func repair_walls() -> String:
-	if not BaseZone.hero_inside:
+func repair_walls(remote: bool = false) -> String:
+	if Coop.is_client():
+		Coop.request("repair_walls")
+		return "Pedido de reparo enviado ao anfitrião."
+	if not remote and not BaseZone.hero_inside:
 		return "Volte para a base para reparar."
 	var walls := _walls()
 	walls.sort_custom(func(a: Structure, b: Structure) -> bool: return a.health.ratio() < b.health.ratio())
@@ -74,8 +77,11 @@ func core_repair_cost() -> Dictionary:
 	var units := ceili(core_missing_hp() / config.core_hp_per_unit)
 	return {&"stone": units, &"scrap": units} if units > 0 else {}
 
-func repair_core() -> String:
-	if not BaseZone.hero_inside:
+func repair_core(remote: bool = false) -> String:
+	if Coop.is_client():
+		Coop.request("repair_core")
+		return "Pedido de reparo enviado ao anfitrião."
+	if not remote and not BaseZone.hero_inside:
 		return "Volte para a base para reparar."
 	var c := GameManager.base_core as Structure
 	if c == null or c.missing_health() <= 0.0:

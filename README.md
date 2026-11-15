@@ -68,6 +68,14 @@ arrasando muros; abatido, explode ferindo os zumbis ao redor), na 7 o *Cuspidor*
 inclusive por cima dos muros, deixando poças corrosivas, e recua se você se aproximar) e na 9 o *Saltador*
 (salta até 10 m sobre a presa e pula os muros durante o cerco). Cada estreia é anunciada na tela.
 
+**Coop online (até 4 jogadores):** menu *Jogar em grupo (coop)* → *Criar sala* gera um código de 5 letras
+(e um link de convite `?sala=CODIGO`); os amigos entram pelo navegador do celular ou PC com o código. Base,
+armazém, construções e pesquisas são compartilhados; cada jogador tem o próprio herói, nível, atributos e
+equipamento, e o XP vai para quem matou. Saques no chão são de quem pegar primeiro. O anfitrião simula o
+mundo (zumbis, hordas, torres, tempo). Conexão WebRTC direta entre os navegadores, com sinalização pelo
+servidor público do PeerJS (sem servidor próprio); em redes móveis muito restritas a conexão pode falhar.
+Partidas coop não são salvas. No PC (sem navegador), o coop usa IP + porta 24680 (ENet).
+
 **Habilidades:** gastam **energia** (barra azul, regenera 6/s) e têm recarga. *Golpe Giratório* acerta
 tudo ao redor; *Investida* avança 8 m invulnerável atordoando quem estiver no caminho; *Grito de Guerra*
 cura 30% da vida e dá +6 de armadura por 8 s; *Explosão Arcana* cai sobre o maior grupo de zumbis
@@ -123,6 +131,11 @@ godot --headless res://tests/smoke_test.tscn
 
 # Capturas de tela (precisa de display; no Linux sem GPU: xvfb-run + OpenGL)
 xvfb-run godot --rendering-driver opengl3 --rendering-method gl_compatibility res://tests/screenshot.tscn -- /tmp/shots
+```
+
+```bash
+# Coop: anfitrião e cliente em dois processos (ENet local)
+GODOT=godot tools/run_coop_test.sh
 ```
 
 ## Regenerar arte e sons

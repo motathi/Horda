@@ -59,6 +59,8 @@ func _physics_process(delta: float) -> void:
 	if _tick > 0.0:
 		return
 	_tick = TICK
+	if tick_damage <= 0.0:
+		return
 	for n: Node in get_tree().get_nodes_in_group("allies"):
 		var a := n as Node3D
 		if a == null or a.call(&"is_dead"):

@@ -46,7 +46,11 @@ func _ready() -> void:
 	col.add_child(_timer)
 	_call_btn = UIStyle.button("Chamar agora", 13)
 	_call_btn.tooltip_text = "Pula o resto da preparação e chama a horda"
-	_call_btn.pressed.connect(func() -> void: TimeManager.start_horde_now())
+	_call_btn.pressed.connect(func() -> void:
+		if Coop.is_client():
+			Coop.request("call_horde")
+		else:
+			TimeManager.start_horde_now())
 	col.add_child(_call_btn)
 	EventBus.horde_started.connect(func(_n: int, total: int) -> void:
 		_total = total
