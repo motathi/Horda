@@ -45,8 +45,8 @@ func _ready() -> void:
 		_players_2d.append(p)
 	for i in POOL_3D:
 		var p3 := AudioStreamPlayer3D.new()
-		p3.max_distance = 60.0
-		p3.unit_size = 8.0
+		p3.max_distance = 70.0
+		p3.unit_size = 4.5
 		p3.bus = "SFX"
 		add_child(p3)
 		_players_3d.append(p3)
@@ -71,6 +71,16 @@ func _ready() -> void:
 	get_tree().node_added.connect(_on_node_added)
 
 func _setup_buses() -> void:
+	# Limitador no canal principal: muitos golpes/explosões juntos não distorcem.
+	var has_limiter := false
+	for i in AudioServer.get_bus_effect_count(0):
+		if AudioServer.get_bus_effect(0, i) is AudioEffectHardLimiter:
+			has_limiter = true
+	if not has_limiter:
+		var lim := AudioEffectHardLimiter.new()
+		lim.ceiling_db = -1.0
+		lim.pre_gain_db = 0.0
+		AudioServer.add_bus_effect(0, lim)
 	for b in BUSES:
 		if AudioServer.get_bus_index(b) == -1:
 			AudioServer.add_bus()

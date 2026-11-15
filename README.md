@@ -100,7 +100,9 @@ Efeitos, músicas e ambientes **CC0** do OpenGameArt (créditos em
 [assets/sounds/CREDITS.md](assets/sounds/CREDITS.md)), com 3 a 17 variações por efeito sorteadas com leve
 variação de tom. Música dinâmica com crossfade: menu, preparação (2 faixas alternadas), horda (2 faixas),
 chefe e derrota; ambiente de pássaros de dia, grilos à noite e um ambiente sombrio perto do cemitério.
-Volume de Música, Efeitos, Ambiente e Interface no menu de pausa (salvo em `user://settings.cfg`).
+Volume de Música, Efeitos, Ambiente e Interface no menu de pausa (salvo em `user://settings.cfg`). O "ouvido" do jogo fica
+no herói (não na câmera alta), com limitador no canal principal. Para medir o volume de uma luta:
+`godot --headless --audio-driver Dummy res://tests/audio_capture.tscn -- luta.wav`.
 
 ## Assets de terceiros (CC0)
 

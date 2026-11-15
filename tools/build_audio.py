@@ -18,6 +18,7 @@ SFX = {
     "mine": ["80-cc0-rpg-sfx/**/item_stone_0*.ogg", "80-cc0-rpg-sfx/**/stones_0*.ogg"],
     "break": ["35-wooden-crackshitsdestructions/**/crack0[1-6].mp3.flac"],
     "zombie_death": ["80-cc0-rpg-sfx/**/creature_die_01.ogg", "undead-moans/undead-*.ogg", "rpg-sound-pack/**/gutteral beast/mnstr[1-5].wav"],
+    "zombie_attack": ["16-monster-growls/**/monster.[9].ogg", "16-monster-growls/**/monster.1[0-6].ogg", "rpg-sound-pack/**/gutteral beast/mnstr[6-9].wav", "rpg-sound-pack/**/gutteral beast/mnstr1[0-5].wav"],
     "groan": ["undead-moans/undead-*.ogg", "rpg-sound-pack/**/shade/shade[1-8].wav", "16-monster-growls/**/monster.[1-8].ogg", "@split:zombie-moans/*.ogg"],
     "skeleton": ["80-cc0-rpg-sfx/**/wood_0[1-5].ogg", "80-cc0-rpg-sfx/**/chain_0*.ogg"],
     "heal": ["rpg-sound-pack/**/inventory/bubble*.wav", "80-cc0-rpg-sfx/**/spell_02.ogg"],

@@ -25,6 +25,13 @@ func _ready() -> void:
 		_target = get_node(target_path)
 	camera.fov = 45.0
 	camera.far = 400.0
+	# O "ouvido" fica no herói (centro do rig), não na câmera alta: senão golpes e
+	# zumbis ficavam muito baixos por causa da distância. Gira junto com a câmera.
+	var ear := AudioListener3D.new()
+	ear.name = "Ear"
+	ear.position = Vector3(0, 1.6, 0)
+	add_child(ear)
+	ear.make_current()
 	_apply()
 
 func set_target(t: Node3D) -> void:

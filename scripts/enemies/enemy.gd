@@ -262,7 +262,7 @@ func _think() -> void:
 	_update_separation()
 	if (state == State.CHASE or state == State.SIEGE) and _rng.randf() < 0.025:
 		var h := GameManager.hero as Node3D
-		if h and h.global_position.distance_to(global_position) < 22.0 and not Coop.is_host():
+		if h and h.global_position.distance_to(global_position) < 22.0:
 			AudioManager.play_3d(&"skeleton" if _is_skeleton() else &"groan", global_position, -8.0, 1.0 / maxf(0.7, def.model_scale), 600)
 	var hero := nearest_hero()
 	var hero_ok := hero != null and not hero.is_dead()
@@ -279,6 +279,9 @@ func _think() -> void:
 
 	# Alvos vivos próximos têm prioridade.
 	if hero_ok and hero_d <= def.aggro_range:
+		if _target != hero:
+			# Avistou o herói: rosnado de alerta.
+			AudioManager.play_3d(&"skeleton" if _is_skeleton() else &"groan", global_position, -2.0, 1.0 / maxf(0.7, def.model_scale), 350)
 		_target = hero
 		state = State.CHASE
 	elif state == State.CHASE:
@@ -322,6 +325,7 @@ func _try_attack() -> void:
 	_windup = minf(0.45, def.attack_cooldown * 0.4)
 	model.play_attack(_windup + 0.2)
 	net_attack_count += 1
+	AudioManager.play_3d(&"skeleton" if _is_skeleton() else &"zombie_attack", global_position, -3.0, 1.0 / maxf(0.7, def.model_scale), 140)
 
 func _resolve_attack() -> void:
 	if def.behavior == EnemyDef.Behavior.EXPLODER:
@@ -639,6 +643,7 @@ func apply_net_state(pos: Vector3, yaw: float, hp: float, speed: float, atk: int
 	if atk != _puppet_atk:
 		_puppet_atk = atk
 		model.play_attack(0.55)
+		AudioManager.play_3d(&"skeleton" if _is_skeleton() else &"zombie_attack", global_position, -3.0, 1.0, 140)
 
 func _puppet_process(delta: float) -> void:
 	var d := puppet_target - global_position
