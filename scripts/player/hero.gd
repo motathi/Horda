@@ -90,6 +90,8 @@ var _respawn_left: float = 0.0
 var _rng := RandomNumberGenerator.new()
 var _home: Vector3 = Vector3.ZERO
 var _step_t: float = 0.0
+var _stuck_t: float = 0.0
+var _overlap_t: float = 0.0
 
 @onready var nav_agent: NavigationAgent3D = $NavigationAgent3D
 
@@ -407,8 +409,10 @@ func _physics_process(delta: float) -> void:
 	velocity.x = dir.x * speed
 	velocity.z = dir.z * speed
 	velocity.y = 0.0 if is_on_floor() else velocity.y - 30.0 * delta
+	var before := global_position
 	move_and_slide()
 	global_position.y = maxf(global_position.y, 0.0)
+	_check_stuck(delta, dir, speed, before)
 
 	if dir != Vector3.ZERO:
 		_cancel_interaction()
@@ -969,3 +973,58 @@ func _puppet_process(delta: float) -> void:
 	model.rotation.y = lerp_angle(model.rotation.y, _net_yaw, clampf(delta * 12.0, 0.0, 1.0))
 	if not health.dead:
 		model.animate(delta, _net_speed)
+
+# --- Destravar --------------------------------------------------------------
+
+## Se o jogador tenta andar e o herói não sai do lugar (preso entre estruturas,
+## dentro de uma construção feita em cima dele etc.), procura um ponto livre perto.
+func _check_stuck(delta: float, dir: Vector3, speed: float, before: Vector3) -> void:
+	var moved := Vector2(global_position.x - before.x, global_position.z - before.z).length()
+	if dir != Vector3.ZERO and moved < speed * delta * 0.15:
+		_stuck_t += delta
+	else:
+		_stuck_t = maxf(0.0, _stuck_t - delta * 2.0)
+	_overlap_t -= delta
+	var overlapping := false
+	if _overlap_t <= 0.0:
+		_overlap_t = 0.5
+		overlapping = _overlaps_at(global_position)
+	if overlapping or (_stuck_t > 0.9 and _boxed_in()):
+		_stuck_t = 0.0
+		unstuck()
+	elif _stuck_t > 0.9:
+		_stuck_t = 0.0  # só está empurrando uma parede: há saída para outro lado
+
+## true se não dá para andar em nenhuma das 8 direções (preso de verdade).
+func _boxed_in() -> bool:
+	for i in 8:
+		var a := i * TAU / 8.0
+		if not test_move(global_transform, Vector3(cos(a), 0.0, sin(a)) * 0.35):
+			return false
+	return true
+
+## Teste de sobreposição da cápsula do herói com mundo/estruturas num ponto.
+func _overlaps_at(p: Vector3) -> bool:
+	var cs := $CollisionShape3D as CollisionShape3D
+	var q := PhysicsShapeQueryParameters3D.new()
+	q.shape = cs.shape
+	q.transform = Transform3D(Basis(), p + cs.position + Vector3.UP * 0.05)
+	q.collision_mask = Layers.WORLD | Layers.STRUCTURES | Layers.GATE
+	q.margin = -0.02
+	q.exclude = [get_rid()]
+	return not get_world_3d().direct_space_state.intersect_shape(q, 1).is_empty()
+
+## Move o herói para o ponto livre mais próximo (anéis de 0,7 a 4 m). true se conseguiu.
+func unstuck() -> bool:
+	var origin := global_position
+	for r: float in [0.7, 1.2, 1.8, 2.6, 3.4, 4.2]:
+		for i in 16:
+			var a := i * TAU / 16.0
+			var p := origin + Vector3(cos(a), 0.0, sin(a)) * r
+			if not _overlaps_at(p):
+				global_position = p
+				velocity = Vector3.ZERO
+				_has_move_target = false
+				EffectsHub.float_text(global_position + Vector3.UP * 2.4, "Destravado!", Color(0.6, 0.9, 1.0), 30)
+				return true
+	return false

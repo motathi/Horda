@@ -25,11 +25,11 @@ guaranteed = 0
 [sub_resource type="Resource" id="Entry_fast"]
 script = ExtResource("2")
 enemy = ExtResource("4")
-unlock_night = 3
-weight = 2.5
+unlock_night = 1
+weight = 2.0
 weight_growth = 0.15
 max_per_night = 0
-guaranteed = 3
+guaranteed = 2
 
 [sub_resource type="Resource" id="Entry_brute"]
 script = ExtResource("2")
@@ -106,7 +106,7 @@ guaranteed = 2
 [resource]
 script = ExtResource("1")
 entries = Array[ExtResource("2")]([SubResource("Entry_zombie"), SubResource("Entry_fast"), SubResource("Entry_brute"), SubResource("Entry_exploder"), SubResource("Entry_spitter"), SubResource("Entry_leaper"), SubResource("Entry_skel_minion"), SubResource("Entry_skel_rogue"), SubResource("Entry_skel_warrior"), SubResource("Entry_skel_mage")])
-base_count = 6.0
+base_count = 14.0
 count_linear = 2.6
 count_quadratic = 0.012
 max_alive = 110

@@ -661,3 +661,39 @@ func puppet_die(killer: Node) -> void:
 	AudioManager.play_3d(&"skeleton" if _is_skeleton() else &"zombie_death", global_position, -3.0)
 	EventBus.enemy_killed.emit(self, def, killer)
 	get_tree().create_timer(3.0).timeout.connect(queue_free)
+
+func is_leaping() -> bool:
+	return _leap_t >= 0.0 or _leap_wind >= 0.0
+
+## Recomeça a navegação (após ser reposicionado pelo vigia da horda).
+func reset_navigation() -> void:
+	_last_nav_target = Vector3.INF
+	_stuck_time = 0.0
+	_last_pos = global_position
+	if state != State.DEAD:
+		state = State.SIEGE if is_horde else State.CHASE
+		_target = null
+
+## Marcador dos últimos zumbis da horda (feixe vermelho visível de longe).
+func set_beacon(on: bool) -> void:
+	var b := get_node_or_null(^"Beacon") as MeshInstance3D
+	if on and b == null and state != State.DEAD:
+		b = MeshInstance3D.new()
+		b.name = "Beacon"
+		var cyl := CylinderMesh.new()
+		cyl.top_radius = 0.05
+		cyl.bottom_radius = 0.25
+		cyl.height = 14.0
+		cyl.radial_segments = 6
+		b.mesh = cyl
+		var m := StandardMaterial3D.new()
+		m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		m.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+		m.albedo_color = Color(1.0, 0.15, 0.1, 0.6)
+		b.material_override = m
+		b.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		b.position.y = 7.0
+		add_child(b)
+	elif not on and b:
+		b.queue_free()

@@ -26,6 +26,14 @@ var _alive: Array[Enemy] = []
 var _night_active: bool = false
 var _rng := RandomNumberGenerator.new()
 var _parent: Node
+# Vigia: zumbis presos/fora do mapa são trazidos para perto da base.
+const STUCK_SECONDS := 20.0
+const WATCH_INTERVAL := 2.0
+const STRAGGLER_RESCUE := 60.0
+const STRAGGLER_KILL := 120.0
+var _watch_t: float = WATCH_INTERVAL
+var _straggler_t: float = 0.0
+var _straggler_stage: int = 0
 
 func _ready() -> void:
 	_rng.randomize()
@@ -100,6 +108,8 @@ func end_night() -> void:
 			e.burn()
 			burned += 1
 	_alive.clear()
+	_straggler_t = 0.0
+	_straggler_stage = 0
 	var wave := _current
 	EventBus.horde_ended.emit(wave)
 	EventBus.night_survived.emit(wave)
@@ -116,6 +126,7 @@ func _process(delta: float) -> void:
 	if not _night_active or not GameManager.is_playing():
 		return
 	_prune()
+	_watchdog(delta)
 	if _queue.is_empty() and _elites_left <= 0 and _bosses_left <= 0:
 		# Horda vencida quando não resta ninguém vivo.
 		if _alive.is_empty():
@@ -157,7 +168,8 @@ func _spawn(def: EnemyDef, night: int, kind: int) -> void:
 	if def == null or _active_points.is_empty():
 		return
 	var base: Vector3 = _active_points[_rng.randi() % _active_points.size()]
-	var pos := base + Vector3(_rng.randf_range(-6, 6), 0, _rng.randf_range(-6, 6))
+	# Sempre num ponto alcançável da malha de navegação (nunca dentro de árvores/obstáculos).
+	var pos := _nav_point(base + Vector3(_rng.randf_range(-6, 6), 0, _rng.randf_range(-6, 6)))
 	var e := ENEMY_SCENE.instantiate() as Enemy
 	_parent.add_child(e)
 	e.global_position = pos
@@ -171,6 +183,87 @@ func _spawn(def: EnemyDef, night: int, kind: int) -> void:
 		Coop.banner_all("CHEFE!", "%s gigante ataca a base" % def.display_name, Color(1.0, 0.25, 0.1))
 	e.start_siege()
 	_alive.append(e)
+
+func _nav_point(p: Vector3) -> Vector3:
+	var map := (_parent as Node3D).get_world_3d().navigation_map
+	if NavigationServer3D.map_get_iteration_id(map) == 0:
+		return p
+	# Aceita só pontos da malha no chão (não em telhados) onde um zumbi cabe de verdade:
+	# o recorte da malha deixa "miolos" dentro de obstáculos fechados.
+	var space := (_parent as Node3D).get_world_3d().direct_space_state
+	var probe := PhysicsShapeQueryParameters3D.new()
+	var sph := SphereShape3D.new()
+	sph.radius = 0.55
+	probe.shape = sph
+	probe.collision_mask = Layers.WORLD | Layers.STRUCTURES | Layers.GATE
+	for r: float in [0.0, 2.0, 4.0, 6.0, 9.0, 13.0]:
+		for i in (1 if r == 0.0 else 8):
+			var a := i * TAU / 8.0
+			var q := NavigationServer3D.map_get_closest_point(map, p + Vector3(cos(a) * r, 0.0, sin(a) * r))
+			if q.y > 1.5:
+				continue
+			q.y = 0.0
+			probe.transform = Transform3D(Basis(), q + Vector3.UP * 0.9)
+			if space.intersect_shape(probe, 1).is_empty():
+				return q
+	return p
+
+## Leva um zumbi da horda para um ponto alcançável entre ele e a base.
+func rescue(e: Enemy) -> void:
+	var dir := e.global_position
+	dir.y = 0.0
+	if dir.length() < 1.0:
+		dir = Vector3(0, 0, 1)
+	var target := _nav_point(dir.normalized() * 30.0)
+	e.velocity = Vector3.ZERO
+	e.global_position = target
+	e.reset_navigation()
+	e.set_meta(&"wd_pos", target)
+	e.set_meta(&"wd_t", 0.0)
+
+## Vigia: a cada 2 s confere se algum zumbi da horda está preso ou fora do mapa,
+## e cuida dos retardatários (marcação, resgate e, por fim, eliminação).
+func _watchdog(delta: float) -> void:
+	var alive := _alive.size()
+	var all_spawned := _queue.is_empty() and _elites_left <= 0 and _bosses_left <= 0
+	if all_spawned and alive > 0 and alive <= 3:
+		_straggler_t += delta
+		if _straggler_stage == 0 and _straggler_t > STRAGGLER_RESCUE:
+			_straggler_stage = 1
+			for e in _alive:
+				rescue(e)
+			EventBus.notify("Os últimos zumbis foram atraídos para a base!", Color(1, 0.6, 0.3))
+		elif _straggler_stage == 1 and _straggler_t > STRAGGLER_KILL:
+			_straggler_stage = 2
+			for e in _alive.duplicate():
+				var info := DamageInfo.make(e.health.current + 9999.0, null)
+				info.type = DamageInfo.Type.TRUE
+				e.health.take_damage(info)
+	else:
+		_straggler_t = 0.0
+		_straggler_stage = 0
+	_watch_t -= delta
+	if _watch_t > 0.0:
+		return
+	_watch_t = WATCH_INTERVAL
+	for e in _alive:
+		var p := e.global_position
+		if absf(p.x) > 120.5 or absf(p.z) > 120.5 or p.y < -3.0 or (p.y > 6.0 and not e.is_leaping()):
+			rescue(e)
+			continue
+		if e.state == Enemy.State.ATTACK or e.is_stunned() or e.is_leaping():
+			e.set_meta(&"wd_pos", p)
+			e.set_meta(&"wd_t", 0.0)
+			continue
+		var last: Vector3 = e.get_meta(&"wd_pos", p)
+		if last.distance_to(p) > 1.5:
+			e.set_meta(&"wd_pos", p)
+			e.set_meta(&"wd_t", 0.0)
+		else:
+			var t := float(e.get_meta(&"wd_t", 0.0)) + WATCH_INTERVAL
+			e.set_meta(&"wd_t", t)
+			if t >= STUCK_SECONDS:
+				rescue(e)
 
 func _prune() -> void:
 	var before := _alive.size()

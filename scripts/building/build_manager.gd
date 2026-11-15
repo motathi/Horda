@@ -140,6 +140,12 @@ func check(d: BuildingDef, pos: Vector3, rot: float, _remote: bool = false) -> S
 		return "Perto demais da fortaleza"
 	if not ResourceManager.can_afford(d.cost):
 		return "Faltam recursos: " + ResourceManager.cost_to_string(d.cost)
+	# Nenhum jogador pode ficar dentro da construção (no coop, os heróis dos outros não têm colisão aqui).
+	var inv := Basis(Vector3.UP, rot).inverse()
+	for n in get_tree().get_nodes_in_group("hero"):
+		var local: Vector3 = inv * ((n as Node3D).global_position - pos)
+		if absf(local.x) < d.footprint.x * 0.5 + 0.7 and absf(local.z) < d.footprint.y * 0.5 + 0.7:
+			return "Um herói está no caminho"
 	var shape := BoxShape3D.new()
 	var h := maxf(d.height, 0.6)
 	shape.size = Vector3(d.footprint.x - 0.1, h - 0.1, d.footprint.y - 0.1)

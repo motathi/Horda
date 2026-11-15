@@ -40,6 +40,7 @@ func _ready() -> void:
 	await _test_equipment()
 	await _test_tech()
 	await _test_special_enemies()
+	await _test_fixes()
 	await _test_harvest_and_loot()
 	await _test_base_services()
 	await _test_building()
@@ -532,6 +533,65 @@ func _test_special_enemies() -> void:
 	hero.health.current = hero.health.max_health
 	hero.health.invulnerable = was_invulnerable
 
+func _test_fixes() -> void:
+	print("[correções: horda e herói preso]")
+	var hd := world.horde
+	await _clear_enemies()
+	# Surgimento sempre na malha de navegação.
+	var crypt_pos := Vector3.ZERO
+	for n in world.builder.nav_region.get_children():
+		if n is StaticBody3D and n.get_child_count() > 0 and String(n.get_child(0).scene_file_path).ends_with("crypt.gltf"):
+			crypt_pos = (n as Node3D).global_position
+	var np := hd._nav_point(crypt_pos)
+	check(crypt_pos != Vector3.ZERO and np.distance_to(crypt_pos) > 1.0, "ponto de surgimento dentro de obstáculo (cripta) é movido para a malha de navegação (%.1f m)" % np.distance_to(crypt_pos))
+	# Zumbi fora do mapa é resgatado.
+	var lost := _spawn_def("zombie", Vector3(60, 0, 60))
+	await wait(0.05)
+	lost.start_siege()
+	lost.global_position = Vector3(130, -8, 0)
+	hd._alive.append(lost)
+	hd._watch_t = 0.0
+	hd._watchdog(0.016)
+	check(absf(lost.global_position.x) < 40.0 and lost.global_position.y > -1.0, "zumbi fora do mapa trazido para perto da base (%s)" % lost.global_position)
+	# Zumbi parado por 20 s é resgatado.
+	var stuck := _spawn_def("zombie", Vector3(80, 0, -20))
+	await wait(0.05)
+	stuck.start_siege()
+	stuck.set_physics_process(false)
+	hd._alive.append(stuck)
+	for i in 11:
+		hd._watch_t = 0.0
+		hd._watchdog(0.016)
+	check(stuck.global_position.distance_to(Vector3(80, 0, -20)) > 20.0, "zumbi preso por 20 s é reposicionado (%s)" % stuck.global_position)
+	# Últimos zumbis: marcados no minimapa/feixe e, por fim, eliminados.
+	var phase0 := TimeManager.phase
+	TimeManager.phase = TimeManager.Phase.NIGHT  # sem sinal: não dispara uma horda real
+	world.hud.minimap._update_stragglers()
+	check(lost.get_node_or_null(^"Beacon") != null, "últimos zumbis da horda ganham feixe vermelho")
+	hd._straggler_t = hd.STRAGGLER_KILL + 1.0
+	hd._straggler_stage = 1
+	hd._watchdog(0.016)
+	await wait(0.1)
+	check(lost.is_dead() and stuck.is_dead(), "retardatários eliminados no último recurso")
+	hd._alive.clear()
+	hd._straggler_t = 0.0
+	hd._straggler_stage = 0
+	TimeManager.phase = phase0
+	await _clear_enemies()
+	# Não constrói em cima de herói.
+	var hero := world.hero
+	hero.global_position = Vector3(6, 0, 18)
+	await wait(0.1)
+	var bm := world.build_manager
+	ResourceManager.storage.add(&"wood", 50)
+	check(bm.check(Building.load_def(&"barricade"), Vector3(6, 0, 18), 0.0) == "Um herói está no caminho", "não deixa construir em cima de um herói")
+	# Herói dentro de uma construção é destravado.
+	var trap := bm.place(Building.load_def(&"stone_wall"), Vector3(6, 0, 18), 0.0, false)
+	await wait(1.2)
+	check(not hero._overlaps_at(hero.global_position) and hero.global_position.distance_to(Vector3(6, 0, 18)) > 0.5, "herói preso dentro de uma construção é destravado (%s)" % hero.global_position)
+	trap.queue_free()
+	await wait(0.05)
+
 func _flat(a: Vector3, b: Vector3) -> float:
 	return Vector2(a.x - b.x, a.z - b.z).length()
 
@@ -799,7 +859,7 @@ func _test_night() -> void:
 	var has_fast := n6.any(func(d: EnemyDef) -> bool: return d.id == &"zombie_fast")
 	check(n6.size() > n1.size(), "horda 6 maior que horda 1 (%d > %d)" % [n6.size(), n1.size()])
 	check(has_brute and has_fast, "horda 6 contém zumbis rápidos e resistentes")
-	check(n1.all(func(d: EnemyDef) -> bool: return d.id == &"zombie"), "horda 1 só tem zumbis comuns")
+	check(n1.size() >= 15 and n1.filter(func(d: EnemyDef) -> bool: return d.id == &"zombie_fast").size() >= 2, "horda 1 mais forte: %d zumbis, com rápidos" % n1.size())
 	check(cfg.elite_count(5) == 1 and cfg.boss_count(10) == 1 and cfg.boss_count(9) == 0, "elite na horda 5, chefe na horda 10")
 	var c100 := cfg.total_count(100)
 	check(c100 > 300 and c100 < 450 and cfg.hp_multiplier(100) > 8.0 and cfg.hp_multiplier(100) < 12.0, "horda 100: %d zumbis, vida x%.1f" % [c100, cfg.hp_multiplier(100)])
