@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="EquipmentDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/progression/equipment_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"amulet_arcane"
+display_name = "Amuleto Arcano"
+description = "Cristal arcano que fortalece as habilidades."
+icon_name = "eq_amulet_arcane"
+slot = 2
+stats = {
+"energy": 25.0,
+"ability_power_pct": 0.15,
+"cdr_pct": 0.05
+}
+craft_cost = {
+&"herbs": 6,
+&"cloth": 6,
+&"scrap": 10
+}
+min_wave = 4

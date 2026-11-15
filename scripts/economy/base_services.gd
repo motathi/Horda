@@ -126,3 +126,40 @@ func craft(r: Recipe) -> String:
 	ResourceManager.hero_inventory.add(r.output_item, r.output_amount)
 	AudioManager.play(&"loot")
 	return "Fabricado: %d %s" % [r.output_amount, ResourceManager.item_name(r.output_item)]
+
+# --- Forja (equipamentos) ----------------------------------------------------
+
+## Sorte na raridade da Forja: cada ponto de Engenharia soma 4%.
+func forge_luck(hero: Hero) -> float:
+	return hero.attr(&"engineering") * 0.04 if hero else 0.0
+
+## Chance (0..1) de cada raridade na Forja para este herói.
+func forge_odds(hero: Hero) -> Array[float]:
+	var luck := forge_luck(hero)
+	var w: Array[float] = []
+	var total := 0.0
+	for i in Gear.RARITY_WEIGHTS.size():
+		var x := Gear.RARITY_WEIGHTS[i] * pow(1.0 + luck * 2.0, i)
+		w.append(x)
+		total += x
+	for i in w.size():
+		w[i] /= total
+	return w
+
+func forge(d: EquipmentDef, hero: Hero) -> String:
+	if not BaseZone.hero_inside:
+		return "Volte para a base para usar a Forja."
+	if TimeManager.wave() < d.min_wave:
+		return "%s libera na horda %d." % [d.display_name, d.min_wave]
+	if hero.gear_bag.size() >= Gear.BAG_SIZE:
+		return "Bolsa de equipamentos cheia. Desmonte algo no painel do personagem."
+	if not ResourceManager.spend(d.craft_cost):
+		return "Recursos insuficientes: " + ResourceManager.cost_to_string(d.craft_cost)
+	var rng := RandomNumberGenerator.new()
+	rng.randomize()
+	var item := Gear.make_item(d, Gear.roll_rarity(rng, forge_luck(hero)), TimeManager.wave(), rng)
+	hero.add_gear(item)
+	AudioManager.play(&"upgrade")
+	if item.rarity >= 2:
+		AudioManager.play(&"levelup", -4.0)
+	return "Forjado: %s %s (nível %d) — equipe no personagem (P)." % [item.display_name(), item.rarity_name(), item.item_level]

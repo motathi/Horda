@@ -94,6 +94,27 @@ func _ready() -> void:
 	await _frames(4)
 	await _shot("13_character")
 	world.hud.character.visible = false
+	var grng := RandomNumberGenerator.new()
+	grng.seed = 3
+	for gid: StringName in [&"sword", &"plate", &"amulet_arcane", &"daggers", &"ring_hunter", &"chain", &"hammer"]:
+		hero.add_gear(Gear.make_item(Gear.get_def(gid), grng.randi_range(0, 4), 6, grng))
+	hero.equip(hero.gear_bag[0])
+	world.hud.character.show_gear_tab()
+	world.hud.character._select(hero.gear_bag[1], false)
+	await _frames(6)
+	await _shot("20_equipamento")
+	world.hud.character.visible = false
+	world.hud.base_panel.visible = true
+	world.hud.base_panel._tab = 1
+	world.hud.base_panel._rebuild()
+	await _frames(6)
+	await _shot("21_forja")
+	world.hud.base_panel.visible = false
+	world.hud.base_panel._tab = 0
+	for i in 3:
+		EffectsHub.drop_gear(hero.global_position + Vector3(3.5 + i * 1.6, 0, -2.0), Gear.make_item(Gear.defs()[i * 3], 2 + i % 3, 6, grng))
+	await get_tree().create_timer(1.2).timeout
+	await _shot("22_saque_equip")
 	hero.health.invulnerable = true
 	var offs := {"zombie_exploder": Vector3(-3.5, 0, 2.5), "zombie_spitter": Vector3(0, 0, 7.5), "zombie_leaper": Vector3(4.5, 0, 3.0),
 		"skeleton_minion": Vector3(-5.5, 0, -1.0), "skeleton_warrior": Vector3(5.5, 0, -1.5), "skeleton_rogue": Vector3(-2.0, 0, 5.0), "skeleton_mage": Vector3(3.0, 0, 6.0)}

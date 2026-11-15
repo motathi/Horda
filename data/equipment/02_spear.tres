@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="EquipmentDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/progression/equipment_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"spear"
+display_name = "Lança de Guarda"
+description = "Alcance maior: acerta zumbis antes que cheguem perto."
+icon_name = "eq_spear"
+slot = 0
+stats = {
+"damage": 7.0,
+"reach": 0.9
+}
+craft_cost = {
+&"wood": 20,
+&"scrap": 10
+}
+min_wave = 3

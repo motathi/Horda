@@ -37,6 +37,7 @@ func _ready() -> void:
 	await _test_combat()
 	await _test_abilities()
 	await _test_attributes()
+	await _test_equipment()
 	await _test_special_enemies()
 	await _test_harvest_and_loot()
 	await _test_base_services()
@@ -318,6 +319,73 @@ func _test_attributes() -> void:
 	hero.respec()
 	hero.attr_points = 0
 	b.queue_free()
+
+func _test_equipment() -> void:
+	print("[equipamento]")
+	var hero := world.hero
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 7
+	check(Gear.defs().size() == 11, "11 itens base de equipamento (%d)" % Gear.defs().size())
+	check(hero.equipped(EquipmentDef.Slot.WEAPON) != null and hero.equipped(EquipmentDef.Slot.WEAPON).def.id == &"axe", "herói começa com machado")
+	var sword := Gear.get_def(&"sword")
+	var c1 := Gear.make_item(sword, 0, 1, rng)
+	var l1 := Gear.make_item(sword, 4, 1, rng)
+	var c20 := Gear.make_item(sword, 0, 20, rng)
+	check(l1.stat("damage") > c1.stat("damage") * 2.0 and l1.affixes.size() == 4, "Lendário: dano %.1f vs comum %.1f, 4 bônus" % [l1.stat("damage"), c1.stat("damage")])
+	check(c20.stat("damage") > c1.stat("damage") * 1.5, "nível do item escala atributos (nv 20: %.1f)" % c20.stat("damage"))
+	# Equipar troca e devolve o antigo para a bolsa.
+	hero.gear_bag.clear()
+	var dmg0 := hero.damage()
+	var rare_sword := Gear.make_item(sword, 2, 5, rng)
+	hero.add_gear(rare_sword)
+	hero.equip(rare_sword)
+	check(hero.damage() > dmg0 and hero.gear_bag.size() == 1 and hero.gear_bag[0].def.id == &"axe", "equipar espada aumenta dano (%.0f -> %.0f) e o machado volta à bolsa" % [dmg0, hero.damage()])
+	var arm0 := hero.health.armor
+	var ms0 := hero.current_move_speed()
+	var plate := Gear.make_item(Gear.get_def(&"plate"), 0, 1, rng)
+	hero.add_gear(plate)
+	hero.equip(plate)
+	check(hero.health.armor > arm0 + 10.0 and hero.current_move_speed() < ms0, "placas: armadura %.0f -> %.0f e movimento menor" % [arm0, hero.health.armor])
+	hero.unequip(EquipmentDef.Slot.ARMOR)
+	check(is_equal_approx(hero.health.armor, arm0), "remover armadura restaura a armadura")
+	# Desmontar
+	var scrap0 := ResourceManager.storage.count(&"scrap")
+	var msg := hero.salvage(plate)
+	check(ResourceManager.storage.count(&"scrap") > scrap0 and not hero.gear_bag.has(plate), "desmontar devolve recursos (%s)" % msg)
+	# Forja: Engenharia melhora as chances.
+	var svc := world.services
+	var odds0 := svc.forge_odds(hero)
+	hero.attributes[&"engineering"] = 10
+	var odds1 := svc.forge_odds(hero)
+	hero.attributes[&"engineering"] = 0
+	check(odds1[4] > odds0[4] * 3.0 and odds1[0] < odds0[0], "Engenharia aumenta chance de Lendário (%.1f%% -> %.1f%%)" % [odds0[4] * 100, odds1[4] * 100])
+	var axe_def := Gear.get_def(&"axe")
+	for id: StringName in axe_def.craft_cost:
+		ResourceManager.storage.add(id, int(axe_def.craft_cost[id]))
+	hero.global_position = Vector3(3, 0, 3)
+	await wait(0.2)
+	var bag0 := hero.gear_bag.size()
+	msg = svc.forge(axe_def, hero)
+	check(hero.gear_bag.size() == bag0 + 1, "Forja cria item na bolsa (%s)" % msg)
+	# Saque de chefe sempre Raro ou melhor.
+	var all_rare := true
+	for i in 25:
+		var bd := Gear.enemy_drop(rng, true, false, false)
+		all_rare = all_rare and bd != null and bd.rarity >= 2
+	check(all_rare, "chefes sempre largam Raro ou melhor")
+	# Item no chão é coletado para a bolsa.
+	hero.gear_bag.clear()
+	EffectsHub.drop_gear(hero.global_position + Vector3(1.2, 0, 0), Gear.make_item(Gear.get_def(&"amulet_life"), 3, 4, rng))
+	await wait(2.0)
+	check(hero.gear_bag.size() == 1 and hero.gear_bag[0].def.id == &"amulet_life", "equipamento no chão vai para a bolsa")
+	# Salvar/carregar
+	var saved := hero.to_save()
+	var eq_id := hero.equipped(EquipmentDef.Slot.WEAPON).def.id
+	hero.equipment.clear()
+	hero.gear_bag.clear()
+	hero.from_save(saved)
+	check(hero.equipped(EquipmentDef.Slot.WEAPON) != null and hero.equipped(EquipmentDef.Slot.WEAPON).def.id == eq_id and hero.gear_bag.size() == 1 and hero.gear_bag[0].rarity == 3, "equipamento e bolsa persistem no save")
+	hero.gear_bag.clear()
 
 func _spawn_def(id: String, pos: Vector3) -> Enemy:
 	var e := (load("res://scenes/enemies/zombie.tscn") as PackedScene).instantiate() as Enemy

@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="EquipmentDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/progression/equipment_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"hammer"
+display_name = "Martelo de Guerra"
+description = "Golpes devastadores, porém lentos."
+icon_name = "eq_hammer"
+slot = 0
+stats = {
+"damage": 18.0,
+"attack_speed_pct": -0.12
+}
+craft_cost = {
+&"stone": 22,
+&"scrap": 16
+}
+min_wave = 5

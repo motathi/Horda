@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="EquipmentDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/progression/equipment_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"amulet_life"
+display_name = "Amuleto da Vida"
+description = "Pulsa com calor: vida e regeneração."
+icon_name = "eq_amulet_life"
+slot = 2
+stats = {
+"max_hp": 40.0,
+"health_regen": 1.5
+}
+craft_cost = {
+&"herbs": 8,
+&"scrap": 6
+}
+min_wave = 2

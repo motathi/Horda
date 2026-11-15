@@ -62,6 +62,8 @@ func interact(_hero: Hero) -> void:
 			y += 0.45
 		if got < amount:
 			EffectsHub.drop_item(global_position, id, amount - got)
+	if _rng.randf() < Gear.container_chance(display_label):
+		EffectsHub.drop_gear(global_position + Vector3.UP * 0.5, Gear.random_item(_rng, TimeManager.wave(), 0.1))
 	AudioManager.play_3d(&"loot", global_position)
 	EventBus.container_looted.emit(self)
 	_set_looted(true)

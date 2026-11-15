@@ -126,7 +126,11 @@ em `horde_started`. As ruínas vêm de `WorldBuilder._build_ruins()` (KayKit Dun
   **Atributos prontos**: `AttributeConfig` (`data/config/attributes.tres`) define o bônus por ponto; o `Hero`
   guarda `attributes`/`attr_points` (3 por nível), recalcula vida/energia/regeneração/carga em
   `_recalc_stats()` e chama `refresh_stats` no grupo `buildings` (Engenharia). `CharacterPanel` (P / retrato)
-  distribui e redistribui pontos. Falta: equipamentos com raridade e fabricação de armas via `Recipe`.
+  distribui e redistribui pontos. **Equipamentos prontos**: `EquipmentDef` (item base, `data/equipment`), `GearItem` (raridade, nível,
+  bônus sorteados; `stat()`, `to_dict()`), `Gear` (raridades, pesos com sorte, `make_item`, `random_item`,
+  `enemy_drop`), `GearPickup` (feixe na cor da raridade). O `Hero` soma `gear(stat)` em dano, velocidade,
+  crítico, alcance, armadura, vida, regeneração, energia, poder e recarga; `equip/unequip/salvage`, bolsa de 16.
+  Forja em `BaseServices.forge()` (sorte = Engenharia × 4%); abas em `BasePanel` e `CharacterPanel`.
 - **Fase 3 — Construção (núcleo pronto)**: `BuildManager` (prévia transparente, grade de 0,5 m, rotação,
   validação por área da base/espaço livre/recursos), `Building` (estende `Structure`: níveis 1–3, torre que
   dispara `Projectile` com pool, armadilha que fere e se desgasta, demolição com reembolso) e dados em

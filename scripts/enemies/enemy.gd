@@ -451,6 +451,9 @@ func _on_died(info: DamageInfo) -> void:
 		var drops := def.loot.roll(_rng, 8.0 if is_boss else (2.5 if is_elite else 1.0))
 		for id: StringName in drops:
 			EffectsHub.drop_item(global_position, id, drops[id])
+		var gi := Gear.enemy_drop(_rng, is_boss, is_elite, def.special_radius > 0.0 or def.behavior >= EnemyDef.Behavior.EXPLODER)
+		if gi:
+			EffectsHub.drop_gear(global_position, gi)
 	EventBus.enemy_killed.emit(self, def, info.source if info else null)
 	get_tree().create_timer(3.0).timeout.connect(queue_free)
 

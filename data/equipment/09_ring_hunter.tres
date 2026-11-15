@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="EquipmentDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/progression/equipment_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"ring_hunter"
+display_name = "Anel do Caçador"
+description = "Para quem caça a horda: crítico, ataque e movimento."
+icon_name = "eq_ring_hunter"
+slot = 2
+stats = {
+"crit": 0.06,
+"attack_speed_pct": 0.08,
+"move_speed_pct": 0.06
+}
+craft_cost = {
+&"scrap": 16,
+&"cloth": 4
+}
+min_wave = 3

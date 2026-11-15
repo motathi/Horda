@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="EquipmentDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/progression/equipment_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"chain"
+display_name = "Cota de Malha"
+description = "Anéis de aço: boa armadura e vida extra."
+icon_name = "eq_chain"
+slot = 1
+stats = {
+"armor": 6.0,
+"max_hp": 50.0
+}
+craft_cost = {
+&"scrap": 22,
+&"cloth": 6
+}
+min_wave = 3

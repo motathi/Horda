@@ -208,5 +208,71 @@
   "out": "assets/ui/hud/src/b_iron_wall.jpg",
   "size": "1024x1024",
   "prompt": "Game UI icon of a riveted dark iron plated wall segment with spikes on top, glossy stylized hand-painted mobile strategy game UI icon, chunky readable shape, vibrant saturated colors, soft specular highlights, thick dark outline, centered, isolated on a completely black #000000 background, the background must be pitch black, no frame, no border, no text"
+ },
+ {
+  "name": "ui_eq_axe",
+  "out": "assets/ui/hud/src/eq_axe.jpg",
+  "size": "1024x1024",
+  "prompt": "Game item icon of a sturdy woodcutter axe with a wooden handle, glossy stylized hand-painted MOBA item icon in the style of Dota 2, dynamic composition, vibrant saturated colors, soft specular highlights, thick dark outline, centered, isolated on a completely black #000000 background, the background must be pitch black, no frame, no border, no text"
+ },
+ {
+  "name": "ui_eq_sword",
+  "out": "assets/ui/hud/src/eq_sword.jpg",
+  "size": "1024x1024",
+  "prompt": "Game item icon of a polished steel longsword with a leather wrapped grip, glossy stylized hand-painted MOBA item icon in the style of Dota 2, dynamic composition, vibrant saturated colors, soft specular highlights, thick dark outline, centered, isolated on a completely black #000000 background, the background must be pitch black, no frame, no border, no text"
+ },
+ {
+  "name": "ui_eq_spear",
+  "out": "assets/ui/hud/src/eq_spear.jpg",
+  "size": "1024x1024",
+  "prompt": "Game item icon of a long guard spear with a steel leaf blade and red ribbon, glossy stylized hand-painted MOBA item icon in the style of Dota 2, dynamic composition, vibrant saturated colors, soft specular highlights, thick dark outline, centered, isolated on a completely black #000000 background, the background must be pitch black, no frame, no border, no text"
+ },
+ {
+  "name": "ui_eq_hammer",
+  "out": "assets/ui/hud/src/eq_hammer.jpg",
+  "size": "1024x1024",
+  "prompt": "Game item icon of a massive iron warhammer with a heavy square head, glossy stylized hand-painted MOBA item icon in the style of Dota 2, dynamic composition, vibrant saturated colors, soft specular highlights, thick dark outline, centered, isolated on a completely black #000000 background, the background must be pitch black, no frame, no border, no text"
+ },
+ {
+  "name": "ui_eq_daggers",
+  "out": "assets/ui/hud/src/eq_daggers.jpg",
+  "size": "1024x1024",
+  "prompt": "Game item icon of a pair of crossed curved daggers, glossy stylized hand-painted MOBA item icon in the style of Dota 2, dynamic composition, vibrant saturated colors, soft specular highlights, thick dark outline, centered, isolated on a completely black #000000 background, the background must be pitch black, no frame, no border, no text"
+ },
+ {
+  "name": "ui_eq_leather",
+  "out": "assets/ui/hud/src/eq_leather.jpg",
+  "size": "1024x1024",
+  "prompt": "Game item icon of a brown leather jerkin armor vest, glossy stylized hand-painted MOBA item icon in the style of Dota 2, dynamic composition, vibrant saturated colors, soft specular highlights, thick dark outline, centered, isolated on a completely black #000000 background, the background must be pitch black, no frame, no border, no text"
+ },
+ {
+  "name": "ui_eq_chain",
+  "out": "assets/ui/hud/src/eq_chain.jpg",
+  "size": "1024x1024",
+  "prompt": "Game item icon of a steel chainmail shirt, glossy stylized hand-painted MOBA item icon in the style of Dota 2, dynamic composition, vibrant saturated colors, soft specular highlights, thick dark outline, centered, isolated on a completely black #000000 background, the background must be pitch black, no frame, no border, no text"
+ },
+ {
+  "name": "ui_eq_plate",
+  "out": "assets/ui/hud/src/eq_plate.jpg",
+  "size": "1024x1024",
+  "prompt": "Game item icon of a heavy steel plate armor breastplate with gold trim, glossy stylized hand-painted MOBA item icon in the style of Dota 2, dynamic composition, vibrant saturated colors, soft specular highlights, thick dark outline, centered, isolated on a completely black #000000 background, the background must be pitch black, no frame, no border, no text"
+ },
+ {
+  "name": "ui_eq_amulet_life",
+  "out": "assets/ui/hud/src/eq_amulet_life.jpg",
+  "size": "1024x1024",
+  "prompt": "Game item icon of a golden amulet with a glowing red heart gem, glossy stylized hand-painted MOBA item icon in the style of Dota 2, dynamic composition, vibrant saturated colors, soft specular highlights, thick dark outline, centered, isolated on a completely black #000000 background, the background must be pitch black, no frame, no border, no text"
+ },
+ {
+  "name": "ui_eq_amulet_arcane",
+  "out": "assets/ui/hud/src/eq_amulet_arcane.jpg",
+  "size": "1024x1024",
+  "prompt": "Game item icon of a silver amulet with a glowing blue arcane crystal, glossy stylized hand-painted MOBA item icon in the style of Dota 2, dynamic composition, vibrant saturated colors, soft specular highlights, thick dark outline, centered, isolated on a completely black #000000 background, the background must be pitch black, no frame, no border, no text"
+ },
+ {
+  "name": "ui_eq_ring_hunter",
+  "out": "assets/ui/hud/src/eq_ring_hunter.jpg",
+  "size": "1024x1024",
+  "prompt": "Game item icon of a golden ring with a green emerald and an arrow engraving, glossy stylized hand-painted MOBA item icon in the style of Dota 2, dynamic composition, vibrant saturated colors, soft specular highlights, thick dark outline, centered, isolated on a completely black #000000 background, the background must be pitch black, no frame, no border, no text"
  }
 ]

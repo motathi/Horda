@@ -7,6 +7,7 @@ signal attack_cooldown_changed(ratio: float)
 signal stats_changed
 signal leveled_up(level: int)
 signal ability_cast(index: int)
+signal gear_changed
 
 @export_group("Atributos")
 @export var max_health: float = 220.0
@@ -53,6 +54,10 @@ const ATTRIBUTES_PATH := "res://data/config/attributes.tres"
 var attr_cfg: AttributeConfig
 var attributes: Dictionary = {}  # StringName -> int
 var attr_points: int = 0
+
+# Equipamento: espaço (EquipmentDef.Slot) -> GearItem, e bolsa de itens não equipados.
+var equipment: Dictionary = {}
+var gear_bag: Array[GearItem] = []
 ## Modo toque (celular): ataque pelo botão, mira automática, toque no mundo = mover/atacar.
 var touch_mode: bool = false
 var touch_attack_held: bool = false
@@ -107,6 +112,10 @@ func _ready() -> void:
 	lantern.visible = false
 	add_child(lantern)
 	add_to_group("night_lights")
+	# Equipamento inicial: um machado comum.
+	var axe := Gear.get_def(&"axe")
+	if axe and equipment.is_empty():
+		equipment[axe.slot] = Gear.make_item(axe, 0, 1, _rng)
 	_recalc_stats(false)
 
 func set_camera(cam: Camera3D) -> void:
@@ -116,7 +125,90 @@ func set_home(p: Vector3) -> void:
 	_home = p
 
 func damage() -> float:
-	return (base_damage + weapon_level * SHARPEN_BONUS + (level - 1) * LEVEL_DAMAGE) * (1.0 + attr(&"strength") * attr_cfg.str_damage_pct)
+	return (base_damage + gear(&"damage") + weapon_level * SHARPEN_BONUS + (level - 1) * LEVEL_DAMAGE) * (1.0 + attr(&"strength") * attr_cfg.str_damage_pct)
+
+## Alcance do golpe (lança aumenta).
+func reach() -> float:
+	return attack_range + gear(&"reach")
+
+# --- Equipamento ----------------------------------------------------------
+
+## Soma de um atributo em todos os itens equipados.
+func gear(stat: StringName) -> float:
+	var t := 0.0
+	for it: GearItem in equipment.values():
+		if it:
+			t += it.stat(String(stat))
+	return t
+
+func equipped(slot: int) -> GearItem:
+	return equipment.get(slot) as GearItem
+
+## Equipa um item da bolsa (o antigo volta para a bolsa).
+func equip(item: GearItem) -> String:
+	if item == null or not gear_bag.has(item):
+		return "Item não está na bolsa."
+	gear_bag.erase(item)
+	var old := equipped(item.def.slot)
+	if old:
+		gear_bag.append(old)
+	equipment[item.def.slot] = item
+	_recalc_stats(true)
+	AudioManager.play(&"upgrade", -4.0)
+	gear_changed.emit()
+	return "Equipado: %s (%s)" % [item.display_name(), item.rarity_name()]
+
+func unequip(slot: int) -> String:
+	var it := equipped(slot)
+	if it == null:
+		return ""
+	if gear_bag.size() >= Gear.BAG_SIZE:
+		return "Bolsa de equipamentos cheia."
+	equipment.erase(slot)
+	gear_bag.append(it)
+	_recalc_stats(true)
+	gear_changed.emit()
+	return "Removido: " + it.display_name()
+
+## Adiciona à bolsa; false se estiver cheia.
+func add_gear(item: GearItem) -> bool:
+	if gear_bag.size() >= Gear.BAG_SIZE:
+		return false
+	gear_bag.append(item)
+	gear_changed.emit()
+	return true
+
+## Desmonta um item da bolsa em recursos (vão para o armazém).
+func salvage(item: GearItem) -> String:
+	if not gear_bag.has(item):
+		return "Só itens da bolsa podem ser desmontados."
+	gear_bag.erase(item)
+	var got := item.salvage_value()
+	for id: StringName in got:
+		ResourceManager.storage.add(id, int(got[id]))
+	AudioManager.play(&"break", -4.0)
+	gear_changed.emit()
+	return "Desmontado: %s → %s" % [item.display_name(), ResourceManager.cost_to_string(got)]
+
+func _gear_save() -> Dictionary:
+	var eq := {}
+	for slot: int in equipment:
+		if equipment[slot]:
+			eq[str(slot)] = (equipment[slot] as GearItem).to_dict()
+	return {"equipped": eq, "bag": gear_bag.map(func(g: GearItem) -> Dictionary: return g.to_dict())}
+
+func _gear_load(d: Dictionary) -> void:
+	equipment.clear()
+	gear_bag.clear()
+	var eq: Dictionary = d.get("equipped", {})
+	for k: String in eq:
+		var g := GearItem.from_dict(eq[k])
+		if g:
+			equipment[g.def.slot] = g
+	for gd: Dictionary in d.get("bag", []):
+		var g2 := GearItem.from_dict(gd)
+		if g2:
+			gear_bag.append(g2)
 
 # --- Atributos ------------------------------------------------------------
 
@@ -124,22 +216,26 @@ func attr(id: StringName) -> int:
 	return int(attributes.get(id, 0))
 
 func attack_speed() -> float:
-	return attacks_per_second * (1.0 + attr(&"agility") * attr_cfg.agi_attack_speed_pct)
+	return attacks_per_second * maxf(0.3, 1.0 + attr(&"agility") * attr_cfg.agi_attack_speed_pct + gear(&"attack_speed_pct"))
 
 func current_move_speed() -> float:
-	return move_speed * (1.0 + minf(attr(&"agility") * attr_cfg.agi_move_speed_pct, attr_cfg.agi_move_speed_cap))
+	return move_speed * maxf(0.5, 1.0 + minf(attr(&"agility") * attr_cfg.agi_move_speed_pct, attr_cfg.agi_move_speed_cap) + gear(&"move_speed_pct"))
 
 func crit() -> float:
-	return minf(0.75, crit_chance + attr(&"agility") * attr_cfg.agi_crit)
+	return minf(0.75, crit_chance + attr(&"agility") * attr_cfg.agi_crit + gear(&"crit"))
 
 func ability_power() -> float:
-	return 1.0 + attr(&"intelligence") * attr_cfg.int_power_pct
+	return 1.0 + attr(&"intelligence") * attr_cfg.int_power_pct + gear(&"ability_power_pct")
 
 func cooldown_mult() -> float:
-	return 1.0 - minf(attr(&"intelligence") * attr_cfg.int_cdr_pct, attr_cfg.int_cdr_cap)
+	return 1.0 - minf(attr(&"intelligence") * attr_cfg.int_cdr_pct + gear(&"cdr_pct"), attr_cfg.int_cdr_cap)
 
 func total_max_health() -> float:
-	return max_health + (level - 1) * LEVEL_HP + attr(&"vitality") * attr_cfg.vit_hp
+	return max_health + (level - 1) * LEVEL_HP + attr(&"vitality") * attr_cfg.vit_hp + gear(&"max_hp")
+
+## Armadura total: base + equipamento + Grito de Guerra.
+func total_armor() -> float:
+	return armor + gear(&"armor") + _armor_buff
 
 func carry_capacity() -> int:
 	return ResourceManager.HERO_CAPACITY + attr(&"strength") * attr_cfg.str_carry
@@ -194,9 +290,10 @@ func _recalc_stats(keep_ratio: bool) -> void:
 		health.current = clampf(health.current + maxf(0.0, health.max_health - old_max), 1.0, health.max_health)
 	else:
 		health.current = minf(health.current, health.max_health)
-	health.regen_per_second = health_regen + attr(&"vitality") * attr_cfg.vit_regen
+	health.regen_per_second = health_regen + attr(&"vitality") * attr_cfg.vit_regen + gear(&"health_regen")
+	health.armor = total_armor()
 	health.changed.emit(health.current, health.max_health)
-	max_energy = 100.0 + attr(&"intelligence") * attr_cfg.int_energy
+	max_energy = 100.0 + attr(&"intelligence") * attr_cfg.int_energy + gear(&"energy")
 	energy_regen = 6.0 + attr(&"intelligence") * attr_cfg.int_energy_regen
 	energy = minf(energy, max_energy)
 	ResourceManager.hero_inventory.capacity = carry_capacity()
@@ -272,7 +369,7 @@ func _physics_process(delta: float) -> void:
 		else:
 			var to := _target_enemy.global_position - global_position
 			to.y = 0.0
-			if to.length() <= attack_range * 0.9:
+			if to.length() <= reach() * 0.9:
 				_aim_point = _target_enemy.global_position
 				want_attack = true
 			else:
@@ -421,11 +518,14 @@ func _apply_hit() -> void:
 		var en := e as Enemy
 		if en == null or en.is_dead():
 			continue
-		if _in_arc(en.global_position, fwd, half_arc, attack_range + en.get_radius()):
+		if _in_arc(en.global_position, fwd, half_arc, reach() + en.get_radius()):
 			var crit := _rng.randf() < crit()
 			var info := DamageInfo.make(damage() * (crit_multiplier if crit else 1.0), self, crit)
 			en.take_damage(info)
 			hit_any = true
+			var ls := gear(&"lifesteal_pct")
+			if ls > 0.0:
+				health.heal(info.amount * ls)
 			AudioManager.play_3d(&"hit", en.global_position, -2.0 if crit else -5.0, 0.85 if crit else 1.0)
 	for h: Node in get_tree().get_nodes_in_group("harvestable"):
 		var hv := h as Harvestable
@@ -503,8 +603,8 @@ func _tick_abilities(delta: float) -> void:
 	if _armor_buff_left > 0.0:
 		_armor_buff_left -= delta
 		if _armor_buff_left <= 0.0:
-			health.armor -= _armor_buff
 			_armor_buff = 0.0
+			health.armor = total_armor()
 			stats_changed.emit()
 
 func is_unlocked(i: int) -> bool:
@@ -601,7 +701,7 @@ func _cast_warcry(a: AbilityDef) -> void:
 	health.heal_over_time(health.max_health * a.power * ability_power(), 3.0)
 	if _armor_buff_left <= 0.0:
 		_armor_buff = 6.0
-		health.armor += _armor_buff
+		health.armor = total_armor()
 	_armor_buff_left = a.duration
 	EffectsHub.spawn_ring(global_position + Vector3.UP * 0.2, 3.5, Color(1.0, 0.85, 0.3), 0.6)
 	EffectsHub.spawn_heal(global_position)
@@ -657,7 +757,7 @@ func use_consumable(id: StringName) -> void:
 ## Mira automática (celular): inimigo mais próximo, depois recurso, senão para frente.
 func _auto_aim(move_dir: Vector3) -> void:
 	var best: Node3D = null
-	var best_d := attack_range + 3.0
+	var best_d := reach() + 3.0
 	for e: Node in get_tree().get_nodes_in_group("enemies"):
 		var en := e as Enemy
 		if en and not en.is_dead():
@@ -760,7 +860,7 @@ func _raycast_mouse(mask: int) -> Node:
 # --- Salvamento -----------------------------------------------------------
 
 func to_save() -> Dictionary:
-	return {"pos": [global_position.x, global_position.y, global_position.z], "hp": health.current, "weapon_level": weapon_level, "level": level, "xp": xp, "attributes": _attr_save(), "attr_points": attr_points}
+	return {"pos": [global_position.x, global_position.y, global_position.z], "hp": health.current, "weapon_level": weapon_level, "level": level, "xp": xp, "attributes": _attr_save(), "attr_points": attr_points, "gear": _gear_save()}
 
 func _attr_save() -> Dictionary:
 	var d := {}
@@ -779,6 +879,8 @@ func from_save(d: Dictionary) -> void:
 	# Saves antigos (sem atributos) recebem os pontos dos níveis já conquistados.
 	attr_points = int(d.get("attr_points", (level - 1) * attr_cfg.points_per_level if not d.has("attributes") else 0))
 	weapon_level = int(d.get("weapon_level", 0))
+	if d.has("gear"):
+		_gear_load(d["gear"])
 	_recalc_stats(false)
 	health.current = clampf(float(d.get("hp", health.max_health)), 1.0, health.max_health)
 	health.changed.emit(health.current, health.max_health)

@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="EquipmentDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/progression/equipment_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"leather"
+display_name = "Gibão de Couro"
+description = "Proteção leve que não atrapalha a corrida."
+icon_name = "eq_leather"
+slot = 1
+stats = {
+"armor": 3.0,
+"max_hp": 25.0,
+"move_speed_pct": 0.03
+}
+craft_cost = {
+&"cloth": 10,
+&"scrap": 4
+}
+min_wave = 1

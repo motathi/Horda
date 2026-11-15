@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="EquipmentDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/progression/equipment_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"sword"
+display_name = "Espada Longa"
+description = "Lâmina afiada com chance extra de golpe crítico."
+icon_name = "eq_sword"
+slot = 0
+stats = {
+"damage": 9.0,
+"crit": 0.03
+}
+craft_cost = {
+&"scrap": 14,
+&"stone": 6,
+&"wood": 6
+}
+min_wave = 2

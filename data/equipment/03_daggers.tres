@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="EquipmentDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/progression/equipment_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"daggers"
+display_name = "Adagas Gêmeas"
+description = "Golpes rapidíssimos e muito críticos, mas leves."
+icon_name = "eq_daggers"
+slot = 0
+stats = {
+"damage": 4.0,
+"attack_speed_pct": 0.25,
+"crit": 0.08
+}
+craft_cost = {
+&"scrap": 18,
+&"cloth": 4
+}
+min_wave = 4

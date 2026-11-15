@@ -104,6 +104,11 @@ static func drop_item(pos: Vector3, id: StringName, amount: int) -> void:
 	if _inst and amount > 0:
 		(_inst._pickups.acquire() as ResourcePickup).activate(pos, id, amount)
 
+## Equipamento no chão (GearPickup).
+static func drop_gear(pos: Vector3, item: GearItem) -> void:
+	if _inst and item:
+		GearPickup.spawn(_inst, pos, item)
+
 static func spawn_arrow(from: Vector3, target: Enemy, info: DamageInfo, speed: float) -> void:
 	if _inst:
 		(_inst._arrows.acquire() as Projectile).activate(from, target, info, speed)
