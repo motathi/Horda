@@ -90,7 +90,7 @@ func build_hero() -> void:
 func build_zombie(def: EnemyDef) -> void:
 	kind = Kind.ZOMBIE
 	hunch = def.hunch
-	if ResourceLoader.exists(RIGGED_DIR + String(def.id) + ".glb"):
+	if rigged_path(String(def.id)) != "":
 		_build_rigged(String(def.id), 2.0 * def.model_scale)
 		_run_threshold = 0.5 if def.behavior in [EnemyDef.Behavior.CHARGER, EnemyDef.Behavior.LEAPER] else 0.85
 		return
@@ -125,11 +125,18 @@ func build_zombie(def: EnemyDef) -> void:
 	_rest_arm_angle = deg_to_rad(75.0)
 	scale = Vector3.ONE * def.model_scale * MODEL_SCALE
 
+## Modelo riggado: .glb (Tripo) ou .scn (montado por tools/bake_kaykit.gd). "" se não houver.
+static func rigged_path(model_name: String) -> String:
+	for ext in [".glb", ".scn"]:
+		if ResourceLoader.exists(RIGGED_DIR + model_name + ext):
+			return RIGGED_DIR + model_name + ext
+	return ""
+
 func _build_rigged(model_name: String, height: float) -> void:
 	_rigged = true
 	_rig = Node3D.new()
 	add_child(_rig)
-	var inst := (load(RIGGED_DIR + model_name + ".glb") as PackedScene).instantiate() as Node3D
+	var inst := (load(rigged_path(model_name)) as PackedScene).instantiate() as Node3D
 	_rig.add_child(inst)
 	var aabb := AABB()
 	var first := true

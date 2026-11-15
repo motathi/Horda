@@ -27,6 +27,7 @@ var regions: Array[Dictionary] = []
 
 func build(world: Node3D, seed_value: int) -> void:
 	rng.seed = seed_value
+	PropFactory.style_rng.seed = seed_value + 4242
 	_splat = Image.create(SPLAT_RES, SPLAT_RES, false, Image.FORMAT_RGBA8)
 	_splat.fill(Color(0, 0, 0, 1))
 	nav_region = NavigationRegion3D.new()
@@ -48,9 +49,11 @@ func build(world: Node3D, seed_value: int) -> void:
 	_build_contaminated()
 	_scatter_wilds()
 	_build_base(world)
+	_build_scenery()
 	_define_spawns()
 	_apply_terrain_material()
 	_build_foliage(world)
+	_build_decor(world)
 
 func _make_navmesh() -> NavigationMesh:
 	var nm := NavigationMesh.new()
@@ -336,7 +339,7 @@ func _build_city() -> void:
 		if p2 != null:
 			_add_harvestable(PropFactory.make_tree(rng, rng.randf() < 0.5), p2)
 	regions.append({"name": "Cidade Abandonada", "center": Vector3(c.x, 0, c.y), "radius": 38.0, "max": 12,
-		"enemies": [_enemy("zombie"), _enemy("zombie_fast")], "weights": [0.7, 0.3], "hp_mult": 1.0})
+		"enemies": [_enemy("zombie"), _enemy("zombie_fast"), _enemy("skeleton_minion")], "weights": [0.6, 0.25, 0.15], "hp_mult": 1.0})
 
 func _build_farm() -> void:
 	var c := Vector2(-35, 78)
@@ -391,7 +394,8 @@ func _build_contaminated() -> void:
 		if p3 != null:
 			_add_harvestable(PropFactory.make_rock(rng, true), p3)
 	regions.append({"name": "Área Contaminada", "center": Vector3(c.x, 0, c.y), "radius": 26.0, "max": 9,
-		"enemies": [_enemy("zombie"), _enemy("zombie_fast"), _enemy("zombie_brute"), _enemy("zombie_exploder"), _enemy("zombie_spitter")], "weights": [0.32, 0.28, 0.2, 0.1, 0.1], "hp_mult": 1.25})
+		"enemies": [_enemy("zombie"), _enemy("zombie_fast"), _enemy("zombie_brute"), _enemy("zombie_exploder"), _enemy("zombie_spitter"), _enemy("skeleton_minion"), _enemy("skeleton_warrior"), _enemy("skeleton_mage")],
+		"weights": [0.24, 0.2, 0.14, 0.08, 0.08, 0.14, 0.06, 0.06], "hp_mult": 1.25})
 
 func _scatter_wilds() -> void:
 	# Árvores e pedras esparsas nas áreas de transição.
@@ -512,3 +516,168 @@ func _define_spawns() -> void:
 
 func _enemy(id: String) -> EnemyDef:
 	return load("res://data/enemies/%s.tres" % id) as EnemyDef
+
+# --- Cenário de terceiros (CC0) ------------------------------------------------------
+
+var _srng := RandomNumberGenerator.new()
+
+## Objeto sólido (com colisão) do pacote, reservando a área no mapa.
+func _place_solid(pack: String, model: String, p: Vector3, height: float, rot_y: float, radius: float, parent: Node3D = null) -> void:
+	if not ThirdParty.has(pack, model):
+		return
+	var b := ThirdParty.solid(pack, model, height)
+	b.position = p
+	b.rotation.y = rot_y
+	(parent if parent else nav_region).add_child(b)
+	_reserve(p, radius)
+
+func _try_place_s(center: Vector2, half: Vector2, radius: float, road_margin: float = 2.0) -> Variant:
+	for i in 14:
+		var p := Vector3(center.x + _srng.randf_range(-half.x, half.x), 0, center.y + _srng.randf_range(-half.y, half.y))
+		if _free_at(p, radius) and not _near_road(p, road_margin + radius):
+			return p
+	return null
+
+func _build_scenery() -> void:
+	_srng.seed = rng.seed + 777
+	_build_cemetery()
+	_build_base_props()
+	# Cidade: barracas, carroças, barris e cercas de ferro.
+	var city := Vector2(80, 12)
+	for i in 5:
+		var p: Variant = _try_place_s(city, Vector2(30, 42), 2.2, 1.0)
+		if p != null:
+			_place_solid(ThirdParty.PROPS, "Stall_Cart_Empty" if i % 2 == 0 else "Stall_Empty", p, 2.6, _srng.randf() * TAU, 2.2)
+	for i in 3:
+		var p2: Variant = _try_place_s(city, Vector2(30, 42), 2.4, 1.0)
+		if p2 != null:
+			_place_solid(ThirdParty.VILLAGE, "Prop_Wagon", p2, 2.0, _srng.randf() * TAU, 2.4)
+	for i in 12:
+		var p3: Variant = _try_place_s(city, Vector2(30, 42), 0.8, 1.0)
+		if p3 != null:
+			var m: String = ["Barrel", "Barrel_Apples", "Crate_Wooden", "Crate_Metal"][_srng.randi() % 4]
+			_place_solid(ThirdParty.PROPS, m, p3, _srng.randf_range(0.9, 1.2), _srng.randf() * TAU, 0.8)
+	for i in 6:
+		var p4: Variant = _try_place_s(city, Vector2(30, 42), 1.6, 1.5)
+		if p4 != null:
+			_place_solid(ThirdParty.VILLAGE, "Prop_MetalFence_Ornament", p4, 1.6, _srng.randf() * PI, 1.6)
+	# Fazenda: caixotes de maçã, barris, carroça e cercas de madeira.
+	var farm := Vector2(-35, 78)
+	for i in 8:
+		var fp: Variant = _try_place_s(farm, Vector2(35, 30), 0.8)
+		if fp != null:
+			var fm: String = ["FarmCrate_Apple", "Barrel_Apples", "Barrel", "Bucket_Wooden_1"][_srng.randi() % 4]
+			_place_solid(ThirdParty.PROPS, fm, fp, 0.9 if fm != "Bucket_Wooden_1" else 0.5, _srng.randf() * TAU, 0.8)
+	for i in 8:
+		var wp: Variant = _try_place_s(farm, Vector2(38, 32), 1.4)
+		if wp != null:
+			_place_solid(ThirdParty.VILLAGE, "Prop_WoodenFence_Single", wp, 1.3, _srng.randf() * PI, 1.4)
+	var wg: Variant = _try_place_s(farm, Vector2(30, 26), 2.4)
+	if wg != null:
+		_place_solid(ThirdParty.VILLAGE, "Prop_Wagon", wg, 2.0, _srng.randf() * TAU, 2.4)
+
+## Cemitério na Área Contaminada: cripta, portal, cercas, lápides, caixões, ossos e lanternas.
+func _build_cemetery() -> void:
+	var c := Vector2(88, -88)
+	var yard := Vector3(c.x - 6, 0, c.y + 4)
+	_place_solid(ThirdParty.HALLOWEEN, "crypt", yard + Vector3(0, 0, -7), 4.8, 0.0, 4.0)
+	_place_solid(ThirdParty.HALLOWEEN, "arch_gate", yard + Vector3(0, 0, 8.5), 3.6, 0.0, 2.0)
+	# Cerca ao redor do pátio (com a entrada pelo portal).
+	for i in 12:
+		var ang := i * TAU / 12.0
+		var fp := yard + Vector3(sin(ang) * 9.5, 0, cos(ang) * 9.5)
+		if absf(fp.x - yard.x) < 2.5 and fp.z > yard.z:
+			continue
+		_place_solid(ThirdParty.HALLOWEEN, "fence_broken" if _srng.randf() < 0.3 else "fence", fp, 1.4, ang + PI * 0.5, 1.2)
+	# Fileiras de túmulos.
+	var graves := ["grave_A", "grave_B", "gravestone", "gravemarker_A", "gravemarker_B"]
+	for row in 3:
+		for col in 5:
+			var gp := yard + Vector3(-6 + col * 3.0 + _srng.randf_range(-0.4, 0.4), 0, -2 + row * 3.2 + _srng.randf_range(-0.3, 0.3))
+			if _free_at(gp, 0.5):
+				var g: String = graves[_srng.randi() % graves.size()]
+				_place_solid(ThirdParty.HALLOWEEN, g, gp, _srng.randf_range(0.9, 1.3), _srng.randf_range(-0.2, 0.2), 0.7)
+	for i in 3:
+		var cp: Variant = _try_place_s(c, Vector2(24, 24), 1.2)
+		if cp != null:
+			_place_solid(ThirdParty.HALLOWEEN, "coffin", cp, 0.7, _srng.randf() * TAU, 1.2)
+	for i in 4:
+		var lp: Variant = _try_place_s(c, Vector2(22, 22), 0.6)
+		if lp != null:
+			_place_solid(ThirdParty.HALLOWEEN, "lantern_standing" if i % 2 == 0 else "post_skull", lp, 1.8, _srng.randf() * TAU, 0.6)
+	for i in 2:
+		var sp: Variant = _try_place_s(c, Vector2(22, 22), 1.0)
+		if sp != null:
+			_place_solid(ThirdParty.HALLOWEEN, "shrine_candles", sp, 1.6, _srng.randf() * TAU, 1.0)
+
+## Oficina e estandartes dentro da base (perto da paliçada, longe dos portões).
+func _build_base_props() -> void:
+	var r := BASE_RADIUS - 3.2
+	var forge_ang := 2.0
+	var fc := Vector3(sin(forge_ang) * r, 0, -cos(forge_ang) * r)
+	_place_solid(ThirdParty.PROPS, "Anvil", fc, 0.9, forge_ang, 0.7)
+	_place_solid(ThirdParty.PROPS, "Workbench", fc + Vector3(1.8, 0, -1.2).rotated(Vector3.UP, -forge_ang), 1.1, forge_ang, 1.0)
+	_place_solid(ThirdParty.PROPS, "WeaponStand", fc + Vector3(-1.8, 0, -0.6).rotated(Vector3.UP, -forge_ang), 1.6, forge_ang, 0.8)
+	var dummy_ang := 4.3
+	_place_solid(ThirdParty.PROPS, "Dummy", Vector3(sin(dummy_ang) * r, 0, -cos(dummy_ang) * r), 1.8, dummy_ang, 0.6)
+	for ang: float in [0.9, 1.25, 3.9, 5.15]:
+		var cp := Vector3(sin(ang) * r, 0, -cos(ang) * r)
+		var m: String = ["Barrel", "Crate_Wooden", "Barrel_Apples", "Chest_Wood"][int(ang * 10) % 4]
+		_place_solid(ThirdParty.PROPS, m, cp, 1.0, ang, 0.7)
+	# Estandartes nos dois lados de cada portão.
+	for base_ang: float in [0.0, PI]:
+		for off: float in [-0.32, 0.32]:
+			var ang := base_ang + off
+			if ThirdParty.has(ThirdParty.PROPS, "Banner_1"):
+				var bn := ThirdParty.instance(ThirdParty.PROPS, "Banner_1", 3.4)
+				bn.position = Vector3(sin(ang) * (BASE_RADIUS - 1.6), 0, -cos(ang) * (BASE_RADIUS - 1.6))
+				bn.rotation.y = -ang + PI
+				structures_root.add_child(bn)
+
+## Vegetação e detalhes sem colisão (MultiMesh por região, para o recorte por câmera funcionar).
+func _build_decor(world: Node3D) -> void:
+	var drng := RandomNumberGenerator.new()
+	drng.seed = rng.seed + 911
+	var k := 0.55 if Platform.low_end else 1.0
+	var N := ThirdParty.NATURE
+	var H := ThirdParty.HALLOWEEN
+	var pebbles := [[N, "Pebble_Round_1", 0.15, 0.35], [N, "Pebble_Round_2", 0.15, 0.35], [N, "Pebble_Round_3", 0.15, 0.3]]
+	var plan := {
+		"Floresta": [Vector2(-25, -78), Vector2(85, 38), [
+			[N, "Bush_Common_Flowers", 90, 0.9, 1.4], [N, "Fern_1", 110, 0.6, 1.0],
+			[N, "Mushroom_Common", 40, 0.25, 0.5], [N, "Mushroom_Laetiporus", 15, 0.3, 0.5], [N, "Plant_1_Big", 40, 0.8, 1.3],
+			[N, "Clover_1", 60, 0.15, 0.3], [N, "Flower_3_Group", 30, 0.4, 0.7],
+			[N, "Grass_Wispy_Tall", 60, 0.5, 0.9], [N, "Rock_Medium_1", 12, 0.6, 1.3], [N, "Rock_Medium_2", 10, 0.6, 1.3]]],
+		"Campos": [Vector2.ZERO, Vector2(112, 112), [
+			[N, "Bush_Common_Flowers", 60, 0.9, 1.3], [N, "Flower_4_Group", 70, 0.4, 0.7], [N, "Flower_3_Group", 50, 0.4, 0.7],
+			[N, "Fern_1", 40, 0.6, 1.0], [N, "Grass_Common_Tall", 80, 0.5, 0.9], [N, "Rock_Medium_3", 20, 0.6, 1.2]]],
+		"Fazenda": [Vector2(-35, 78), Vector2(40, 34), [
+			[N, "Flower_4_Group", 40, 0.4, 0.7], [N, "Flower_3_Group", 20, 0.4, 0.7], [N, "Bush_Common_Flowers", 20, 0.9, 1.3]]],
+		"Cidade": [Vector2(80, 12), Vector2(30, 42), [[N, "Bush_Common_Flowers", 12, 0.8, 1.2], [N, "Grass_Common_Tall", 30, 0.5, 0.8]]],
+		"Contaminada": [Vector2(88, -88), Vector2(26, 26), [
+			[H, "ribcage", 10, 0.5, 0.7], [H, "skull", 18, 0.25, 0.32], [H, "bone_A", 25, 0.1, 0.16],
+			[N, "Mushroom_Laetiporus", 15, 0.3, 0.5], [H, "tree_dead_medium", 6, 3.0, 4.0], [H, "tree_dead_large", 4, 4.0, 5.5]]],
+		"Pedreira": [Vector2(-85, 15), Vector2(28, 32), [[N, "Rock_Medium_1", 15, 0.6, 1.4], [N, "Rock_Medium_2", 12, 0.6, 1.4]]],
+	}
+	for region: String in plan:
+		var spec: Array = plan[region]
+		var center: Vector2 = spec[0]
+		var half: Vector2 = spec[1]
+		var items: Array = (spec[2] as Array).duplicate()
+		for pb: Array in pebbles:
+			items.append([pb[0], pb[1], 20, pb[2], pb[3]])
+		var sc := DecorScatter.new()
+		sc.name = "Decor_" + region
+		world.add_child(sc)
+		for it: Array in items:
+			var n := int(int(it[2]) * k)
+			var placed := 0
+			var tries := 0
+			while placed < n and tries < n * 4:
+				tries += 1
+				var p := Vector3(center.x + drng.randf_range(-half.x, half.x), 0, center.y + drng.randf_range(-half.y, half.y))
+				if p.length() < BASE_RADIUS + 5.0 or not _free_at(p, 0.5) or _near_road(p, 2.2):
+					continue
+				sc.add(it[0], it[1], p, drng.randf_range(it[3], it[4]), drng.randf() * TAU)
+				placed += 1
+		sc.commit(not Platform.low_end)

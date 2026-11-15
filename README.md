@@ -72,6 +72,21 @@ automaticamente ao entrar. Ao entardecer soa o aviso; à noite a horda vem pelas
 quebra a paliçada e tenta destruir o **Núcleo**. Sobreviva até o amanhecer: o sol queima os zumbis restantes.
 Se o herói cair, renasce na base (e a mochila fica no chão onde morreu). Se o Núcleo cair, fim de jogo.
 
+## Assets de terceiros (CC0)
+
+Além da arte gerada por IA, o mapa usa pacotes **CC0** baixados do itch.io (créditos em
+[assets/third_party/CREDITS.md](assets/third_party/CREDITS.md)): vegetação, pedras e árvores do
+*Stylized Nature MegaKit* (Quaternius), cemitério do *Halloween Bits* (Kay Lousberg), objetos de cenário
+do *Fantasy Props* e *Medieval Village MegaKit* (Quaternius) e os **esqueletos** animados do *KayKit
+Skeletons* + *Character Animations* (Kay Lousberg), que entram na horda: *Esqueleto* (horda 2),
+*Ladino* (5), *Guerreiro* (8) e *Mago* (12, ataca de longe). Para baixar de novo:
+
+```bash
+python3 tools/itch_fetch.py /tmp/itch quaternius/stylized-nature-megakit kaylousberg/kaykit-skeletons ...
+python3 tools/import_third_party.py /tmp/itch/extraido      # copia só os modelos usados
+godot --headless --script res://tools/bake_kaykit.gd         # monta os esqueletos com armas e animações
+```
+
 ## Testes
 
 ```bash

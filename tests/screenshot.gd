@@ -88,7 +88,8 @@ func _ready() -> void:
 	await _shot("13_character")
 	world.hud.character.visible = false
 	hero.health.invulnerable = true
-	var offs := {"zombie_exploder": Vector3(-3.5, 0, 2.5), "zombie_spitter": Vector3(0, 0, 7.5), "zombie_leaper": Vector3(4.5, 0, 3.0)}
+	var offs := {"zombie_exploder": Vector3(-3.5, 0, 2.5), "zombie_spitter": Vector3(0, 0, 7.5), "zombie_leaper": Vector3(4.5, 0, 3.0),
+		"skeleton_minion": Vector3(-5.5, 0, -1.0), "skeleton_warrior": Vector3(5.5, 0, -1.5), "skeleton_rogue": Vector3(-2.0, 0, 5.0), "skeleton_mage": Vector3(3.0, 0, 6.0)}
 	for id: String in offs:
 		var z := (load("res://scenes/enemies/zombie.tscn") as PackedScene).instantiate() as Enemy
 		z.def = load("res://data/enemies/%s.tres" % id) as EnemyDef
@@ -113,6 +114,12 @@ func _ready() -> void:
 	await _frames(6)
 	await _shot("16_menu_construir")
 	world.hud.build_panel.visible = false
+	hero.global_position = Vector3(82, 0, -82)
+	await _frames(40)
+	await _shot("17_cemiterio")
+	hero.global_position = Vector3(-30, 0, -66)
+	await _frames(40)
+	await _shot("18_floresta")
 	for b in placed:
 		b.queue_free()
 	# Cidade

@@ -58,6 +58,30 @@ func _test_world() -> void:
 	var nm := b.nav_region.navigation_mesh
 	check(nm.get_polygon_count() > 100, "malha de navegação assada (%d polígonos)" % nm.get_polygon_count())
 	check(BaseZone.hero_inside, "herói começa dentro da base")
+	# Cenário de terceiros (CC0): vegetação em MultiMesh, cemitério e árvores variadas.
+	var decor := 0
+	for n in world.get_children():
+		if n is DecorScatter:
+			decor += (n as DecorScatter).count()
+	check(decor > 600, "vegetação decorativa espalhada (%d peças)" % decor)
+	var crypt := false
+	var tp_trees := 0
+	for n in b.nav_region.get_children():
+		if n is StaticBody3D and n.get_child_count() > 0 and String(n.get_child(0).scene_file_path).ends_with("crypt.gltf"):
+			crypt = true
+		if n is Harvestable:
+			for x: Node in n.find_children("*", "Node3D", true, false):
+				if x.scene_file_path.contains("third_party"):
+					tp_trees += 1
+					break
+	check(crypt, "cemitério com cripta na Área Contaminada")
+	check(tp_trees > 40, "árvores variadas do pacote de natureza (%d)" % tp_trees)
+	# Esqueletos (KayKit) com animações.
+	for id in ["skeleton_minion", "skeleton_rogue", "skeleton_warrior", "skeleton_mage"]:
+		var sk := _spawn_def(id, Vector3(30, 0, 30))
+		await get_tree().process_frame
+		check(sk.model._rigged and sk.model._anim_names.has("slash") and sk.model._anim_names.has("hurt"), "%s animado (%s)" % [id, ", ".join(sk.model._anim_names.keys())])
+		sk.queue_free()
 	var c := TimeManager.config
 	check(TimeManager.day == 1 and absf(c.dawn_duration + c.day_duration + c.dusk_duration - 120.0) < 0.01, "começa na horda 1 com 2 minutos de preparação")
 	check(world.objectives.objectives.size() == 3, "3 objetivos do dia gerados")

@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="HordeConfig" load_steps=14 format=3]
+[gd_resource type="Resource" script_class="HordeConfig" load_steps=22 format=3]
 
 [ext_resource type="Script" path="res://scripts/hordes/horde_config.gd" id="1"]
 [ext_resource type="Script" path="res://scripts/hordes/horde_spawn_entry.gd" id="2"]
@@ -8,6 +8,10 @@
 [ext_resource type="Resource" path="res://data/enemies/zombie_exploder.tres" id="6"]
 [ext_resource type="Resource" path="res://data/enemies/zombie_spitter.tres" id="7"]
 [ext_resource type="Resource" path="res://data/enemies/zombie_leaper.tres" id="8"]
+[ext_resource type="Resource" path="res://data/enemies/skeleton_minion.tres" id="9"]
+[ext_resource type="Resource" path="res://data/enemies/skeleton_rogue.tres" id="10"]
+[ext_resource type="Resource" path="res://data/enemies/skeleton_warrior.tres" id="11"]
+[ext_resource type="Resource" path="res://data/enemies/skeleton_mage.tres" id="12"]
 
 [sub_resource type="Resource" id="Entry_zombie"]
 script = ExtResource("2")
@@ -63,9 +67,45 @@ weight_growth = 0.05
 max_per_night = 0
 guaranteed = 2
 
+[sub_resource type="Resource" id="Entry_skel_minion"]
+script = ExtResource("2")
+enemy = ExtResource("9")
+unlock_night = 2
+weight = 1.8
+weight_growth = 0.08
+max_per_night = 0
+guaranteed = 3
+
+[sub_resource type="Resource" id="Entry_skel_rogue"]
+script = ExtResource("2")
+enemy = ExtResource("10")
+unlock_night = 5
+weight = 0.9
+weight_growth = 0.05
+max_per_night = 0
+guaranteed = 2
+
+[sub_resource type="Resource" id="Entry_skel_warrior"]
+script = ExtResource("2")
+enemy = ExtResource("11")
+unlock_night = 8
+weight = 0.5
+weight_growth = 0.04
+max_per_night = 0
+guaranteed = 1
+
+[sub_resource type="Resource" id="Entry_skel_mage"]
+script = ExtResource("2")
+enemy = ExtResource("12")
+unlock_night = 12
+weight = 0.45
+weight_growth = 0.04
+max_per_night = 0
+guaranteed = 2
+
 [resource]
 script = ExtResource("1")
-entries = Array[ExtResource("2")]([SubResource("Entry_zombie"), SubResource("Entry_fast"), SubResource("Entry_brute"), SubResource("Entry_exploder"), SubResource("Entry_spitter"), SubResource("Entry_leaper")])
+entries = Array[ExtResource("2")]([SubResource("Entry_zombie"), SubResource("Entry_fast"), SubResource("Entry_brute"), SubResource("Entry_exploder"), SubResource("Entry_spitter"), SubResource("Entry_leaper"), SubResource("Entry_skel_minion"), SubResource("Entry_skel_rogue"), SubResource("Entry_skel_warrior"), SubResource("Entry_skel_mage")])
 base_count = 6.0
 count_linear = 2.6
 count_quadratic = 0.012

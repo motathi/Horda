@@ -28,6 +28,27 @@ static func _collision(body: CollisionObject3D, shape: Shape3D, pos: Vector3 = V
 
 # --- Árvores -------------------------------------------------------------------
 
+## Escolhe o modelo das árvores sem consumir o gerador principal do mapa
+## (assim a geração continua igual e os saves seguem válidos).
+static var style_rng := RandomNumberGenerator.new()
+
+static func _third_party_tree(dead: bool) -> Node3D:
+	var r := style_rng.randf()
+	var t: Node3D = null
+	if dead:
+		var names := ThirdParty.DEAD_TREES
+		var m: String = names[style_rng.randi() % names.size()]
+		if ThirdParty.has(ThirdParty.NATURE, m):
+			t = ThirdParty.instance(ThirdParty.NATURE, m, style_rng.randf_range(4.5, 6.5))
+	elif r < 0.55:
+		var pool := ThirdParty.TREES if r < 0.3 else ThirdParty.PINES
+		var m2: String = pool[style_rng.randi() % pool.size()]
+		if ThirdParty.has(ThirdParty.NATURE, m2):
+			t = ThirdParty.instance(ThirdParty.NATURE, m2, style_rng.randf_range(5.5, 8.5))
+	if t:
+		t.rotation.y = style_rng.randf() * TAU
+	return t
+
 static func make_tree(rng: RandomNumberGenerator, dead: bool = false) -> Harvestable:
 	var h := Harvestable.new()
 	h.kind = Harvestable.Kind.TREE
@@ -40,6 +61,11 @@ static func make_tree(rng: RandomNumberGenerator, dead: bool = false) -> Harvest
 	sh.height = 4.0
 	_collision(h, sh, Vector3(0, 2, 0))
 	var v := Node3D.new()
+	var tp := _third_party_tree(dead)
+	if tp:
+		v.add_child(tp)
+		h.setup_visual(v)
+		return h
 	if not dead and ModelLibrary.has("tree"):
 		var g := rng.randf_range(0.85, 1.1)
 		var t := ModelLibrary.instance_height("tree", rng.randf_range(5.5, 8.5), Color(g * rng.randf_range(0.9, 1.05), g, g * rng.randf_range(0.85, 1.0)))

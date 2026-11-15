@@ -214,5 +214,29 @@
   "out": "assets/enemies/portrait_zombie_leaper.jpg",
   "size": "2048x2048",
   "prompt": "Square character portrait for a strategy game HUD, head and shoulders, three-quarter view, dramatic rim lighting, dark background, no text, a wiry pale bluish leaper zombie with long claws, exposed ribs, bandages, cyan glowing eyes, crouched ready to pounce, in the art style of Dota 2 and Warcraft III, hand-painted, painterly stylized fantasy, rich saturated colors, high detail"
+ },
+ {
+  "name": "portrait_skeleton_minion",
+  "out": "assets/enemies/portrait_skeleton_minion.jpg",
+  "size": "2048x2048",
+  "prompt": "Square character portrait for a strategy game HUD, head and shoulders, three-quarter view, dramatic rim lighting, dark background, no text, a grinning undead skeleton warrior with a rusty short blade, glowing blue eye sockets, tattered cloth, in the art style of Dota 2 and Warcraft III, hand-painted, painterly stylized fantasy, rich saturated colors, high detail"
+ },
+ {
+  "name": "portrait_skeleton_rogue",
+  "out": "assets/enemies/portrait_skeleton_rogue.jpg",
+  "size": "2048x2048",
+  "prompt": "Square character portrait for a strategy game HUD, head and shoulders, three-quarter view, dramatic rim lighting, dark background, no text, a hooded undead skeleton rogue holding two curved daggers, glowing blue eye sockets, dark red hood, in the art style of Dota 2 and Warcraft III, hand-painted, painterly stylized fantasy, rich saturated colors, high detail"
+ },
+ {
+  "name": "portrait_skeleton_warrior",
+  "out": "assets/enemies/portrait_skeleton_warrior.jpg",
+  "size": "2048x2048",
+  "prompt": "Square character portrait for a strategy game HUD, head and shoulders, three-quarter view, dramatic rim lighting, dark background, no text, an armored undead skeleton warrior with a horned iron helmet, battle axe and round shield, glowing blue eye sockets, in the art style of Dota 2 and Warcraft III, hand-painted, painterly stylized fantasy, rich saturated colors, high detail"
+ },
+ {
+  "name": "portrait_skeleton_mage",
+  "out": "assets/enemies/portrait_skeleton_mage.jpg",
+  "size": "2048x2048",
+  "prompt": "Square character portrait for a strategy game HUD, head and shoulders, three-quarter view, dramatic rim lighting, dark background, no text, an undead skeleton necromancer mage with a pointed purple hat and a bone staff glowing with purple magic, glowing eye sockets, in the art style of Dota 2 and Warcraft III, hand-painted, painterly stylized fantasy, rich saturated colors, high detail"
  }
 ]

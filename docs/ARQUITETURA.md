@@ -91,6 +91,17 @@ em área contra aliados, estruturas e — se abatido — outros zumbis, com cré
 (estreia nas hordas 4, 7 e 9, anunciada pelo `HordeDirector`) e na Área Contaminada durante o dia.
 Modelos riggados gerados pelo `tools/tripo_pipeline.py`.
 
+## Cenário de terceiros (CC0)
+
+`ThirdParty` (`scripts/world/third_party.gd`) carrega os modelos de `assets/third_party/` (escala por altura,
+sombra, `solid()` com colisão em caixa na camada `WORLD`, que entra na malha de navegação).
+`DecorScatter` desenha a vegetação sem colisão com um `MultiMeshInstance3D` por modelo e por região
+(recorte por câmera; 55% da quantidade em aparelhos fracos). O `WorldBuilder` usa geradores aleatórios
+próprios para o cenário (`_srng`, `PropFactory.style_rng`), então a sequência principal do mapa e os IDs
+de coletáveis/saqueáveis dos saves não mudam. Os esqueletos KayKit são montados por
+`tools/bake_kaykit.gd` em `assets/models/rigged/*.scn` (personagem + armas em `BoneAttachment3D` +
+animações renomeadas para idle/walk/run/slash/hurt), carregados por `CharacterModel.rigged_path()`.
+
 ## Roteiro
 
 - **Fase 2 — RPG (em andamento)**: níveis/XP e **habilidades prontas** — `AbilityDef`

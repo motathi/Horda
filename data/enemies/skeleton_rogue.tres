@@ -1,0 +1,43 @@
+[gd_resource type="Resource" script_class="EnemyDef" load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_def.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/enemies/portrait_skeleton_rogue.jpg" id="2"]
+[ext_resource type="Script" path="res://scripts/enemies/loot_entry.gd" id="3"]
+[ext_resource type="Script" path="res://scripts/enemies/loot_table.gd" id="4"]
+
+[sub_resource type="Resource" id="LootEntry_0"]
+script = ExtResource("3")
+item_id = &"scrap"
+min_amount = 1
+max_amount = 2
+chance = 0.45
+
+[sub_resource type="Resource" id="LootEntry_1"]
+script = ExtResource("3")
+item_id = &"cloth"
+min_amount = 1
+max_amount = 1
+chance = 0.3
+
+[sub_resource type="Resource" id="LootTable_main"]
+script = ExtResource("4")
+entries = Array[ExtResource("3")]([SubResource("LootEntry_0"), SubResource("LootEntry_1")])
+
+[resource]
+script = ExtResource("1")
+id = &"skeleton_rogue"
+display_name = "Esqueleto Ladino"
+description = "Corre com duas lâminas e ataca rápido. Some na escuridão."
+portrait = ExtResource("2")
+behavior = 1
+max_health = 42.0
+armor = 0.0
+damage = 8.0
+attack_range = 1.5
+attack_cooldown = 0.8
+move_speed = 6.0
+aggro_range = 16.0
+structure_damage_mult = 0.6
+xp_reward = 14
+model_scale = 0.95
+loot = SubResource("LootTable_main")
