@@ -29,6 +29,17 @@ const MAP := {
 func _init() -> void:
 	var lib_src := (load(ANIMS) as PackedScene).instantiate()
 	var src_ap := lib_src.find_children("*", "AnimationPlayer", true, false)[0] as AnimationPlayer
+	# Biblioteca de animações compartilhada por todos os sobreviventes.
+	var shared := AnimationLibrary.new()
+	for key: String in MAP:
+		if not src_ap.has_animation(MAP[key]):
+			push_warning("animação ausente: " + MAP[key])
+			continue
+		var a0 := src_ap.get_animation(MAP[key]).duplicate(true) as Animation
+		a0.loop_mode = Animation.LOOP_NONE if key in ["hurt", "slash", "interact"] else Animation.LOOP_LINEAR
+		shared.add_animation(key, a0)
+	ResourceSaver.save(shared, OUT + "npc_anims.res")
+	shared = load(OUT + "npc_anims.res") as AnimationLibrary
 	for id: String in JOBS:
 		var job: Array = JOBS[id]
 		var root := Node3D.new()
@@ -53,15 +64,7 @@ func _init() -> void:
 		var ap := AnimationPlayer.new()
 		ap.name = "AnimationPlayer"
 		body.add_child(ap)
-		var lib := AnimationLibrary.new()
-		for key: String in MAP:
-			if not src_ap.has_animation(MAP[key]):
-				push_warning("animação ausente: " + MAP[key])
-				continue
-			var a := src_ap.get_animation(MAP[key]).duplicate(true) as Animation
-			a.loop_mode = Animation.LOOP_NONE if key in ["hurt", "slash", "interact"] else Animation.LOOP_LINEAR
-			lib.add_animation(key, a)
-		ap.add_animation_library("", lib)
+		ap.add_animation_library("", shared)
 		_own(root, root)
 		var ps := PackedScene.new()
 		ps.pack(root)

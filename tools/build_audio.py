@@ -111,7 +111,7 @@ def main(base):
         os.makedirs(od, exist_ok=True)
         for mid, (pat, st, du) in table.items():
             src = find(base, pat)[0]
-            args = ["-ss", str(st)] + (["-t", str(du)] if du else []) + ["-i", src, "-af", f"loudnorm=I={lufs}:TP=-1.5", "-ac", "2", "-ar", "44100", "-c:a", "libvorbis", "-q:a", "2" if folder == "music" else "1", os.path.join(od, mid + ".ogg")]
+            args = ["-ss", str(st)] + (["-t", str(du)] if du else []) + ["-i", src, "-af", f"loudnorm=I={lufs}:TP=-1.5", "-ac", "2", "-ar", "44100", "-c:a", "libvorbis", "-q:a", "0", os.path.join(od, mid + ".ogg")]
             ff(args)
             print(f"{folder}/{mid}.ogg <- {os.path.relpath(src, base)}", flush=True)
     # Créditos (autor e página de cada pacote usado).

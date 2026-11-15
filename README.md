@@ -19,6 +19,13 @@ Retrato do herói = inventário • **+** nos recursos = menu da base • painel
 
 Cada push no GitHub recompila automaticamente no Vercel (`tools/vercel_build.sh`, ~1 min).
 
+Download da versão web: ~51 MB de dados (`index.pck`) + ~34 MB do motor (`index.wasm`, servido comprimido).
+Para manter leve: texturas importadas como WebP com perda (`compress/mode=1`, qualidade 0.8; texturas
+dos modelos riggados limitadas a 1024 px), animações compartilhadas entre personagens
+(`kaykit_base_anims.res`, `npc_anims.res`), música em Vorbis q0 e os modelos-fonte usados só pelas
+ferramentas de montagem (`tools/bake_*.gd`) fora do export (`exclude_filter` em `export_presets.cfg`).
+Ao adicionar texturas novas, use o mesmo modo de compressão no `.import`.
+
 ## Como jogar (PC)
 
 1. Abra a pasta no Godot 4.3 (ou mais novo) e pressione **F5**.

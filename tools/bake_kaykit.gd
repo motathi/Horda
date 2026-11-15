@@ -32,6 +32,14 @@ func _init() -> void:
 		for a in ap.get_animation_list():
 			src[String(a)] = ap.get_animation(a)
 		n.free()
+	# Animações comuns num arquivo só (referenciado por todos os personagens).
+	var base := AnimationLibrary.new()
+	for key: String in MAP:
+		var a0 := (src[MAP[key]] as Animation).duplicate(true) as Animation
+		a0.loop_mode = Animation.LOOP_LINEAR if key in ["idle", "walk", "run"] else Animation.LOOP_NONE
+		base.add_animation(key, a0)
+	ResourceSaver.save(base, OUT + "kaykit_base_anims.res")
+	base = load(OUT + "kaykit_base_anims.res") as AnimationLibrary
 	for id: String in JOBS:
 		var job: Array = JOBS[id]
 		var root := Node3D.new()
@@ -57,13 +65,11 @@ func _init() -> void:
 		ap.name = "AnimationPlayer"
 		ch.add_child(ap)
 		var lib := AnimationLibrary.new()
-		var wanted: Dictionary = MAP.duplicate()
-		wanted["slash"] = job[3]
-		for key: String in wanted:
-			var a := (src[wanted[key]] as Animation).duplicate(true) as Animation
-			a.loop_mode = Animation.LOOP_LINEAR if key in ["idle", "walk", "run"] else Animation.LOOP_NONE
-			lib.add_animation(key, a)
+		var a := (src[job[3]] as Animation).duplicate(true) as Animation
+		a.loop_mode = Animation.LOOP_NONE
+		lib.add_animation("slash", a)
 		ap.add_animation_library("", lib)
+		ap.add_animation_library("base", base)
 		_own(root, root)
 		extra.append(ap)
 		for e in extra:
