@@ -6,6 +6,7 @@ var _cycle: String = "normal"
 var _new_panel: Control
 var _main_panel: Control
 var _coop_panel: CoopPanel
+var _settings_panel: SettingsPanel
 
 func _ready() -> void:
 	GameManager.state = GameManager.State.MENU
@@ -59,6 +60,10 @@ func _ready() -> void:
 	layout.add_child(_main_panel)
 	_new_panel = _build_new_game()
 	layout.add_child(_new_panel)
+	_settings_panel = SettingsPanel.new()
+	_settings_panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	layout.add_child(_settings_panel)
+	_settings_panel.closed.connect(func() -> void: _main_panel.visible = true)
 	_coop_panel = CoopPanel.new()
 	_coop_panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	layout.add_child(_coop_panel)
@@ -76,7 +81,7 @@ func _ready() -> void:
 		layout.add_child(msg)
 		layout.move_child(msg, 2)
 		GameManager.menu_message = ""
-	var ver := UIStyle.label("Protótipo — Fase 1", 14, UIStyle.TEXT_DIM)
+	var ver := UIStyle.label("Horda v1.0", 14, UIStyle.TEXT_DIM)
 	ver.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
 	ver.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	ver.grow_vertical = Control.GROW_DIRECTION_BEGIN
@@ -109,6 +114,11 @@ func _build_main() -> Control:
 		_main_panel.visible = false
 		_coop_panel.visible = true)
 	col.add_child(coop)
+	var cfgb := UIStyle.button("Configurações", 22)
+	cfgb.pressed.connect(func() -> void:
+		_main_panel.visible = false
+		_settings_panel.visible = true)
+	col.add_child(cfgb)
 	if OS.has_feature("web"):
 		var fs := UIStyle.button("Tela cheia", 22)
 		fs.pressed.connect(func() -> void: Platform.toggle_fullscreen())

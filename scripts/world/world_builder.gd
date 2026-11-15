@@ -145,7 +145,7 @@ func _build_foliage(world: Node3D) -> void:
 	var f := Foliage.new()
 	f.name = "Foliage"
 	world.add_child(f)
-	f.build(MAP_HALF - 2.0, 0.38 if Platform.low_end else 0.55, _is_grass, rng.seed + 7)
+	f.build(MAP_HALF - 2.0, Settings.grass_density(), _is_grass, rng.seed + 7)
 
 func _is_grass(p: Vector3) -> bool:
 	var n := int(MAP_HALF * 2)
@@ -653,7 +653,7 @@ func _build_base_props() -> void:
 func _build_decor(world: Node3D) -> void:
 	var drng := RandomNumberGenerator.new()
 	drng.seed = rng.seed + 911
-	var k := 0.55 if Platform.low_end else 1.0
+	var k := Settings.decor_density()
 	var N := ThirdParty.NATURE
 	var H := ThirdParty.HALLOWEEN
 	var pebbles := [[N, "Pebble_Round_1", 0.15, 0.35], [N, "Pebble_Round_2", 0.15, 0.35], [N, "Pebble_Round_3", 0.15, 0.3]]
@@ -695,7 +695,7 @@ func _build_decor(world: Node3D) -> void:
 					continue
 				sc.add(it[0], it[1], p, drng.randf_range(it[3], it[4]), drng.randf() * TAU)
 				placed += 1
-		sc.commit(not Platform.low_end)
+		sc.commit(Settings.quality >= 2)
 
 ## Ruínas (KayKit Dungeon Pack, CC0): muros quebrados, colunas e escombros espalhados.
 func _ruin_cluster(c: Vector3, rot: float) -> void:

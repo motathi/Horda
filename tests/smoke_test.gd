@@ -19,6 +19,7 @@ func wait(sec: float) -> void:
 
 func _ready() -> void:
 	print("== Smoke test Fase 1 ==")
+	Settings.tutorial_done = true  # o tutorial tem teste próprio
 	GameManager.difficulty = "normal"
 	ResourceManager.reset()
 	TimeManager.setup("normal")
@@ -34,6 +35,7 @@ func _ready() -> void:
 	print("Mundo pronto em %d ms" % (Time.get_ticks_msec() - t0))
 	await _test_world()
 	await _test_audio()
+	await _test_settings_tutorial()
 	await _test_combat()
 	await _test_abilities()
 	await _test_attributes()
@@ -146,6 +148,42 @@ func _test_audio() -> void:
 	AudioManager.set_volume("Music", 0.5)
 	check(absf(AudioServer.get_bus_volume_db(AudioServer.get_bus_index("Music")) - linear_to_db(0.5)) < 0.01, "volume da música ajustável")
 	AudioManager.set_volume("Music", 0.7)
+
+func _test_settings_tutorial() -> void:
+	print("[configurações e tutorial]")
+	var q0 := Settings.quality
+	var fps0 := Settings.fps_limit
+	var sun := world.get_node(^"Sun") as DirectionalLight3D
+	Settings.set_value("quality", 0)
+	check(not sun.shadow_enabled and is_equal_approx(get_viewport().scaling_3d_scale, 0.7), "qualidade Baixa: sem sombras e resolução 3D 70%")
+	Settings.set_value("quality", 2)
+	check(sun.shadow_enabled and is_equal_approx(get_viewport().scaling_3d_scale, 1.0), "qualidade Alta: sombras e resolução cheia")
+	Settings.set_value("fps_limit", 30)
+	check(Engine.max_fps == 30, "limite de 30 FPS aplicado")
+	Settings.set_value("fps_limit", fps0)
+	Settings.set_value("quality", q0)
+	# Tutorial (primeira partida solo).
+	Settings.tutorial_done = false
+	world.hud.start_tutorial()
+	var tut := world.hud.tutorial
+	check(tut != null and tut.visible and not world.hud.objectives_panel.visible, "tutorial aparece no lugar dos objetivos")
+	check(not TimeManager.running, "relógio da preparação parado durante o tutorial")
+	var hero := world.hero
+	hero.global_position += Vector3(7, 0, 0)
+	await wait(0.1)
+	ResourceManager.give_hero(&"wood", 1)
+	EventBus.enemy_killed.emit(null, load("res://data/enemies/zombie.tres"), hero)
+	hero.global_position = Vector3(0, 0, 5)
+	await wait(0.3)
+	check(tut.step == 4, "tutorial avança: mover, coletar, derrotar zumbi, voltar à base (passo %d)" % tut.step)
+	EventBus.building_placed.emit(null)
+	hero.ability_cast.emit(0)
+	check(tut.step == 6 and TimeManager.running, "construir e usar habilidade liberam o relógio")
+	var wood0 := ResourceManager.storage.count(&"wood")
+	EventBus.horde_started.emit(1, 1)
+	EventBus.horde_ended.emit(1)
+	check(not tut.visible and Settings.tutorial_done and ResourceManager.storage.count(&"wood") == wood0 + 25 and world.hud.objectives_panel.visible, "chamar a horda conclui o tutorial com bônus")
+	TimeManager.running = true
 
 func _test_combat() -> void:
 	print("[combate]")

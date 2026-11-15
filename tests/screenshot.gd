@@ -25,9 +25,14 @@ func _ready() -> void:
 	(menu.get("_coop_panel") as Control).visible = true
 	await _frames(6)
 	await _shot("01c_coop")
+	(menu.get("_coop_panel") as Control).visible = false
+	(menu.get("_settings_panel") as Control).visible = true
+	await _frames(6)
+	await _shot("01d_config")
 	menu.queue_free()
 	# Herói escolhido pela variável de ambiente HORDA_SKIN (padrão: caçador).
 	GameManager.hero_skin = OS.get_environment("HORDA_SKIN") if OS.get_environment("HORDA_SKIN") != "" else HeroSkins.DEFAULT
+	Settings.tutorial_done = true  # o tutorial tem teste próprio
 	GameManager.difficulty = "normal"
 	ResourceManager.reset()
 	TimeManager.setup("normal")
@@ -43,6 +48,13 @@ func _ready() -> void:
 	world.camera_rig.global_position = hero.global_position
 	await _frames(60)
 	await _shot("02_base_day")
+	Settings.tutorial_done = false
+	TimeManager.day = 1
+	world.hud.start_tutorial()
+	await _frames(6)
+	await _shot("02b_tutorial")
+	world.hud.tutorial.finish(false)
+	TimeManager.running = false
 	# Construções do jogador
 	for id: StringName in [&"wood", &"stone", &"scrap"]:
 		ResourceManager.storage.add(id, 400)

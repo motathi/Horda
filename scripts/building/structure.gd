@@ -279,7 +279,7 @@ func _build_core() -> void:
 	light.light_color = Color(1.0, 0.62, 0.25)
 	light.light_energy = 3.0
 	light.omni_range = 12.0
-	light.shadow_enabled = not Platform.low_end
+	light.shadow_enabled = Settings.quality >= 2 and not Platform.low_end
 	light.position = Vector3(0, 1.6, 0)
 	_visual.add_child(light)
 	var fire := EffectsHub.make_fire_particles(1.4)

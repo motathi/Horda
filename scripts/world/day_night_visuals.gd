@@ -21,6 +21,8 @@ const NIGHT_MOON := Color(0.45, 0.55, 0.95)
 
 func _ready() -> void:
 	_sun = get_node(sun_path)
+	add_to_group(&"quality_sun")
+	apply_quality()
 	_env = (get_node(env_path) as WorldEnvironment).environment
 	_sky = _env.sky.sky_material as ProceduralSkyMaterial
 
@@ -82,3 +84,8 @@ func _process(delta: float) -> void:
 			if hero:
 				var a := randf() * TAU
 				AudioManager.play_3d(&"groan", hero.global_position + Vector3(cos(a), 0, sin(a)) * 25.0, -2.0)
+
+## Configurações: sombras ligadas só nas qualidades Média e Alta.
+func apply_quality() -> void:
+	if _sun:
+		_sun.shadow_enabled = Settings.shadows_enabled()

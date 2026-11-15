@@ -170,6 +170,9 @@ func _ready() -> void:
 	_center(_help, root)
 	_pause = _build_pause()
 	_center(_pause, root)
+	_settings = SettingsPanel.new()
+	_center(_settings, root)
+	_settings.closed.connect(func() -> void: _pause.visible = true)
 	_game_over = _build_game_over()
 	_center(_game_over, root)
 
@@ -318,7 +321,10 @@ func bind_build(m: BuildManager) -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("pause"):
-		if inventory.visible or base_panel.visible or _help.visible or build_panel.visible or character.visible:
+		if _settings and _settings.visible:
+			_settings.visible = false
+			_pause.visible = true
+		elif inventory.visible or base_panel.visible or _help.visible or build_panel.visible or character.visible:
 			character.visible = false
 			inventory.visible = false
 			base_panel.visible = false
@@ -438,6 +444,23 @@ func _on_phase_changed(phase: int, day: int) -> void:
 
 # --- Menus -------------------------------------------------------------------
 
+var _settings: SettingsPanel
+var tutorial: Tutorial
+
+## Tutorial da primeira partida: ocupa o lugar dos objetivos enquanto ativo.
+func start_tutorial() -> void:
+	if not Tutorial.should_run():
+		return
+	tutorial = Tutorial.new()
+	_anchor(tutorial, Control.PRESET_TOP_LEFT, Vector2(16, 160), Control.GROW_DIRECTION_END, Control.GROW_DIRECTION_END)
+	objectives_panel.get_parent().add_child(tutorial)
+	objectives_panel.get_parent().move_child(tutorial, objectives_panel.get_index() + 1)
+	objectives_panel.visible = false
+	tutorial.visibility_changed.connect(func() -> void:
+		if not tutorial.visible:
+			objectives_panel.visible = true)
+	tutorial.begin(_hero)
+
 func _toggle_pause() -> void:
 	if Coop.active():
 		# Coop: o menu abre por cima, mas o mundo continua (os outros jogadores seguem).
@@ -473,11 +496,11 @@ func _build_pause() -> Control:
 	var help := UIStyle.button("Controles (F1)")
 	help.pressed.connect(func() -> void: _help.visible = not _help.visible)
 	col.add_child(help)
-	col.add_child(HSeparator.new())
-	col.add_child(UIStyle.label("Som", 18, UIStyle.GOLD))
-	for pair: Array in [["Música", "Music"], ["Efeitos", "SFX"], ["Ambiente", "Ambient"], ["Interface", "UI"]]:
-		col.add_child(_volume_row(pair[0], pair[1]))
-	col.add_child(HSeparator.new())
+	var cfg := UIStyle.button("Configurações (som, gráficos)")
+	cfg.pressed.connect(func() -> void:
+		_settings.visible = true
+		panel.visible = false)
+	col.add_child(cfg)
 	var menu := UIStyle.button("Menu principal")
 	menu.pressed.connect(func() -> void: GameManager.return_to_menu())
 	col.add_child(menu)
@@ -487,34 +510,6 @@ func _build_pause() -> Control:
 		col.add_child(quit)
 	panel.visible = false
 	return panel
-
-## Linha "nome — barra de volume — %" (salva ao soltar a barra).
-func _volume_row(label: String, bus: String) -> Control:
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 8)
-	var l := UIStyle.label(label, 15)
-	l.custom_minimum_size = Vector2(90, 0)
-	row.add_child(l)
-	var sl := HSlider.new()
-	sl.min_value = 0.0
-	sl.max_value = 1.0
-	sl.step = 0.05
-	sl.value = float(AudioManager.volumes.get(bus, 1.0))
-	sl.custom_minimum_size = Vector2(170, 32)
-	sl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	sl.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	row.add_child(sl)
-	var pct := UIStyle.label("%d%%" % roundi(sl.value * 100), 14, UIStyle.TEXT_DIM)
-	pct.custom_minimum_size = Vector2(44, 0)
-	row.add_child(pct)
-	sl.value_changed.connect(func(v: float) -> void:
-		AudioManager.set_volume(bus, v)
-		pct.text = "%d%%" % roundi(v * 100))
-	sl.drag_ended.connect(func(_changed: bool) -> void:
-		AudioManager.save_settings()
-		if bus != "Music" and bus != "Ambient":
-			AudioManager.play_ui(&"ui_click"))
-	return row
 
 func _build_help() -> Control:
 	var panel := UIStyle.panel()

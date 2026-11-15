@@ -387,6 +387,8 @@ func _process(delta: float) -> void:
 			_marker.visible = false
 
 func _on_damage_dealt(target: Node3D, info: DamageInfo, amount: float) -> void:
+	if not Settings.damage_numbers:
+		return
 	var pos := target.global_position + Vector3.UP * 2.2
 	var txt := str(int(round(amount)))
 	if target is Hero:

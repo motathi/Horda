@@ -12,6 +12,7 @@ config/icon="res://icon.svg"
 [autoload]
 
 Platform="*res://autoload/platform.gd"
+Settings="*res://autoload/settings.gd"
 EventBus="*res://autoload/event_bus.gd"
 GameManager="*res://autoload/game_manager.gd"
 TimeManager="*res://autoload/time_manager.gd"

@@ -89,6 +89,15 @@ Soldados navegam pela `WorldBuilder.ally_nav_region` (camada de navegação 2, r
 rebake em segundo plano quando algo é construído/destruído). `Enemy` alvo em soldados próximos e não "dorme"
 perto deles. Coop: `Coop.soldier_spawned/_soldier_snap/_soldier_died/_army_state` e pedidos `recruit`/`army_order`.
 
+## Configurações e tutorial
+
+Autoload `Settings` (`user://settings.cfg`): `quality` (0–2) controla MSAA, atlas de sombras, `scaling_3d_scale`
+(resolução 3D), sombra do sol (grupo `quality_sun`), densidade de grama/decoração (na geração do mundo) e luzes;
+também `fps_limit` (`Engine.max_fps`), `show_fps`, `damage_numbers` e `tutorial_done`. `SettingsPanel` é usado no
+menu principal e na pausa. `Tutorial` (HUD) roda na primeira partida solo, ocupa o lugar dos objetivos, avança por
+eventos (`item_picked_up`, `enemy_killed`, `building_placed`, `ability_cast`, `horde_started`) e para o relógio da
+preparação até o passo final.
+
 ## Coop online
 
 - `Net` (autoload): salas e lobby. No navegador, `WebRTCMultiplayerPeer` com uma `WebRTCPeerConnection` por

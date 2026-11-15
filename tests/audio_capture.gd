@@ -6,6 +6,7 @@ var world: World
 
 func _ready() -> void:
 	var out := OS.get_cmdline_user_args()[0] if OS.get_cmdline_user_args().size() > 0 else "user://luta.wav"
+	Settings.tutorial_done = true  # o tutorial tem teste próprio
 	GameManager.difficulty = "normal"
 	ResourceManager.reset()
 	TimeManager.setup("normal")

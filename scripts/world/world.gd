@@ -43,8 +43,25 @@ func _process(delta: float) -> void:
 			bake_ally_nav()
 var _baking: bool = false
 
+const TIPS: Array[String] = [
+	"Dica: a mochila é guardada no armazém automaticamente ao entrar na base.",
+	"Dica: torres de canhão e elétricas seguram grupos grandes de zumbis.",
+	"Dica: o Zumbi Explosivo arrasa muros — mate-o de longe.",
+	"Dica: pontos de Engenharia aumentam a vida das construções e a sorte na Forja.",
+	"Dica: soldados no modo Defender protegem a fortaleza enquanto você explora.",
+	"Dica: chefes aparecem a cada 10 hordas e sempre deixam equipamento Raro ou melhor.",
+	"Dica: pesquise Coletores para que os sobreviventes produzam recursos.",
+	"Dica: jogue com amigos em Jogar em grupo (coop) — basta compartilhar o código da sala.",
+	"Dica: o Saltador pula por cima dos muros; tenha defesas também dentro da base.",
+]
+
 func _ready() -> void:
 	loading.visible = true
+	var tip := loading.get_node_or_null(^"Label") as Label
+	if tip:
+		tip.text = "Gerando o mundo...\n" + TIPS[randi() % TIPS.size()]
+		tip.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		tip.offset_top -= 50.0
 	hud.visible = false
 	await get_tree().process_frame
 	await get_tree().process_frame
@@ -95,6 +112,7 @@ func _ready() -> void:
 	Coop.attach(self)
 	TimeManager.phase_changed.connect(_on_phase_changed)
 	GameManager.world_ready(self)
+	hud.start_tutorial()
 	loading.visible = false
 	hud.visible = true
 	if Net.in_game:

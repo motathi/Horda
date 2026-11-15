@@ -76,6 +76,12 @@ arrasando muros; abatido, explode ferindo os zumbis ao redor), na 7 o *Cuspidor*
 inclusive por cima dos muros, deixando poças corrosivas, e recua se você se aproximar) e na 9 o *Saltador*
 (salta até 10 m sobre a presa e pula os muros durante o cerco). Cada estreia é anunciada na tela.
 
+**Tutorial e configurações:** a primeira partida solo traz um tutorial guiado de 7 passos (mover, coletar,
+derrotar um zumbi, voltar à base, construir, usar habilidade, chamar a horda) com o relógio parado e bônus no
+final — pode ser pulado e refeito em *Configurações*. Configurações (menu principal e pausa): qualidade gráfica
+Baixa/Média/Alta (sombras, antisserrilhado, resolução 3D, grama e decoração), limite de FPS (30/60/livre),
+contador de FPS, números de dano e volumes.
+
 **Coop online (até 4 jogadores):** menu *Jogar em grupo (coop)* → *Criar sala* gera um código de 5 letras
 (e um link de convite `?sala=CODIGO`); os amigos entram pelo navegador do celular ou PC com o código. Base,
 armazém, construções e pesquisas são compartilhados; cada jogador tem o próprio herói, nível, atributos e
