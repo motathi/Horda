@@ -57,6 +57,12 @@ Chefes sempre largam Raro ou melhor, elites às vezes; caixas e esconderijos tam
 base, aba Forja) fabrique com recursos — Engenharia aumenta a chance de raridade. Equipe, compare e desmonte
 na aba *Equipamento* do personagem (P). Dados em `data/equipment/*.tres`.
 
+**Tecnologias:** aba *Pesquisa* no menu da base — uma pesquisa por vez, com custo e tempo (o relógio corre
+inclusive durante a horda), 16 tecnologias em três ramos com pré-requisitos: **Defesa** (muros reforçados,
+pontas de aço, recarga, lunetas, munição pesada, muralhas de ferro, pedreiros que consertam sozinhos),
+**Economia** (ferramentas, mochilas, saqueadores, coletores que produzem recursos, oficina avançada) e
+**Herói** (treinamento, medicina, foco arcano, veterano). Dados em `data/tech/*.tres`.
+
 **Inimigos especiais:** a partir da horda 4 surge o *Zumbi Explosivo* (incha e explode ao alcançar o alvo,
 arrasando muros; abatido, explode ferindo os zumbis ao redor), na 7 o *Cuspidor* (cospe ácido de 10 m,
 inclusive por cima dos muros, deixando poças corrosivas, e recua se você se aproximar) e na 9 o *Saltador*

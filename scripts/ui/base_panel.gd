@@ -9,7 +9,9 @@ var _status: Label
 var _where: Label
 var _t: float = 0.0
 var _signature: String = ""
-var _tab: int = 0  # 0 = Oficina, 1 = Forja
+var _tab: int = 0  # 0 = Oficina, 1 = Forja, 2 = Pesquisa
+var _research_bar: ProgressBar
+var _research_label: Label
 var _tabs: Array[Button] = []
 var _scroll: ScrollContainer
 
@@ -31,8 +33,8 @@ func _ready() -> void:
 	tabs.add_theme_constant_override("separation", 6)
 	col.add_child(tabs)
 	var group := ButtonGroup.new()
-	for i in 2:
-		var tb := UIStyle.button(["Oficina", "Forja"][i], 17)
+	for i in 3:
+		var tb := UIStyle.button(["Oficina", "Forja", "Pesquisa"][i], 17)
 		tb.toggle_mode = true
 		tb.button_group = group
 		tb.button_pressed = i == 0
@@ -62,6 +64,9 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	if not visible:
 		return
+	if _research_bar and is_instance_valid(_research_bar) and Tech.active_def():
+		_research_bar.value = Tech.ratio() * 100.0
+		_research_label.text = "Pesquisando: %s — %ds restantes" % [Tech.active_def().display_name, ceili(Tech.active_def().research_time - Tech.progress)]
 	_t -= delta
 	if _t <= 0.0:
 		_t = 0.25
@@ -73,7 +78,7 @@ func _process(delta: float) -> void:
 func _make_signature() -> String:
 	if services == null or hero == null:
 		return ""
-	return "%d|%s|%d|%d|%d|%s|%s|%d|%d" % [_tab, BaseZone.hero_inside, int(services.walls_missing_hp()), int(services.core_missing_hp()),
+	return "%s|%s|%d|%s|%d|%d|%d|%s|%s|%d|%d" % [Tech.active, Tech.done.keys(), _tab, BaseZone.hero_inside, int(services.walls_missing_hp()), int(services.core_missing_hp()),
 		hero.weapon_level, ResourceManager.storage.to_dict(), ResourceManager.hero_inventory.to_dict(), hero.gear_bag.size(), TimeManager.wave()]
 
 func _rebuild() -> void:
@@ -87,6 +92,9 @@ func _rebuild() -> void:
 	_tabs[_tab].set_pressed_no_signal(true)
 	if _tab == 1:
 		_build_forge()
+		return
+	if _tab == 2:
+		_build_research()
 		return
 	var wall_cost := services.wall_repair_cost()
 	_add_row("Reparar muros e portões", "Vida faltando: %d" % int(services.walls_missing_hp()), wall_cost,
@@ -102,6 +110,46 @@ func _rebuild() -> void:
 	for r in services.recipes:
 		_add_row("Fabricar: %s" % r.display_name, r.description, r.inputs,
 			func() -> String: return services.craft(r), true, false)
+
+func _build_research() -> void:
+	var top := PanelContainer.new()
+	top.add_theme_stylebox_override("panel", UIStyle.panel_style(UIStyle.BG_LIGHT, UIStyle.GOLD, 1, 6))
+	var th := HBoxContainer.new()
+	th.add_theme_constant_override("separation", 10)
+	top.add_child(th)
+	var tv := VBoxContainer.new()
+	tv.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	th.add_child(tv)
+	_research_label = UIStyle.label("Nenhuma pesquisa em andamento. %d de %d concluídas." % [Tech.done.size(), Tech.defs.size()], 15, UIStyle.GOLD)
+	tv.add_child(_research_label)
+	_research_bar = UIStyle.hud_bar(Color(0.35, 0.75, 1.0), 16)
+	_research_bar.custom_minimum_size = Vector2(300, 16)
+	_research_bar.value = Tech.ratio() * 100.0
+	_research_bar.visible = Tech.active_def() != null
+	tv.add_child(_research_bar)
+	if Tech.active_def():
+		var cancel := UIStyle.button("Cancelar", 14)
+		cancel.pressed.connect(func() -> void:
+			_status.text = Tech.cancel()
+			_rebuild())
+		th.add_child(cancel)
+	_rows.add_child(top)
+	var hint := UIStyle.label("Uma pesquisa por vez; o tempo corre inclusive durante a horda.", 13, UIStyle.TEXT_DIM)
+	_rows.add_child(hint)
+	var last_branch := -1
+	for d in Tech.defs:
+		if d.branch != last_branch:
+			last_branch = d.branch
+			_rows.add_child(UIStyle.label(TechDef.branch_name(d.branch), 18, UIStyle.GOLD))
+		var why := Tech.block_reason(d)
+		var done := Tech.has(d.id)
+		var sub := "%s  •  %ds" % [d.description, int(d.research_time)]
+		if not done and why != "" and not why.begins_with("Faltam") and Tech.active != d.id:
+			sub += "\n" + why
+		var title := d.display_name + ("  (concluída)" if done else ("  (pesquisando)" if Tech.active == d.id else ""))
+		var ok := why == "" or why.begins_with("Faltam")
+		_add_row(title, sub, {} if done else d.cost, func() -> String: return Tech.start(d), ok and not done and Tech.active == &"", false, d.icon(),
+			"Concluída" if done else ("..." if Tech.active == d.id else "Pesquisar"))
 
 func _build_forge() -> void:
 	var odds := services.forge_odds(hero)

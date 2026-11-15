@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="TechDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/progression/tech_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"arrows1"
+display_name = "Pontas de Aço"
+description = "+20% de dano de todas as torres e armadilhas."
+icon_name = "t_arrows1"
+branch = 0
+cost = {
+&"scrap": 20,
+&"wood": 20
+}
+research_time = 60.0
+requires = Array[StringName]([])
+min_wave = 2
+effects = {
+"tower_damage_pct": 0.2
+}

@@ -80,6 +80,15 @@ exporte `TRIPO_API_KEY`. `CharacterModel` usa o GLB rigado quando existe (máqui
 idle/walk/run/slash; `hurt` vira a queda da morte; animação pausada fora da tela) e cai para a malha
 estática animada por código ou para o visual procedural se o arquivo faltar.
 
+## Tecnologias
+
+Autoload `Tech` (`autoload/tech_manager.gd`) com `TechDef` (`data/tech`): custo, tempo, pré-requisitos,
+horda mínima e `effects` (chaves somadas por `Tech.bonus(key)`). Consumidores: `Structure._max_hp`
+(muros/núcleo) e `refresh_stats`, `Building` (dano/velocidade/alcance de torres), `Harvestable` (coleta),
+`Lootable` (saque e chance de equipamento), `BaseServices` (afiar e sorte da Forja) e `Hero` (dano, vida,
+regeneração, energia, recarga, carga, cura). Efeitos contínuos no próprio `Tech._process`: reparo automático
+e produção dos coletores. Estado no save (`tech`); UI na aba Pesquisa do `BasePanel` e pílula no HUD.
+
 ## Inimigos especiais
 
 `EnemyDef.Behavior` ganhou `EXPLODER`, `SPITTER` e `LEAPER`, configurados pelos campos `special_*` do

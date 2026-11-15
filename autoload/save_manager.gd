@@ -38,6 +38,7 @@ func save_game() -> bool:
 		"time": {"phase": TimeManager.phase, "day": TimeManager.day, "t": TimeManager.phase_time},
 		"inventory": ResourceManager.hero_inventory.to_dict(),
 		"storage": ResourceManager.storage.to_dict(),
+		"tech": Tech.to_save(),
 		"world": GameManager.world.call(&"collect_save"),
 	}
 	var f := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
@@ -64,6 +65,7 @@ func apply_loaded_state() -> void:
 		return
 	ResourceManager.hero_inventory.from_dict(_loaded.get("inventory", {}))
 	ResourceManager.storage.from_dict(_loaded.get("storage", {}))
+	Tech.from_save(_loaded.get("tech", {}))
 	if GameManager.world:
 		GameManager.world.call(&"apply_save", _loaded.get("world", {}))
 	var tm: Dictionary = _loaded.get("time", {})

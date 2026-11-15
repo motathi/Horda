@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="TechDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/progression/tech_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"walls2"
+display_name = "Muralhas de Ferro"
+description = "+35% de vida nos muros e +50% no Núcleo."
+icon_name = "t_walls2"
+branch = 0
+cost = {
+&"stone": 60,
+&"scrap": 40
+}
+research_time = 150.0
+requires = Array[StringName]([&"walls1"])
+min_wave = 7
+effects = {
+"wall_hp_pct": 0.35,
+"core_hp_pct": 0.5
+}

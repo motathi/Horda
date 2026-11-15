@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="TechDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/progression/tech_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"arrows2"
+display_name = "Munição Pesada"
+description = "+25% de dano das torres e armadilhas."
+icon_name = "t_arrows2"
+branch = 0
+cost = {
+&"scrap": 50,
+&"stone": 30
+}
+research_time = 150.0
+requires = Array[StringName]([&"gears"])
+min_wave = 8
+effects = {
+"tower_damage_pct": 0.25
+}

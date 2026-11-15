@@ -99,7 +99,7 @@ func sharpen_cost(hero: Hero) -> Dictionary:
 	return cost
 
 func can_sharpen(hero: Hero) -> bool:
-	return hero.weapon_level < config.sharpen_max_level
+	return hero.weapon_level < config.sharpen_max_level + int(Tech.bonus("sharpen_max"))
 
 func sharpen(hero: Hero) -> String:
 	if not BaseZone.hero_inside:
@@ -131,7 +131,7 @@ func craft(r: Recipe) -> String:
 
 ## Sorte na raridade da Forja: cada ponto de Engenharia soma 4%.
 func forge_luck(hero: Hero) -> float:
-	return hero.attr(&"engineering") * 0.04 if hero else 0.0
+	return (hero.attr(&"engineering") * 0.04 if hero else 0.0) + Tech.bonus("forge_luck")
 
 ## Chance (0..1) de cada raridade na Forja para este herói.
 func forge_odds(hero: Hero) -> Array[float]:

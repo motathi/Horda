@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="TechDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/progression/tech_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"medicine"
+display_name = "Medicina de Campo"
+description = "+1,5 de vida/s e curativos/carne curam 50% a mais."
+icon_name = "t_medicine"
+branch = 2
+cost = {
+&"herbs": 12,
+&"cloth": 8
+}
+research_time = 60.0
+requires = Array[StringName]([])
+min_wave = 2
+effects = {
+"health_regen": 1.5,
+"heal_mult": 0.5
+}

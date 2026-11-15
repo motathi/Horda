@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="TechDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/progression/tech_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"walls1"
+display_name = "Muros Reforçados"
+description = "+25% de vida em muros, paliçadas e portões."
+icon_name = "t_walls1"
+branch = 0
+cost = {
+&"wood": 40,
+&"stone": 30
+}
+research_time = 60.0
+requires = Array[StringName]([])
+min_wave = 1
+effects = {
+"wall_hp_pct": 0.25
+}

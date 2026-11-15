@@ -147,6 +147,11 @@ func _ready() -> void:
 	_death_label.visible = false
 	root.add_child(_death_label)
 
+	_research_pill = _build_research_pill()
+	_anchor(_research_pill, Control.PRESET_CENTER_TOP, Vector2(0, 62), Control.GROW_DIRECTION_BOTH, Control.GROW_DIRECTION_END)
+	root.add_child(_research_pill)
+	Tech.researched.connect(func(_d: TechDef) -> void: _research_pill.visible = false)
+
 	placement_bar = PlacementBar.new()
 	_anchor(placement_bar, Control.PRESET_CENTER_BOTTOM, Vector2(0, -14), Control.GROW_DIRECTION_BOTH, Control.GROW_DIRECTION_BEGIN)
 	root.add_child(placement_bar)
@@ -204,6 +209,45 @@ func _toggle_build() -> void:
 	inventory.visible = false
 	base_panel.visible = false
 	character.visible = false
+
+var _research_pill: PanelContainer
+var _research_pill_label: Label
+var _research_pill_bar: ProgressBar
+var _research_pill_icon: TextureRect
+
+## Pílula no topo: pesquisa em andamento (ícone, nome e progresso).
+func _build_research_pill() -> PanelContainer:
+	var p := PanelContainer.new()
+	p.add_theme_stylebox_override("panel", UIStyle.hud_panel_style(UIStyle.PANEL_BG, 8))
+	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var h := HBoxContainer.new()
+	h.add_theme_constant_override("separation", 6)
+	h.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	p.add_child(h)
+	_research_pill_icon = TextureRect.new()
+	_research_pill_icon.custom_minimum_size = Vector2(28, 28)
+	_research_pill_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_research_pill_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	h.add_child(_research_pill_icon)
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 1)
+	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	h.add_child(v)
+	_research_pill_label = UIStyle.label("", 12, Color(0.6, 0.85, 1.0))
+	v.add_child(_research_pill_label)
+	_research_pill_bar = UIStyle.hud_bar(Color(0.35, 0.75, 1.0), 6)
+	_research_pill_bar.custom_minimum_size = Vector2(150, 6)
+	v.add_child(_research_pill_bar)
+	p.visible = false
+	return p
+
+func _process_research_pill() -> void:
+	var d := Tech.active_def()
+	_research_pill.visible = d != null and GameManager.is_playing()
+	if d:
+		_research_pill_icon.texture = d.icon()
+		_research_pill_label.text = "%s  %ds" % [d.display_name, ceili(d.research_time - Tech.progress)]
+		_research_pill_bar.value = Tech.ratio() * 100.0
 
 ## Selo "N" (norte) no topo do minimapa.
 class _NorthBadge extends Control:
@@ -283,6 +327,8 @@ func _quick_save() -> void:
 # --- Atualização -------------------------------------------------------------
 
 func _process(_delta: float) -> void:
+	if _research_pill:
+		_process_research_pill()
 	if _hero and _hero.is_dead() and GameManager.is_playing():
 		_death_label.visible = true
 		_death_label.text = "Você caiu!\nRenascendo em %d..." % ceili(_hero.respawn_seconds_left())

@@ -274,5 +274,101 @@
   "out": "assets/ui/hud/src/eq_ring_hunter.jpg",
   "size": "1024x1024",
   "prompt": "Game item icon of a golden ring with a green emerald and an arrow engraving, glossy stylized hand-painted MOBA item icon in the style of Dota 2, dynamic composition, vibrant saturated colors, soft specular highlights, thick dark outline, centered, isolated on a completely black #000000 background, the background must be pitch black, no frame, no border, no text"
+ },
+ {
+  "name": "ui_t_walls1",
+  "out": "assets/ui/hud/src/t_walls1.jpg",
+  "size": "1024x1024",
+  "prompt": "Game upgrade icon of a reinforced stone wall with wooden beams, glossy stylized hand-painted MOBA upgrade icon in the style of Dota 2, dynamic composition, vibrant saturated colors, soft specular highlights, thick dark outline, centered, isolated on a completely black #000000 background, the background must be pitch black, no frame, no border, no text"
+ },
+ {
+  "name": "ui_t_arrows1",
+  "out": "assets/ui/hud/src/t_arrows1.jpg",
+  "size": "1024x1024",
+  "prompt": "Game upgrade icon of a bundle of steel tipped arrows, glossy stylized hand-painted MOBA upgrade icon in the style of Dota 2, dynamic composition, vibrant saturated colors, soft specular highlights, thick dark outline, centered, isolated on a completely black #000000 background, the background must be pitch black, no frame, no border, no text"
+ },
+ {
+  "name": "ui_t_gears",
+  "out": "assets/ui/hud/src/t_gears.jpg",
+  "size": "1024x1024",
+  "prompt": "Game upgrade icon of interlocking brass gears with a crossbow trigger, glossy stylized hand-painted MOBA upgrade icon in the style of Dota 2, dynamic composition, vibrant saturated colors, soft specular highlights, thick dark outline, centered, isolated on a completely black #000000 background, the background must be pitch black, no frame, no border, no text"
+ },
+ {
+  "name": "ui_t_optics",
+  "out": "assets/ui/hud/src/t_optics.jpg",
+  "size": "1024x1024",
+  "prompt": "Game upgrade icon of a brass spyglass telescope, glossy stylized hand-painted MOBA upgrade icon in the style of Dota 2, dynamic composition, vibrant saturated colors, soft specular highlights, thick dark outline, centered, isolated on a completely black #000000 background, the background must be pitch black, no frame, no border, no text"
+ },
+ {
+  "name": "ui_t_arrows2",
+  "out": "assets/ui/hud/src/t_arrows2.jpg",
+  "size": "1024x1024",
+  "prompt": "Game upgrade icon of heavy iron ballista bolts glowing orange, glossy stylized hand-painted MOBA upgrade icon in the style of Dota 2, dynamic composition, vibrant saturated colors, soft specular highlights, thick dark outline, centered, isolated on a completely black #000000 background, the background must be pitch black, no frame, no border, no text"
+ },
+ {
+  "name": "ui_t_walls2",
+  "out": "assets/ui/hud/src/t_walls2.jpg",
+  "size": "1024x1024",
+  "prompt": "Game upgrade icon of a massive iron fortress wall with rivets, glossy stylized hand-painted MOBA upgrade icon in the style of Dota 2, dynamic composition, vibrant saturated colors, soft specular highlights, thick dark outline, centered, isolated on a completely black #000000 background, the background must be pitch black, no frame, no border, no text"
+ },
+ {
+  "name": "ui_t_masons",
+  "out": "assets/ui/hud/src/t_masons.jpg",
+  "size": "1024x1024",
+  "prompt": "Game upgrade icon of a stonemason hammer and chisel over bricks, glossy stylized hand-painted MOBA upgrade icon in the style of Dota 2, dynamic composition, vibrant saturated colors, soft specular highlights, thick dark outline, centered, isolated on a completely black #000000 background, the background must be pitch black, no frame, no border, no text"
+ },
+ {
+  "name": "ui_t_tools",
+  "out": "assets/ui/hud/src/t_tools.jpg",
+  "size": "1024x1024",
+  "prompt": "Game upgrade icon of a crossed pickaxe and axe with shining steel heads, glossy stylized hand-painted MOBA upgrade icon in the style of Dota 2, dynamic composition, vibrant saturated colors, soft specular highlights, thick dark outline, centered, isolated on a completely black #000000 background, the background must be pitch black, no frame, no border, no text"
+ },
+ {
+  "name": "ui_t_packs",
+  "out": "assets/ui/hud/src/t_packs.jpg",
+  "size": "1024x1024",
+  "prompt": "Game upgrade icon of a large leather backpack full of supplies, glossy stylized hand-painted MOBA upgrade icon in the style of Dota 2, dynamic composition, vibrant saturated colors, soft specular highlights, thick dark outline, centered, isolated on a completely black #000000 background, the background must be pitch black, no frame, no border, no text"
+ },
+ {
+  "name": "ui_t_scav",
+  "out": "assets/ui/hud/src/t_scav.jpg",
+  "size": "1024x1024",
+  "prompt": "Game upgrade icon of an open treasure crate with coins and scrap, glossy stylized hand-painted MOBA upgrade icon in the style of Dota 2, dynamic composition, vibrant saturated colors, soft specular highlights, thick dark outline, centered, isolated on a completely black #000000 background, the background must be pitch black, no frame, no border, no text"
+ },
+ {
+  "name": "ui_t_gatherers",
+  "out": "assets/ui/hud/src/t_gatherers.jpg",
+  "size": "1024x1024",
+  "prompt": "Game upgrade icon of a wheelbarrow full of logs and stones, glossy stylized hand-painted MOBA upgrade icon in the style of Dota 2, dynamic composition, vibrant saturated colors, soft specular highlights, thick dark outline, centered, isolated on a completely black #000000 background, the background must be pitch black, no frame, no border, no text"
+ },
+ {
+  "name": "ui_t_workshop",
+  "out": "assets/ui/hud/src/t_workshop.jpg",
+  "size": "1024x1024",
+  "prompt": "Game upgrade icon of an anvil with sparks and a glowing hammer, glossy stylized hand-painted MOBA upgrade icon in the style of Dota 2, dynamic composition, vibrant saturated colors, soft specular highlights, thick dark outline, centered, isolated on a completely black #000000 background, the background must be pitch black, no frame, no border, no text"
+ },
+ {
+  "name": "ui_t_training",
+  "out": "assets/ui/hud/src/t_training.jpg",
+  "size": "1024x1024",
+  "prompt": "Game upgrade icon of a wooden training dummy with a sword stuck in it, glossy stylized hand-painted MOBA upgrade icon in the style of Dota 2, dynamic composition, vibrant saturated colors, soft specular highlights, thick dark outline, centered, isolated on a completely black #000000 background, the background must be pitch black, no frame, no border, no text"
+ },
+ {
+  "name": "ui_t_medicine",
+  "out": "assets/ui/hud/src/t_medicine.jpg",
+  "size": "1024x1024",
+  "prompt": "Game upgrade icon of a green herbal potion with bandages, glossy stylized hand-painted MOBA upgrade icon in the style of Dota 2, dynamic composition, vibrant saturated colors, soft specular highlights, thick dark outline, centered, isolated on a completely black #000000 background, the background must be pitch black, no frame, no border, no text"
+ },
+ {
+  "name": "ui_t_arcane",
+  "out": "assets/ui/hud/src/t_arcane.jpg",
+  "size": "1024x1024",
+  "prompt": "Game upgrade icon of a glowing blue arcane eye rune, glossy stylized hand-painted MOBA upgrade icon in the style of Dota 2, dynamic composition, vibrant saturated colors, soft specular highlights, thick dark outline, centered, isolated on a completely black #000000 background, the background must be pitch black, no frame, no border, no text"
+ },
+ {
+  "name": "ui_t_veteran",
+  "out": "assets/ui/hud/src/t_veteran.jpg",
+  "size": "1024x1024",
+  "prompt": "Game upgrade icon of a golden laurel wreath around a battle scarred helmet, glossy stylized hand-painted MOBA upgrade icon in the style of Dota 2, dynamic composition, vibrant saturated colors, soft specular highlights, thick dark outline, centered, isolated on a completely black #000000 background, the background must be pitch black, no frame, no border, no text"
  }
 ]

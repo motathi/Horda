@@ -18,6 +18,7 @@ TimeManager="*res://autoload/time_manager.gd"
 ResourceManager="*res://autoload/resource_manager.gd"
 SaveManager="*res://autoload/save_manager.gd"
 AudioManager="*res://autoload/audio_manager.gd"
+Tech="*res://autoload/tech_manager.gd"
 
 [display]
 

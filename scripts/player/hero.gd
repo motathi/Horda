@@ -125,11 +125,15 @@ func set_home(p: Vector3) -> void:
 	_home = p
 
 func damage() -> float:
-	return (base_damage + gear(&"damage") + weapon_level * SHARPEN_BONUS + (level - 1) * LEVEL_DAMAGE) * (1.0 + attr(&"strength") * attr_cfg.str_damage_pct)
+	return (base_damage + gear(&"damage") + weapon_level * SHARPEN_BONUS + (level - 1) * LEVEL_DAMAGE) * (1.0 + attr(&"strength") * attr_cfg.str_damage_pct + Tech.bonus("hero_damage_pct"))
 
 ## Alcance do golpe (lança aumenta).
 func reach() -> float:
 	return attack_range + gear(&"reach")
+
+## Chamado pelo Tech ao concluir uma pesquisa.
+func refresh_tech() -> void:
+	_recalc_stats(true)
 
 # --- Equipamento ----------------------------------------------------------
 
@@ -228,17 +232,17 @@ func ability_power() -> float:
 	return 1.0 + attr(&"intelligence") * attr_cfg.int_power_pct + gear(&"ability_power_pct")
 
 func cooldown_mult() -> float:
-	return 1.0 - minf(attr(&"intelligence") * attr_cfg.int_cdr_pct + gear(&"cdr_pct"), attr_cfg.int_cdr_cap)
+	return 1.0 - minf(attr(&"intelligence") * attr_cfg.int_cdr_pct + gear(&"cdr_pct") + Tech.bonus("cdr_pct"), attr_cfg.int_cdr_cap)
 
 func total_max_health() -> float:
-	return max_health + (level - 1) * LEVEL_HP + attr(&"vitality") * attr_cfg.vit_hp + gear(&"max_hp")
+	return max_health + (level - 1) * LEVEL_HP + attr(&"vitality") * attr_cfg.vit_hp + gear(&"max_hp") + Tech.bonus("hero_hp")
 
 ## Armadura total: base + equipamento + Grito de Guerra.
 func total_armor() -> float:
 	return armor + gear(&"armor") + _armor_buff
 
 func carry_capacity() -> int:
-	return ResourceManager.HERO_CAPACITY + attr(&"strength") * attr_cfg.str_carry
+	return ResourceManager.HERO_CAPACITY + attr(&"strength") * attr_cfg.str_carry + int(Tech.bonus("carry"))
 
 func building_hp_mult() -> float:
 	return 1.0 + attr(&"engineering") * attr_cfg.eng_building_hp_pct
@@ -290,11 +294,11 @@ func _recalc_stats(keep_ratio: bool) -> void:
 		health.current = clampf(health.current + maxf(0.0, health.max_health - old_max), 1.0, health.max_health)
 	else:
 		health.current = minf(health.current, health.max_health)
-	health.regen_per_second = health_regen + attr(&"vitality") * attr_cfg.vit_regen + gear(&"health_regen")
+	health.regen_per_second = health_regen + attr(&"vitality") * attr_cfg.vit_regen + gear(&"health_regen") + Tech.bonus("health_regen")
 	health.armor = total_armor()
 	health.changed.emit(health.current, health.max_health)
 	max_energy = 100.0 + attr(&"intelligence") * attr_cfg.int_energy + gear(&"energy")
-	energy_regen = 6.0 + attr(&"intelligence") * attr_cfg.int_energy_regen
+	energy_regen = 6.0 + attr(&"intelligence") * attr_cfg.int_energy_regen + Tech.bonus("energy_regen")
 	energy = minf(energy, max_energy)
 	ResourceManager.hero_inventory.capacity = carry_capacity()
 	if is_inside_tree():
@@ -745,10 +749,11 @@ func use_consumable(id: StringName) -> void:
 		if not (BaseZone.hero_inside and ResourceManager.storage.remove(id, 1) == 1):
 			EventBus.notify("Sem %s." % def.display_name, Color(1, 0.6, 0.4))
 			return
+	var hm := 1.0 + Tech.bonus("heal_mult")
 	if def.heal_instant > 0.0:
-		health.heal(def.heal_instant)
+		health.heal(def.heal_instant * hm)
 	if def.heal_over_time > 0.0:
-		health.heal_over_time(def.heal_over_time, def.heal_duration)
+		health.heal_over_time(def.heal_over_time * hm, def.heal_duration)
 	EffectsHub.spawn_heal(global_position)
 	AudioManager.play_3d(&"heal", global_position)
 

@@ -38,6 +38,7 @@ func _ready() -> void:
 	await _test_abilities()
 	await _test_attributes()
 	await _test_equipment()
+	await _test_tech()
 	await _test_special_enemies()
 	await _test_harvest_and_loot()
 	await _test_base_services()
@@ -386,6 +387,71 @@ func _test_equipment() -> void:
 	hero.from_save(saved)
 	check(hero.equipped(EquipmentDef.Slot.WEAPON) != null and hero.equipped(EquipmentDef.Slot.WEAPON).def.id == eq_id and hero.gear_bag.size() == 1 and hero.gear_bag[0].rarity == 3, "equipamento e bolsa persistem no save")
 	hero.gear_bag.clear()
+
+func _test_tech() -> void:
+	print("[tecnologias]")
+	var hero := world.hero
+	Tech.reset()
+	check(Tech.defs.size() == 16, "16 tecnologias (%d)" % Tech.defs.size())
+	var day0 := TimeManager.day
+	TimeManager.day = 1
+	check(Tech.block_reason(Tech.get_def(&"veteran")).contains("horda"), "Veterano bloqueado por horda")
+	TimeManager.day = 5
+	check(Tech.block_reason(Tech.get_def(&"gears")).begins_with("Requer"), "Mecanismos exige Pontas de Aço")
+	hero.global_position = Vector3(3, 0, 3)
+	await wait(0.2)
+	var tools := Tech.get_def(&"tools")
+	for id: StringName in tools.cost:
+		ResourceManager.storage.add(id, int(tools.cost[id]) * 2)
+	var wood0 := ResourceManager.storage.count(&"wood")
+	var msg := Tech.start(tools)
+	check(Tech.active == &"tools" and ResourceManager.storage.count(&"wood") < wood0, "pesquisa inicia e cobra recursos (%s)" % msg)
+	check(Tech.block_reason(Tech.get_def(&"packs")).contains("andamento"), "só uma pesquisa por vez")
+	Tech.progress = tools.research_time - 0.05
+	await wait(0.3)
+	check(Tech.has(&"tools") and Tech.active == &"", "pesquisa conclui com o tempo")
+	check(int(Tech.bonus("harvest_bonus")) == 1, "Ferramentas: +1 recurso por golpe")
+	# Efeitos aplicados na hora.
+	var wall := world.builder.structures["wall1"] as Structure
+	var whp0 := wall.health.max_health
+	Tech.complete(Tech.get_def(&"walls1"))
+	check(is_equal_approx(wall.health.max_health, whp0 * 1.25), "Muros Reforçados: paliçada %d -> %d" % [int(whp0), int(wall.health.max_health)])
+	var tower := world.build_manager.place(Building.load_def(&"archer_tower"), Vector3(70, 0, 70), 0.0, false)
+	await wait(0.05)
+	var td0 := tower.tower_damage()
+	var tr0 := tower.tower_range()
+	Tech.complete(Tech.get_def(&"arrows1"))
+	Tech.complete(Tech.get_def(&"optics"))
+	check(tower.tower_damage() > td0 * 1.19 and tower.tower_range() > tr0 * 1.14, "torres: dano %.0f -> %.0f, alcance %.1f -> %.1f" % [td0, tower.tower_damage(), tr0, tower.tower_range()])
+	tower.queue_free()
+	var cap0 := ResourceManager.hero_inventory.capacity
+	var dmg0 := hero.damage()
+	Tech.complete(Tech.get_def(&"packs"))
+	Tech.complete(Tech.get_def(&"training"))
+	check(ResourceManager.hero_inventory.capacity == cap0 + 20 and hero.damage() > dmg0 * 1.09, "Mochilas +20 de carga e Treinamento +10% de dano")
+	# Coletores produzem recursos fora da horda.
+	Tech.complete(Tech.get_def(&"gatherers"))
+	var w1 := ResourceManager.storage.count(&"wood")
+	Tech._income_t = 0.05
+	await wait(0.2)
+	check(ResourceManager.storage.count(&"wood") == w1 + 3, "Coletores entregam madeira ao armazém")
+	# Cancelar devolve metade.
+	var med := Tech.get_def(&"medicine")
+	for id: StringName in med.cost:
+		ResourceManager.storage.add(id, int(med.cost[id]))
+	var herbs0 := ResourceManager.storage.count(&"herbs")
+	Tech.start(med)
+	Tech.cancel()
+	check(ResourceManager.storage.count(&"herbs") == herbs0 - int(med.cost[&"herbs"]) + int(med.cost[&"herbs"]) / 2 and Tech.active == &"", "cancelar devolve metade dos recursos")
+	# Salvar/carregar
+	var saved := Tech.to_save()
+	Tech.reset()
+	check(not Tech.has(&"walls1") and is_equal_approx(wall.health.max_health, whp0), "reset remove os bônus")
+	Tech.from_save(saved)
+	check(Tech.has(&"walls1") and Tech.has(&"gatherers") and is_equal_approx(wall.health.max_health, whp0 * 1.25), "tecnologias persistem no save")
+	Tech.reset()
+	hero.refresh_tech()
+	TimeManager.day = day0
 
 func _spawn_def(id: String, pos: Vector3) -> Enemy:
 	var e := (load("res://scenes/enemies/zombie.tscn") as PackedScene).instantiate() as Enemy

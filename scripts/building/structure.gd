@@ -45,7 +45,16 @@ func _ready() -> void:
 # --- Ganchos sobrescritos por construções do jogador (Building) -------------------
 
 func _max_hp() -> float:
-	return KIND_HP[kind]
+	return KIND_HP[kind] * (1.0 + Tech.bonus("core_hp_pct" if kind == Kind.CORE else "wall_hp_pct"))
+
+## Reaplica bônus externos (Engenharia, tecnologias) mantendo a proporção de vida.
+func refresh_stats() -> void:
+	if health == null or health.dead:
+		return
+	var ratio := health.ratio()
+	health.max_health = _max_hp()
+	health.current = health.max_health * ratio
+	health.changed.emit(health.current, health.max_health)
 
 func _armor() -> float:
 	return KIND_ARMOR[kind]

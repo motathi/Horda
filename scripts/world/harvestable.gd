@@ -44,7 +44,7 @@ func harvest(hero: Hero) -> void:
 	if _hits_left <= 0:
 		return
 	_hits_left -= 1
-	var amount := _rng.randi_range(yield_min, yield_max)
+	var amount := _rng.randi_range(yield_min, yield_max) + int(Tech.bonus("harvest_bonus"))
 	var got := ResourceManager.give_hero(item_id, amount)
 	if got > 0:
 		EffectsHub.float_text(global_position + Vector3.UP * 2.0, "+%d %s" % [got, ResourceManager.item_name(item_id)], ResourceManager.get_def(item_id).color)

@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="TechDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/progression/tech_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"gatherers"
+display_name = "Coletores"
+description = "Os sobreviventes produzem madeira, pedra e sucata a cada 20 s fora da horda."
+icon_name = "t_gatherers"
+branch = 1
+cost = {
+&"wood": 50,
+&"stone": 30
+}
+research_time = 120.0
+requires = Array[StringName]([&"tools"])
+min_wave = 4
+effects = {
+"passive_income": 1.0
+}

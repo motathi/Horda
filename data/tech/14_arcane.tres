@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="TechDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/progression/tech_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"arcane"
+display_name = "Foco Arcano"
+description = "+2 de energia/s e -10% de recarga das habilidades."
+icon_name = "t_arcane"
+branch = 2
+cost = {
+&"herbs": 15,
+&"scrap": 20
+}
+research_time = 90.0
+requires = Array[StringName]([&"training"])
+min_wave = 5
+effects = {
+"energy_regen": 2.0,
+"cdr_pct": 0.1
+}

@@ -50,7 +50,7 @@ func interact_label() -> String:
 func interact(_hero: Hero) -> void:
 	if looted:
 		return
-	var drops := loot.roll(_rng) if loot else {}
+	var drops := loot.roll(_rng, 1.0 + Tech.bonus("loot_mult")) if loot else {}
 	if drops.is_empty():
 		EventBus.notify("%s estava vazio." % display_label, Color(0.8, 0.8, 0.8))
 	var y := 2.0
@@ -62,7 +62,7 @@ func interact(_hero: Hero) -> void:
 			y += 0.45
 		if got < amount:
 			EffectsHub.drop_item(global_position, id, amount - got)
-	if _rng.randf() < Gear.container_chance(display_label):
+	if _rng.randf() < Gear.container_chance(display_label) + Tech.bonus("gear_chance"):
 		EffectsHub.drop_gear(global_position + Vector3.UP * 0.5, Gear.random_item(_rng, TimeManager.wave(), 0.1))
 	AudioManager.play_3d(&"loot", global_position)
 	EventBus.container_looted.emit(self)

@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="TechDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/progression/tech_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"scav"
+display_name = "Saqueadores Experientes"
+description = "+50% de recursos em contêineres e +5% de chance de equipamento."
+icon_name = "t_scav"
+branch = 1
+cost = {
+&"scrap": 20,
+&"cloth": 10
+}
+research_time = 90.0
+requires = Array[StringName]([])
+min_wave = 3
+effects = {
+"loot_mult": 0.5,
+"gear_chance": 0.05
+}

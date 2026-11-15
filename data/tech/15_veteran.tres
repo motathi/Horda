@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="TechDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/progression/tech_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"veteran"
+display_name = "Veterano"
+description = "+15% de dano e +60 de vida do herói."
+icon_name = "t_veteran"
+branch = 2
+cost = {
+&"scrap": 40,
+&"herbs": 20
+}
+research_time = 150.0
+requires = Array[StringName]([&"training", &"medicine"])
+min_wave = 9
+effects = {
+"hero_damage_pct": 0.15,
+"hero_hp": 60.0
+}

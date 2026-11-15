@@ -34,7 +34,8 @@ func _ready() -> void:
 # --- Ganchos de Structure ---------------------------------------------------------
 
 func _max_hp() -> float:
-	return def.max_health * (1.0 + 0.5 * (level - 1)) * _eng_hp()
+	var tech := 1.0 + (Tech.bonus("wall_hp_pct") if def.category == BuildingDef.Category.WALL else 0.0)
+	return def.max_health * (1.0 + 0.5 * (level - 1)) * _eng_hp() * tech
 
 ## Bônus de Engenharia do herói (atributo).
 static func _eng_hp() -> float:
@@ -45,14 +46,6 @@ static func _eng_dmg() -> float:
 	var h := GameManager.hero as Hero
 	return h.building_damage_mult() if is_instance_valid(h) and h.attr_cfg else 1.0
 
-## Reaplica bônus externos (chamado pelo herói ao mudar atributos).
-func refresh_stats() -> void:
-	if health == null or health.dead:
-		return
-	var ratio := health.ratio()
-	health.max_health = _max_hp()
-	health.current = health.max_health * ratio
-	health.changed.emit(health.current, health.max_health)
 
 func _armor() -> float:
 	return def.armor + (level - 1)
@@ -184,13 +177,13 @@ static func _box(parent: Node3D, size: Vector3, pos: Vector3, mat: Material) -> 
 # --- Comportamento ----------------------------------------------------------------
 
 func tower_damage() -> float:
-	return def.tower_damage * (1.0 + 0.4 * (level - 1)) * _eng_dmg()
+	return def.tower_damage * (1.0 + 0.4 * (level - 1)) * _eng_dmg() * (1.0 + Tech.bonus("tower_damage_pct"))
 
 func tower_range() -> float:
-	return def.tower_range + 1.5 * (level - 1)
+	return (def.tower_range + 1.5 * (level - 1)) * (1.0 + Tech.bonus("tower_range_pct"))
 
 func trap_damage() -> float:
-	return def.trap_damage * (1.0 + 0.4 * (level - 1)) * _eng_dmg()
+	return def.trap_damage * (1.0 + 0.4 * (level - 1)) * _eng_dmg() * (1.0 + Tech.bonus("tower_damage_pct"))
 
 func _process(delta: float) -> void:
 	if health.dead or def == null:
@@ -209,7 +202,7 @@ func _process_tower(delta: float) -> void:
 	if target == null:
 		_cooldown = 0.25
 		return
-	_cooldown = 1.0 / (def.attacks_per_second * (1.0 + 0.15 * (level - 1)))
+	_cooldown = 1.0 / (def.attacks_per_second * (1.0 + 0.15 * (level - 1)) * (1.0 + Tech.bonus("tower_speed_pct")))
 	var from := global_position + Vector3(0, def.height * 0.85, 0)
 	match def.tower_kind:
 		BuildingDef.TowerKind.PIERCE:

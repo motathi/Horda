@@ -47,6 +47,7 @@ func start_new_game(diff: String, cycle: String = "normal") -> void:
 	load_from_save = false
 	stats = {"kills": 0, "nights_survived": 0, "items_collected": 0}
 	ResourceManager.reset()
+	Tech.reset()
 	# Kit inicial: dá para erguer a primeira defesa já no Dia 1.
 	for id: StringName in STARTER_KIT:
 		ResourceManager.storage.add(id, STARTER_KIT[id])
@@ -64,6 +65,7 @@ func continue_game() -> void:
 	stats = meta.get("stats", stats)
 	hero_skin = str(meta.get("hero_skin", hero_skin))
 	ResourceManager.reset()
+	Tech.reset()
 	TimeManager.setup(cycle_preset)
 	_change_to_world()
 

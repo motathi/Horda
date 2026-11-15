@@ -109,6 +109,15 @@ func _ready() -> void:
 	world.hud.base_panel._rebuild()
 	await _frames(6)
 	await _shot("21_forja")
+	Tech.complete(Tech.get_def(&"walls1"))
+	Tech.complete(Tech.get_def(&"tools"))
+	Tech.complete(Tech.get_def(&"training"))
+	Tech.active = &"arrows1"
+	Tech.progress = 22.0
+	world.hud.base_panel._tab = 2
+	world.hud.base_panel._rebuild()
+	await _frames(6)
+	await _shot("23_pesquisa")
 	world.hud.base_panel.visible = false
 	world.hud.base_panel._tab = 0
 	for i in 3:
