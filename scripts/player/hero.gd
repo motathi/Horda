@@ -6,6 +6,7 @@ extends CharacterBody3D
 signal attack_cooldown_changed(ratio: float)
 signal stats_changed
 signal leveled_up(level: int)
+signal ability_cast(index: int)
 
 @export_group("Atributos")
 @export var max_health: float = 220.0
@@ -28,6 +29,22 @@ const LEVEL_DAMAGE := 3.0
 
 var level: int = 1
 var xp: int = 0
+
+# --- Habilidades ---------------------------------------------------------------
+const ABILITY_IDS: Array[StringName] = [&"whirlwind", &"dash", &"warcry", &"nova"]
+const DASH_SPEED := 34.0
+var abilities: Array[AbilityDef] = []
+var max_energy: float = 100.0
+var energy: float = 100.0
+var energy_regen: float = 6.0
+var _cd: Array[float] = [0.0, 0.0, 0.0, 0.0]
+var _armor_buff_left: float = 0.0
+var _armor_buff: float = 0.0
+var _dash_left: float = 0.0
+var _dash_dir: Vector3 = Vector3.ZERO
+var _dash_hit: Dictionary = {}
+var _dash_power: float = 1.0
+var _dash_def: AbilityDef
 
 var weapon_level: int = 0
 ## Modo toque (celular): ataque pelo botão, mira automática, toque no mundo = mover/atacar.
@@ -69,6 +86,8 @@ func _ready() -> void:
 	GameManager.hero = self
 	touch_mode = Platform.touch
 	EventBus.enemy_killed.connect(_on_enemy_killed)
+	for id in ABILITY_IDS:
+		abilities.append(load("res://data/skills/%s.tres" % id) as AbilityDef)
 	# Lanterna: luz quente ao redor do herói durante a noite (grupo night_lights).
 	var lantern := OmniLight3D.new()
 	lantern.light_color = Color(1.0, 0.75, 0.45)
@@ -120,6 +139,10 @@ func _physics_process(delta: float) -> void:
 	if not GameManager.is_playing():
 		velocity = Vector3.ZERO
 		model.animate(delta, 0.0)
+		return
+	_tick_abilities(delta)
+	if _dash_left > 0.0:
+		_process_dash(delta)
 		return
 	_attack_timer = maxf(0.0, _attack_timer - delta)
 	attack_cooldown_changed.emit(_attack_timer * attacks_per_second)
@@ -213,6 +236,12 @@ func _unhandled_input(event: InputEvent) -> void:
 		use_consumable(&"meat")
 	elif event.is_action_pressed("use_slot_2"):
 		use_consumable(&"bandage")
+	else:
+		for i in 4:
+			if event.is_action_pressed("ability_%d" % (i + 1)):
+				var why := cast_ability(i)
+				if why != "":
+					EventBus.notify(why, Color(1, 0.6, 0.45))
 
 func _selectable(n: Node) -> bool:
 	return n.is_in_group("enemies") or n.is_in_group("structures") or n.is_in_group("interactable") or n.is_in_group("harvestable")
@@ -346,11 +375,149 @@ func respawn() -> void:
 	global_position = _home
 	velocity = Vector3.ZERO
 	health.revive(1.0)
+	energy = max_energy
 	model.reset_pose()
 	collision_layer = Layers.HERO
 	add_to_group("allies")
 	EventBus.hero_respawned.emit()
 	EventBus.notify("O herói voltou à base.", Color(0.6, 0.9, 1.0))
+
+# --- Habilidades ----------------------------------------------------------
+
+func _tick_abilities(delta: float) -> void:
+	energy = minf(max_energy, energy + energy_regen * delta)
+	for i in 4:
+		_cd[i] = maxf(0.0, _cd[i] - delta)
+	if _armor_buff_left > 0.0:
+		_armor_buff_left -= delta
+		if _armor_buff_left <= 0.0:
+			health.armor -= _armor_buff
+			_armor_buff = 0.0
+			stats_changed.emit()
+
+func is_unlocked(i: int) -> bool:
+	return level >= abilities[i].unlock_level
+
+func cooldown_left(i: int) -> float:
+	return _cd[i]
+
+func cooldown_ratio(i: int) -> float:
+	return _cd[i] / maxf(0.01, abilities[i].cooldown)
+
+## "" se pode usar; senão o motivo.
+func ability_block_reason(i: int) -> String:
+	var a := abilities[i]
+	if health.dead:
+		return "Herói caído."
+	if not is_unlocked(i):
+		return "%s libera no nível %d." % [a.display_name, a.unlock_level]
+	if _cd[i] > 0.0:
+		return "%s em recarga (%.0fs)." % [a.display_name, ceil(_cd[i])]
+	if energy < a.energy_cost:
+		return "Energia insuficiente para %s." % a.display_name
+	return ""
+
+func cast_ability(i: int) -> String:
+	if i < 0 or i >= abilities.size() or build_mode or not GameManager.is_playing():
+		return ""
+	var why := ability_block_reason(i)
+	if why != "":
+		AudioManager.play(&"ui_error", -6.0)
+		return why
+	var a := abilities[i]
+	energy -= a.energy_cost
+	_cd[i] = a.cooldown
+	match a.kind:
+		AbilityDef.Kind.WHIRLWIND: _cast_whirlwind(a)
+		AbilityDef.Kind.DASH: _cast_dash(a)
+		AbilityDef.Kind.WARCRY: _cast_warcry(a)
+		AbilityDef.Kind.NOVA: _cast_nova(a)
+	ability_cast.emit(i)
+	return ""
+
+func _enemies_in_radius(center: Vector3, r: float) -> Array[Enemy]:
+	var out: Array[Enemy] = []
+	for e in Enemy.all:
+		if is_instance_valid(e) and not e.is_dead():
+			var d := e.global_position - center
+			d.y = 0.0
+			if d.length() <= r + e.get_radius():
+				out.append(e)
+	return out
+
+func _cast_whirlwind(a: AbilityDef) -> void:
+	model.play_spin(0.4)
+	AudioManager.play_3d(&"swing", global_position, 0.0)
+	EffectsHub.spawn_ring(global_position + Vector3.UP * 0.9, a.radius, Color(1.0, 0.6, 0.2), 0.35)
+	for e in _enemies_in_radius(global_position, a.radius):
+		var crit := _rng.randf() < crit_chance
+		e.take_damage(DamageInfo.make(damage() * a.power * (crit_multiplier if crit else 1.0), self, crit))
+
+func _cast_dash(a: AbilityDef) -> void:
+	var dir := _input_direction()
+	if dir == Vector3.ZERO:
+		dir = facing()
+	_dash_dir = dir
+	_dash_left = a.distance / DASH_SPEED
+	_dash_hit.clear()
+	_dash_def = a
+	_has_move_target = false
+	_target_enemy = null
+	health.invulnerable = true
+	_face(global_position + dir, 1.0, 100.0)
+	model.play_attack(0.3)
+	AudioManager.play_3d(&"swing", global_position, 2.0)
+
+func _process_dash(delta: float) -> void:
+	_dash_left -= delta
+	velocity = _dash_dir * DASH_SPEED
+	move_and_slide()
+	global_position.y = maxf(global_position.y, 0.0)
+	EffectsHub.spawn_debris(global_position + Vector3.UP * 0.3, true)
+	for e in _enemies_in_radius(global_position, _dash_def.radius):
+		if _dash_hit.has(e):
+			continue
+		_dash_hit[e] = true
+		e.take_damage(DamageInfo.make(damage() * _dash_def.power, self))
+		e.stun(_dash_def.duration)
+	model.animate(delta, 1.0)
+	if _dash_left <= 0.0:
+		velocity = Vector3.ZERO
+		health.invulnerable = false
+
+func _cast_warcry(a: AbilityDef) -> void:
+	health.heal_over_time(health.max_health * a.power, 3.0)
+	if _armor_buff_left <= 0.0:
+		_armor_buff = 6.0
+		health.armor += _armor_buff
+	_armor_buff_left = a.duration
+	EffectsHub.spawn_ring(global_position + Vector3.UP * 0.2, 3.5, Color(1.0, 0.85, 0.3), 0.6)
+	EffectsHub.spawn_heal(global_position)
+	AudioManager.play(&"horn", -8.0)
+	stats_changed.emit()
+
+func _cast_nova(a: AbilityDef) -> void:
+	# Alvo: o inimigo (dentro do alcance) com mais vizinhos — o centro do grupo.
+	var best: Enemy = null
+	var best_n := -1
+	for e in _enemies_in_radius(global_position, a.distance):
+		var n := _enemies_in_radius(e.global_position, a.radius).size()
+		if n > best_n:
+			best_n = n
+			best = e
+	var center := best.global_position if best else global_position + facing() * 6.0
+	center.y = 0.0
+	EffectsHub.spawn_ring(center + Vector3.UP * 0.1, a.radius, Color(0.75, 0.35, 1.0), 0.55)
+	model.play_attack(0.5)
+	var timer := get_tree().create_timer(0.55)
+	timer.timeout.connect(func() -> void:
+		if not is_instance_valid(self):
+			return
+		EffectsHub.spawn_explosion(center, a.radius)
+		AudioManager.play_3d(&"break", center, 4.0)
+		for e in _enemies_in_radius(center, a.radius):
+			e.take_damage(DamageInfo.make(damage() * a.power, self, true))
+			e.stun(a.duration))
 
 # --- Consumíveis ----------------------------------------------------------
 

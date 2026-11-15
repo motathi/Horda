@@ -16,17 +16,25 @@ var _stick_home: Vector2
 var _stick_vec: Vector2 = Vector2.ZERO
 var _buttons: Array[Dictionary] = []
 var _last_size: Vector2 = Vector2.ZERO
+var _lock_icon: Texture2D
 
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_buttons = [
-		{"id": "attack", "off": Vector2(-96, -118), "r": 70.0, "key": "", "icon": UIStyle.hud_icon("swords"), "touch": -99, "glow": 1.0},
-		{"id": "loot", "off": Vector2(-258, -112), "r": 50.0, "key": "E", "icon": UIStyle.hud_icon("loot"), "touch": -99, "glow": 0.0},
-		{"id": "meat", "off": Vector2(-212, -258), "r": 46.0, "key": "1", "icon": UIStyle.hud_icon("meat"), "touch": -99, "glow": 0.0},
-		{"id": "bandage", "off": Vector2(-90, -284), "r": 46.0, "key": "2", "icon": UIStyle.hud_icon("potion"), "touch": -99, "glow": 0.0},
-		{"id": "build", "off": Vector2(-376, -104), "r": 44.0, "key": "G", "icon": UIStyle.hud_icon("build"), "touch": -99, "glow": 0.0},
+		{"id": "attack", "off": Vector2(-100, -120), "r": 66.0, "key": "", "icon": UIStyle.hud_icon("swords"), "touch": -99, "glow": 1.0},
+		# Habilidades em arco em volta do ataque
+		{"id": "ab0", "off": Vector2(-238, -64), "r": 42.0, "key": "Q", "icon": UIStyle.hud_icon("ab_whirl"), "touch": -99, "glow": 0.0},
+		{"id": "ab1", "off": Vector2(-258, -172), "r": 42.0, "key": "F", "icon": UIStyle.hud_icon("ab_dash"), "touch": -99, "glow": 0.0},
+		{"id": "ab2", "off": Vector2(-198, -268), "r": 42.0, "key": "R", "icon": UIStyle.hud_icon("ab_warcry"), "touch": -99, "glow": 0.0},
+		{"id": "ab3", "off": Vector2(-88, -294), "r": 46.0, "key": "T", "icon": UIStyle.hud_icon("ab_nova"), "touch": -99, "glow": 0.0},
+		# Fileira de utilidades
+		{"id": "loot", "off": Vector2(-378, -50), "r": 34.0, "key": "E", "icon": UIStyle.hud_icon("loot"), "touch": -99, "glow": 0.0},
+		{"id": "meat", "off": Vector2(-460, -50), "r": 34.0, "key": "1", "icon": UIStyle.hud_icon("meat"), "touch": -99, "glow": 0.0},
+		{"id": "bandage", "off": Vector2(-542, -50), "r": 34.0, "key": "2", "icon": UIStyle.hud_icon("potion"), "touch": -99, "glow": 0.0},
+		{"id": "build", "off": Vector2(-624, -50), "r": 34.0, "key": "G", "icon": UIStyle.hud_icon("build"), "touch": -99, "glow": 0.0},
 	]
+	_lock_icon = UIStyle.hud_icon("lock")
 
 func _center(b: Dictionary) -> Vector2:
 	return get_viewport_rect().size + (b.off as Vector2)
@@ -118,6 +126,10 @@ func _press(id: String) -> void:
 		"meat": hero.use_consumable(&"meat")
 		"bandage": hero.use_consumable(&"bandage")
 		"build": build_pressed.emit()
+		"ab0", "ab1", "ab2", "ab3":
+			var why := hero.cast_ability(int(id.substr(2)))
+			if why != "":
+				EventBus.notify(why, Color(1, 0.6, 0.45))
 
 func _update_stick(pos: Vector2) -> void:
 	var v := (pos - _stick_center) / STICK_RADIUS
@@ -152,6 +164,9 @@ func _draw() -> void:
 		var c := _center(b)
 		var r: float = b.r
 		var pressed: bool = b.touch != -99
+		if String(b.id).begins_with("ab"):
+			_draw_ability(b, c, r, pressed, f)
+			continue
 		var count := -1
 		if b.id in ["meat", "bandage"] and hero:
 			var cid := StringName(b.id)
@@ -164,3 +179,41 @@ func _draw() -> void:
 			var pos := c + Vector2(-r * 0.5, -r * 0.28)
 			draw_string_outline(f, pos, t, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, 5, Color.BLACK)
 			draw_string(f, pos, t, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color.WHITE)
+
+func _draw_ability(b: Dictionary, c: Vector2, r: float, pressed: bool, f: Font) -> void:
+	if hero == null:
+		return
+	var i := int(String(b.id).substr(2))
+	var a := hero.abilities[i]
+	var locked := not hero.is_unlocked(i)
+	var cd := hero.cooldown_left(i)
+	var no_energy := hero.energy < a.energy_cost
+	UIStyle.draw_hex_button(self, c, r, b.icon, pressed, 0.6 if (not locked and cd <= 0.0 and not no_energy and i == 3) else 0.0, locked or no_energy)
+	if locked:
+		draw_colored_polygon(UIStyle.hex_points(c, r - 8.0), Color(0, 0, 0, 0.55))
+		if _lock_icon:
+			draw_texture_rect(_lock_icon, Rect2(c - Vector2(r, r) * 0.38, Vector2(r, r) * 0.76), false)
+		var t := "Nv %d" % a.unlock_level
+		var w := f.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, 15).x
+		draw_string_outline(f, c + Vector2(-w * 0.5, r * 0.62), t, HORIZONTAL_ALIGNMENT_LEFT, -1, 15, 4, Color.BLACK)
+		draw_string(f, c + Vector2(-w * 0.5, r * 0.62), t, HORIZONTAL_ALIGNMENT_LEFT, -1, 15, UIStyle.GOLD)
+	elif cd > 0.0:
+		# Escurece a fração ainda em recarga (de cima para baixo) e mostra os segundos.
+		var ratio := hero.cooldown_ratio(i)
+		var pts := UIStyle.hex_points(c, r - 8.0)
+		var top := c.y - (r - 8.0)
+		var cut := top + (r - 8.0) * 2.0 * ratio
+		var clipped := Geometry2D.intersect_polygons(pts, PackedVector2Array([Vector2(c.x - r, top - 2), Vector2(c.x + r, top - 2), Vector2(c.x + r, cut), Vector2(c.x - r, cut)]))
+		for poly in clipped:
+			draw_colored_polygon(poly, Color(0, 0, 0, 0.62))
+		var t2 := str(ceili(cd))
+		var w2 := f.get_string_size(t2, HORIZONTAL_ALIGNMENT_LEFT, -1, 24).x
+		draw_string_outline(f, c + Vector2(-w2 * 0.5, 9), t2, HORIZONTAL_ALIGNMENT_LEFT, -1, 24, 5, Color.BLACK)
+		draw_string(f, c + Vector2(-w2 * 0.5, 9), t2, HORIZONTAL_ALIGNMENT_LEFT, -1, 24, Color.WHITE)
+	UIStyle.draw_badge(self, c + Vector2(r * 0.62, r * 0.62), 13.0, b.key, 16)
+	# Custo de energia (gota azul)
+	var cost := str(int(a.energy_cost))
+	var pos := c + Vector2(-r * 0.78, r * 0.72)
+	draw_circle(pos + Vector2(8, -6), 11.0, Color(0.1, 0.25, 0.7, 0.95))
+	var cw := f.get_string_size(cost, HORIZONTAL_ALIGNMENT_LEFT, -1, 13).x
+	draw_string(f, pos + Vector2(8 - cw * 0.5, -1), cost, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color.WHITE)

@@ -124,5 +124,35 @@
   "out": "assets/ui/hud/src/demolish.jpg",
   "size": "1024x1024",
   "prompt": "Game UI icon of a cracked broken brick with dust, glossy stylized hand-painted mobile strategy game UI icon, chunky readable shape, vibrant saturated colors, soft specular highlights, thick dark outline, centered, isolated on a completely black #000000 background, the background must be pitch black, no frame, no border, no text"
+ },
+ {
+  "name": "ui_ab_whirl",
+  "out": "assets/ui/hud/src/ab_whirl.jpg",
+  "size": "1024x1024",
+  "prompt": "Game ability icon of a battle axe spinning in a fiery orange whirlwind circle, glossy stylized hand-painted MOBA ability icon in the style of Dota 2, dynamic composition, glowing magical effects, vibrant saturated colors, thick dark outline, centered, isolated on a completely black #000000 background, the background must be pitch black, no frame, no border, no text"
+ },
+ {
+  "name": "ui_ab_dash",
+  "out": "assets/ui/hud/src/ab_dash.jpg",
+  "size": "1024x1024",
+  "prompt": "Game ability icon of a hero silhouette charging forward with blue speed lines and a shockwave, glossy stylized hand-painted MOBA ability icon in the style of Dota 2, dynamic composition, glowing magical effects, vibrant saturated colors, thick dark outline, centered, isolated on a completely black #000000 background, the background must be pitch black, no frame, no border, no text"
+ },
+ {
+  "name": "ui_ab_warcry",
+  "out": "assets/ui/hud/src/ab_warcry.jpg",
+  "size": "1024x1024",
+  "prompt": "Game ability icon of a golden glowing shield with a roaring lion emblem and healing green sparks, glossy stylized hand-painted MOBA ability icon in the style of Dota 2, dynamic composition, glowing magical effects, vibrant saturated colors, thick dark outline, centered, isolated on a completely black #000000 background, the background must be pitch black, no frame, no border, no text"
+ },
+ {
+  "name": "ui_ab_nova",
+  "out": "assets/ui/hud/src/ab_nova.jpg",
+  "size": "1024x1024",
+  "prompt": "Game ability icon of a massive purple arcane explosion orb with lightning, glossy stylized hand-painted MOBA ability icon in the style of Dota 2, dynamic composition, glowing magical effects, vibrant saturated colors, thick dark outline, centered, isolated on a completely black #000000 background, the background must be pitch black, no frame, no border, no text"
+ },
+ {
+  "name": "ui_lock",
+  "out": "assets/ui/hud/src/lock.jpg",
+  "size": "1024x1024",
+  "prompt": "Game ability icon of a heavy iron padlock, glossy stylized hand-painted MOBA ability icon in the style of Dota 2, dynamic composition, glowing magical effects, vibrant saturated colors, thick dark outline, centered, isolated on a completely black #000000 background, the background must be pitch black, no frame, no border, no text"
  }
 ]

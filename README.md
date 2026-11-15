@@ -22,7 +22,7 @@ Cada push no GitHub recompila automaticamente no Vercel (`tools/vercel_build.sh`
 ## Como jogar (PC)
 
 1. Abra a pasta no Godot 4.3 (ou mais novo) e pressione **F5**.
-2. *Novo jogo* → escolha dificuldade e duração do ciclo (Normal 22 min / Rápido 11 min).
+2. *Novo jogo* → escolha a dificuldade.
 
 | Controle | Ação |
 |---|---|
@@ -34,7 +34,8 @@ Cada push no GitHub recompila automaticamente no Vercel (`tools/vercel_build.sh`
 | I ou Tab | Inventário (mochila + armazém) |
 | B | Base: reparar muros/núcleo, afiar arma, fabricar curativos |
 | G | Construir: barricada, muro de pedra, torre de arqueiros, armadilha de espinhos (T gira, clique constrói, botão direito cancela) |
-| Roda / Q, R / C | Zoom / girar câmera / centralizar |
+| Q / F / R / T | Habilidades: Golpe Giratório (nv 1), Investida (nv 2), Grito de Guerra (nv 3), Explosão Arcana (nv 5) |
+| Roda / Z, X / C | Zoom / girar câmera / centralizar |
 | F5 | Salvar (somente de dia; também salva sozinho a cada amanhecer) |
 | F8 | [Depuração] avançar período do dia |
 | F1 / Esc | Controles / pausa |
@@ -42,6 +43,12 @@ Cada push no GitHub recompila automaticamente no Vercel (`tools/vercel_build.sh`
 **100 hordas:** antes de cada horda há **2 minutos de preparação** (ou toque em "Chamar agora"). A horda
 termina quando o último zumbi cai — e já começa a próxima preparação. Elites a cada 5 hordas, **chefe** a
 cada 10 (atacando de todas as direções). Vencer a horda 100 = vitória.
+
+**Habilidades:** gastam **energia** (barra azul, regenera 6/s) e têm recarga. *Golpe Giratório* acerta
+tudo ao redor; *Investida* avança 8 m invulnerável atordoando quem estiver no caminho; *Grito de Guerra*
+cura 30% da vida e dá +6 de armadura por 8 s; *Explosão Arcana* cai sobre o maior grupo de zumbis
+num raio de 14 m e atordoa os sobreviventes. Novas habilidades liberam ao subir de nível. Dados em
+`data/skills/*.tres`.
 
 **Na preparação:** explore as regiões (Floresta, Pedreira, Cidade Abandonada, Fazenda, Área Contaminada),
 mate zumbis, colete madeira/pedra, saqueie e volte à base — a mochila (60 de peso) é guardada

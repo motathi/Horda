@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="AbilityDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/progression/ability_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"warcry"
+display_name = "Grito de Guerra"
+description = "Recupera 30% da vida em 3 s e ganha +6 de armadura por 8 s."
+icon_name = "ab_warcry"
+kind = 2
+unlock_level = 3
+energy_cost = 35.0
+cooldown = 18.0
+power = 0.3
+radius = 0.0
+distance = 0.0
+duration = 8.0

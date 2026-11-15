@@ -88,6 +88,16 @@ func make_elite() -> void:
 	add_child(aura)
 
 var is_boss: bool = false
+var _stun_left: float = 0.0
+
+## Atordoa (para de andar e de atacar). Chefes ficam atordoados por menos tempo.
+func stun(seconds: float) -> void:
+	if state == State.DEAD:
+		return
+	_stun_left = maxf(_stun_left, seconds * (0.35 if is_boss else 1.0))
+
+func is_stunned() -> bool:
+	return _stun_left > 0.0
 
 ## Chefe das hordas 10, 20, ...: gigante, muito resistente e com aura vermelha.
 func make_boss() -> void:
@@ -138,6 +148,12 @@ func _physics_process(delta: float) -> void:
 		return
 	if _burning >= 0.0:
 		_process_burn(delta)
+	if _stun_left > 0.0:
+		_stun_left -= delta
+		velocity = Vector3.ZERO
+		_windup = -1.0
+		model.animate(delta, 0.0)
+		return
 	var hero := GameManager.hero
 	# Inimigos diurnos muito longe do herói "dormem" (economia de CPU).
 	if not is_horde and hero and hero.global_position.distance_to(global_position) > SLEEP_DISTANCE:

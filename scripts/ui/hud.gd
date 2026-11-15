@@ -67,7 +67,7 @@ func _ready() -> void:
 	hero_panel.portrait_pressed.connect(_toggle_inventory)
 
 	objectives_panel = ObjectivesPanel.new()
-	_anchor(objectives_panel, Control.PRESET_TOP_LEFT, Vector2(16, 134), Control.GROW_DIRECTION_END, Control.GROW_DIRECTION_END)
+	_anchor(objectives_panel, Control.PRESET_TOP_LEFT, Vector2(16, 160), Control.GROW_DIRECTION_END, Control.GROW_DIRECTION_END)
 	root.add_child(objectives_panel)
 
 	# Topo central: recursos
@@ -106,7 +106,7 @@ func _ready() -> void:
 	root.add_child(selection)
 
 	_feed = VBoxContainer.new()
-	_anchor(_feed, Control.PRESET_TOP_LEFT, Vector2(16, 300), Control.GROW_DIRECTION_END, Control.GROW_DIRECTION_END)
+	_anchor(_feed, Control.PRESET_TOP_LEFT, Vector2(16, 330), Control.GROW_DIRECTION_END, Control.GROW_DIRECTION_END)
 	_feed.custom_minimum_size = Vector2(440, 0)
 	_feed.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(_feed)
@@ -393,8 +393,9 @@ func _build_help() -> Control:
 		["I ou Tab", "Inventário (mochila e armazém)"],
 		["B", "Menu da base: reparar muros/núcleo, afiar arma, fabricar curativos"],
 		["G", "Construir: muros, barricadas, torres de arqueiros e armadilhas (T gira, clique constrói)"],
+		["Q / F / R / T", "Habilidades: Golpe Giratório, Investida, Grito de Guerra, Explosão Arcana"],
 		["Roda do mouse", "Zoom"],
-		["Q / R ou botão do meio", "Girar câmera"],
+		["Z / X ou botão do meio", "Girar câmera"],
 		["C", "Centralizar câmera no herói"],
 		["F5", "Salvar (somente de dia)"],
 		["F8", "[Depuração] Avançar período do dia"],

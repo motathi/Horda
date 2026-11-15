@@ -6,13 +6,15 @@ extends Control
 signal portrait_pressed
 
 const W := 330.0
-const H := 112.0
+const H := 140.0
 const PORTRAIT := 96.0
 
 var hero: Hero
 var _hp_bar: ProgressBar
 var _hp_label: Label
 var _bag_bar: ProgressBar
+var _en_bar: ProgressBar
+var _en_label: Label
 var _bag_label: Label
 var _portrait_tex: Texture2D
 var _heart: Texture2D
@@ -33,9 +35,15 @@ func _ready() -> void:
 	_hp_bar.size = Vector2(W - PORTRAIT - 72, 26)
 	add_child(_hp_bar)
 	_hp_label = _bar_label(_hp_bar)
-	_bag_bar = UIStyle.hud_bar(Color(0.72, 0.5, 0.2), 24)
-	_bag_bar.position = Vector2(PORTRAIT + 58, 76)
-	_bag_bar.size = Vector2(W - PORTRAIT - 72, 24)
+	_en_bar = UIStyle.hud_bar(Color(0.2, 0.45, 1.0), 20)
+	_en_bar.position = Vector2(PORTRAIT + 58, 72)
+	_en_bar.size = Vector2(W - PORTRAIT - 72, 20)
+	add_child(_en_bar)
+	_en_label = _bar_label(_en_bar)
+	_en_label.add_theme_font_size_override("font_size", 14)
+	_bag_bar = UIStyle.hud_bar(Color(0.72, 0.5, 0.2), 22)
+	_bag_bar.position = Vector2(PORTRAIT + 58, 102)
+	_bag_bar.size = Vector2(W - PORTRAIT - 72, 22)
 	add_child(_bag_bar)
 	_bag_label = _bar_label(_bag_bar)
 	tooltip_text = "Clique no retrato para abrir o inventário"
@@ -62,6 +70,9 @@ func _process(_delta: float) -> void:
 	_hp_bar.max_value = h.max_health
 	_hp_bar.value = h.current
 	_hp_label.text = "%d / %d" % [int(h.current), int(h.max_health)]
+	_en_bar.max_value = hero.max_energy
+	_en_bar.value = hero.energy
+	_en_label.text = "%d / %d" % [int(hero.energy), int(hero.max_energy)]
 	var inv := ResourceManager.hero_inventory
 	_bag_bar.max_value = inv.capacity
 	_bag_bar.value = inv.used_weight()
@@ -78,7 +89,10 @@ func _draw() -> void:
 	if _heart:
 		draw_texture_rect(_heart, Rect2(Vector2(PORTRAIT + 20, 34), Vector2(36, 36)), false)
 	if _bag:
-		draw_texture_rect(_bag, Rect2(Vector2(PORTRAIT + 20, 70), Vector2(36, 36)), false)
+		draw_texture_rect(_bag, Rect2(Vector2(PORTRAIT + 20, 96), Vector2(34, 34)), false)
+	# Ícone de energia (gota azul)
+	draw_circle(Vector2(PORTRAIT + 38, 82), 11.0, Color(0.15, 0.4, 1.0))
+	draw_circle(Vector2(PORTRAIT + 35, 79), 4.0, Color(0.7, 0.85, 1.0, 0.8))
 	# Retrato com moldura dourada
 	var pr := Rect2(Vector2(4, 4), Vector2(PORTRAIT, PORTRAIT + 4))
 	var frame := StyleBoxFlat.new()

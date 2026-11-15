@@ -387,6 +387,16 @@ func play_attack(duration: float) -> void:
 		_anim.seek(0.0, true)
 		_anim.speed_scale = a.length / _attack_dur
 
+## Giro completo do corpo (Golpe Giratório).
+func play_spin(duration: float) -> void:
+	if _rig == null:
+		return
+	play_attack(duration)
+	var tw := create_tween()
+	_rig.rotation.y = 0.0
+	tw.tween_property(_rig, "rotation:y", TAU, duration).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tw.tween_callback(func() -> void: _rig.rotation.y = 0.0)
+
 func flash() -> void:
 	_flash_t = 0.09
 	_set_overlay(MaterialLib.flash())

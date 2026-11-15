@@ -134,6 +134,64 @@ static func spawn_slash(pos: Vector3, yaw: float) -> void:
 	tw.tween_property(arc, "scale", Vector3(1.4, 0.02, 1.4), 0.15)
 	tw.tween_callback(arc.queue_free)
 
+## Anel que se expande no chão (área de habilidade).
+static func spawn_ring(pos: Vector3, radius: float, color: Color, duration: float) -> void:
+	if _inst == null:
+		return
+	var ring := MeshInstance3D.new()
+	var torus := TorusMesh.new()
+	torus.inner_radius = 0.86
+	torus.outer_radius = 1.0
+	torus.rings = 32
+	torus.ring_segments = 6
+	ring.mesh = torus
+	var m := StandardMaterial3D.new()
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	m.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	m.albedo_color = Color(color, 0.9)
+	ring.material_override = m
+	ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_inst.add_child(ring)
+	ring.global_position = pos
+	ring.scale = Vector3(radius * 0.2, 0.15, radius * 0.2)
+	var tw := ring.create_tween()
+	tw.tween_property(ring, "scale", Vector3(radius, 0.15, radius), duration).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	tw.parallel().tween_property(m, "albedo_color:a", 0.0, duration * 1.3)
+	tw.tween_callback(ring.queue_free)
+
+## Explosão (esfera brilhante que cresce + clarão + estilhaços).
+static func spawn_explosion(pos: Vector3, radius: float) -> void:
+	if _inst == null:
+		return
+	var orb := MeshInstance3D.new()
+	var sph := SphereMesh.new()
+	sph.radius = 1.0
+	sph.height = 2.0
+	orb.mesh = sph
+	var m := StandardMaterial3D.new()
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	m.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	m.albedo_color = Color(0.55, 0.22, 0.95, 0.42)
+	orb.material_override = m
+	orb.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_inst.add_child(orb)
+	orb.global_position = pos + Vector3.UP * 0.5
+	orb.scale = Vector3.ONE * 0.4
+	var light := OmniLight3D.new()
+	light.light_color = Color(0.8, 0.5, 1.0)
+	light.light_energy = 3.5
+	light.omni_range = radius * 2.5
+	orb.add_child(light)
+	var tw := orb.create_tween()
+	tw.tween_property(orb, "scale", Vector3(radius, radius * 0.6, radius), 0.3).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
+	tw.parallel().tween_property(m, "albedo_color:a", 0.0, 0.5)
+	tw.parallel().tween_property(light, "light_energy", 0.0, 0.5)
+	tw.tween_callback(orb.queue_free)
+	for i in 4:
+		spawn_debris(pos + Vector3(randf_range(-radius, radius) * 0.5, 0.6, randf_range(-radius, radius) * 0.5), true)
+
 ## Fogo preso a um nó (zumbis queimando ao amanhecer).
 static func attach_fire(target: Node3D) -> Node3D:
 	var f := make_fire_particles(0.8)

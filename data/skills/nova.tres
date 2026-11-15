@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="AbilityDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/progression/ability_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"nova"
+display_name = "Explosão Arcana"
+description = "Explosão no grupo de inimigos mais próximo: muito dano em área e atordoamento."
+icon_name = "ab_nova"
+kind = 3
+unlock_level = 5
+energy_cost = 60.0
+cooldown = 40.0
+power = 4.5
+radius = 6.0
+distance = 14.0
+duration = 1.5

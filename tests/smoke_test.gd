@@ -34,6 +34,7 @@ func _ready() -> void:
 	print("Mundo pronto em %d ms" % (Time.get_ticks_msec() - t0))
 	await _test_world()
 	await _test_combat()
+	await _test_abilities()
 	await _test_harvest_and_loot()
 	await _test_base_services()
 	await _test_building()
@@ -111,6 +112,81 @@ func _test_combat() -> void:
 	check(e2.state == Enemy.State.ATTACK or e2.state == Enemy.State.CHASE, "zumbi persegue o herói (estado %d)" % e2.state)
 	check(hero.health.current < hp0, "zumbi causa dano ao herói (%.0f -> %.0f)" % [hp0, hero.health.current])
 	e2.take_damage(DamageInfo.make(9999, hero))
+	hero.health.heal(9999)
+
+func _spawn_zombie(pos: Vector3) -> Enemy:
+	var e := (load("res://scenes/enemies/zombie.tscn") as PackedScene).instantiate() as Enemy
+	world.enemies_root.add_child(e)
+	e.global_position = pos
+	e.configure(load("res://data/enemies/zombie_brute.tres"))
+	return e
+
+func _test_abilities() -> void:
+	print("[habilidades]")
+	var hero := world.hero
+	hero.global_position = Vector3(50, 0, 50)
+	hero.health.invulnerable = true
+	hero.energy = hero.max_energy
+	check(hero.level < 5 and hero.ability_block_reason(3).contains("nível"), "Explosão Arcana bloqueada antes do nível 5 (herói nv. %d)" % hero.level)
+	# Golpe Giratório
+	var ring: Array[Enemy] = []
+	for k in 3:
+		var a := k * TAU / 3.0
+		ring.append(_spawn_zombie(hero.global_position + Vector3(cos(a), 0, sin(a)) * 2.5))
+	await wait(0.1)
+	var hp0 := ring.map(func(e: Enemy) -> float: return e.health.current)
+	var why := hero.cast_ability(0)
+	await wait(0.1)
+	var all_hit := true
+	for k in 3:
+		all_hit = all_hit and ring[k].health.current < hp0[k]
+	check(why == "" and all_hit, "Golpe Giratório acerta todos em volta")
+	check(hero.energy < hero.max_energy - 20.0 and hero.cooldown_left(0) > 0.0, "gasta energia e entra em recarga")
+	check(hero.cast_ability(0).contains("recarga"), "não usa de novo durante a recarga")
+	for e in ring:
+		e.take_damage(DamageInfo.make(99999, null))
+	# Sobe para o nível 5 (libera todas)
+	while hero.level < 5:
+		hero.add_xp(hero.xp_to_next())
+	hero.energy = hero.max_energy
+	# Investida
+	var victim := _spawn_zombie(hero.global_position + hero.facing() * 4.0)
+	await wait(0.1)
+	var p0 := hero.global_position
+	why = hero.cast_ability(1)
+	await wait(0.6)
+	var moved := hero.global_position.distance_to(p0)
+	check(why == "" and moved > 5.0, "Investida avança %.1f m" % moved)
+	check(victim.is_stunned() or victim.health.current < victim.health.max_health, "Investida fere/atordoa quem está no caminho")
+	victim.take_damage(DamageInfo.make(99999, null))
+	# Grito de Guerra
+	hero.health.invulnerable = false
+	hero.health.take_damage(DamageInfo.make(150, null))
+	hero.health.invulnerable = true
+	var armor0 := hero.health.armor
+	var hp_before := hero.health.current
+	hero.energy = hero.max_energy
+	why = hero.cast_ability(2)
+	await wait(1.5)
+	check(why == "" and hero.health.armor > armor0 and hero.health.current > hp_before, "Grito de Guerra cura e dá armadura")
+	# Explosão Arcana no grupo
+	hero.energy = hero.max_energy
+	var group: Array[Enemy] = []
+	for k in 4:
+		group.append(_spawn_zombie(hero.global_position + Vector3(7 + k * 0.8, 0, 1)))
+	await wait(0.1)
+	why = hero.cast_ability(3)
+	await wait(0.9)
+	var hit := group.filter(func(e: Enemy) -> bool: return e.is_dead() or (e.health.current < e.health.max_health and e.is_stunned())).size()
+	check(why == "" and hit >= 3, "Explosão Arcana atinge o grupo (%d de 4)" % hit)
+	for e in group:
+		if not e.is_dead():
+			e.take_damage(DamageInfo.make(99999, null))
+	hero.energy = 0.0
+	hero._cd = [0.0, 0.0, 0.0, 0.0]
+	check(hero.cast_ability(0).contains("Energia"), "sem energia não usa habilidade")
+	hero.energy = hero.max_energy
+	hero.health.invulnerable = false
 	hero.health.heal(9999)
 
 func _test_harvest_and_loot() -> void:

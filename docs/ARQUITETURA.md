@@ -82,9 +82,13 @@ estática animada por código ou para o visual procedural se o arquivo faltar.
 
 ## Roteiro
 
-- **Fase 2 — RPG**: experiência/níveis (já há `xp_reward` nos inimigos), atributos (Força, Agilidade,
-  Vitalidade, Inteligência, Engenharia), energia, habilidades (ícones de *Golpe Giratório* e *Cura* já
-  gerados), equipamentos com raridade e fabricação de armas via `Recipe`.
+- **Fase 2 — RPG (em andamento)**: níveis/XP e **habilidades prontas** — `AbilityDef`
+  (`scripts/progression/ability_def.gd`, dados em `data/skills/*.tres`: nível de liberação, custo de energia,
+  recarga, poder, raio, distância, duração); o `Hero` mantém energia e recargas e expõe
+  `cast_ability(i)`/`ability_block_reason(i)`; `Enemy.stun()` (chefes resistem 35%); efeitos
+  `EffectsHub.spawn_ring/spawn_explosion`; botões hexagonais em arco no `HudActions` com recarga e cadeado.
+  Falta: atributos (Força, Agilidade, Vitalidade, Inteligência, Engenharia), equipamentos com raridade e
+  fabricação de armas via `Recipe`.
 - **Fase 3 — Construção (núcleo pronto)**: `BuildManager` (prévia transparente, grade de 0,5 m, rotação,
   validação por área da base/espaço livre/recursos), `Building` (estende `Structure`: níveis 1–3, torre que
   dispara `Projectile` com pool, armadilha que fere e se desgasta, demolição com reembolso) e dados em

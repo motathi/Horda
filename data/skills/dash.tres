@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="AbilityDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/progression/ability_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"dash"
+display_name = "Investida"
+description = "Avança rapidamente, fere e atordoa quem estiver no caminho. Fica invulnerável durante o avanço."
+icon_name = "ab_dash"
+kind = 1
+unlock_level = 2
+energy_cost = 20.0
+cooldown = 8.0
+power = 1.5
+radius = 1.8
+distance = 8.0
+duration = 1.0

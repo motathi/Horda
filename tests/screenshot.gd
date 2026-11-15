@@ -69,9 +69,17 @@ func _ready() -> void:
 		e.global_position = hero.global_position + Vector3(-4 + i * 2.5, 0, -6 - (i % 2) * 2)
 		e.configure(load("res://data/enemies/%s.tres" % ["zombie", "zombie_fast", "zombie_brute", "zombie"][i]))
 	await _frames(40)
-	hero._start_attack()
-	await _frames(8)
+	while hero.level < 3:
+		hero.add_xp(hero.xp_to_next())
+	hero.cast_ability(0)
+	await _frames(6)
 	await _shot("03_forest_combat")
+	hero.energy = hero.max_energy
+	while hero.level < 5:
+		hero.add_xp(hero.xp_to_next())
+	hero.cast_ability(3)
+	await get_tree().create_timer(0.62).timeout
+	await _shot("12_nova")
 	# Cidade
 	hero.global_position = Vector3(70, 0, 8)
 	world.camera_rig.global_position = hero.global_position
