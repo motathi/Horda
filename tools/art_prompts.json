@@ -196,5 +196,23 @@
   "out": "assets/ui/menu_background.jpg",
   "size": "2560x1440",
   "prompt": "Epic key art for a cooperative zombie survival strategy game: a lone fortified wooden outpost with torches and watchtowers at dusk, a heroic survivor with an axe on the wall, a massive horde of zombies emerging from a dark forest under a blood-red moon, isometric-ish high angle, dramatic lighting, no text, in the art style of Dota 2 and Warcraft III, hand-painted, painterly stylized fantasy, rich saturated colors, high detail"
+ },
+ {
+  "name": "portrait_zombie_exploder",
+  "out": "assets/enemies/portrait_zombie_exploder.jpg",
+  "size": "2048x2048",
+  "prompt": "Square character portrait for a strategy game HUD, head and shoulders, three-quarter view, dramatic rim lighting, dark background, no text, a grotesquely bloated fat zombie with glowing toxic green pustules on its swollen body, tiny head, green glowing eyes, in the art style of Dota 2 and Warcraft III, hand-painted, painterly stylized fantasy, rich saturated colors, high detail"
+ },
+ {
+  "name": "portrait_zombie_spitter",
+  "out": "assets/enemies/portrait_zombie_spitter.jpg",
+  "size": "2048x2048",
+  "prompt": "Square character portrait for a strategy game HUD, head and shoulders, three-quarter view, dramatic rim lighting, dark background, no text, a hooded thin zombie with a swollen glowing acid-green throat sac, acid dripping from its open mouth, in the art style of Dota 2 and Warcraft III, hand-painted, painterly stylized fantasy, rich saturated colors, high detail"
+ },
+ {
+  "name": "portrait_zombie_leaper",
+  "out": "assets/enemies/portrait_zombie_leaper.jpg",
+  "size": "2048x2048",
+  "prompt": "Square character portrait for a strategy game HUD, head and shoulders, three-quarter view, dramatic rim lighting, dark background, no text, a wiry pale bluish leaper zombie with long claws, exposed ribs, bandages, cyan glowing eyes, crouched ready to pounce, in the art style of Dota 2 and Warcraft III, hand-painted, painterly stylized fantasy, rich saturated colors, high detail"
  }
 ]

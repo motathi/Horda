@@ -36,6 +36,7 @@ func _ready() -> void:
 	await _test_combat()
 	await _test_abilities()
 	await _test_attributes()
+	await _test_special_enemies()
 	await _test_harvest_and_loot()
 	await _test_base_services()
 	await _test_building()
@@ -238,6 +239,88 @@ func _test_attributes() -> void:
 	hero.respec()
 	hero.attr_points = 0
 	b.queue_free()
+
+func _spawn_def(id: String, pos: Vector3) -> Enemy:
+	var e := (load("res://scenes/enemies/zombie.tscn") as PackedScene).instantiate() as Enemy
+	e.def = load("res://data/enemies/%s.tres" % id) as EnemyDef
+	world.enemies_root.add_child(e)
+	e.global_position = pos
+	return e
+
+func _clear_enemies() -> void:
+	for e in Enemy.all.duplicate():
+		if is_instance_valid(e):
+			e.queue_free()
+	await wait(0.05)
+
+func _test_special_enemies() -> void:
+	print("[inimigos especiais]")
+	var hero := world.hero
+	await _clear_enemies()
+	hero.global_position = Vector3(60, 0, 60)
+	var was_invulnerable := hero.health.invulnerable
+	hero.health.invulnerable = false
+	hero.health.max_health = 5000.0
+	hero.health.current = 5000.0
+	# Explosivo chega ao herói, incha e explode.
+	var ex := _spawn_def("zombie_exploder", hero.global_position + Vector3(2.2, 0, 0))
+	var hp0 := hero.health.current
+	await wait(2.2)
+	check(ex.is_dead() or not is_instance_valid(ex), "Explosivo explode sozinho ao alcançar o herói")
+	check(hero.health.current < hp0, "explosão fere o herói (%d de dano)" % int(hp0 - hero.health.current))
+	# Explosivo abatido fere zumbis ao redor e dá XP ao herói.
+	await _clear_enemies()
+	var ex2 := _spawn_def("zombie_exploder", hero.global_position + Vector3(8, 0, 0))
+	var near := _spawn_def("zombie", hero.global_position + Vector3(9.2, 0, 0))
+	near.health.invulnerable = false
+	await wait(0.05)
+	var nhp := near.health.current
+	ex2.take_damage(DamageInfo.make(9999.0, hero))
+	await wait(0.1)
+	check(not is_instance_valid(near) or near.is_dead() or near.health.current < nhp, "Explosivo abatido fere zumbis próximos")
+	# Cuspidor ataca de longe e deixa poça de ácido.
+	await _clear_enemies()
+	hero.health.current = 5000.0
+	var sp := _spawn_def("zombie_spitter", hero.global_position + Vector3(8, 0, 0))
+	var hp1 := hero.health.current
+	var saw_puddle := false
+	for i in 40:
+		await wait(0.1)
+		if not AcidPuddle.active.is_empty():
+			saw_puddle = true
+	check(saw_puddle, "Cuspidor cospe ácido e cria poça")
+	check(is_instance_valid(sp) and _flat(sp.global_position, hero.global_position) > 3.5, "Cuspidor mantém distância do herói (%.1f m)" % _flat(sp.global_position, hero.global_position))
+	check(hero.health.current < hp1, "ácido fere o herói")
+	# Saltador salta sobre o herói.
+	await _clear_enemies()
+	var lp := _spawn_def("zombie_leaper", hero.global_position + Vector3(8, 0, 0))
+	var leapt := false
+	var max_y := 0.0
+	for i in 20:
+		await wait(0.1)
+		max_y = maxf(max_y, lp.global_position.y)
+		if lp._leap_t >= 0.0 or lp._leap_wind >= 0.0:
+			leapt = true
+	check(leapt and max_y > 1.0, "Saltador salta em arco (altura %.1f m)" % max_y)
+	check(_flat(lp.global_position, hero.global_position) < 3.0, "Saltador aterrissa junto ao herói")
+	check(lp.collision_mask & Layers.STRUCTURES != 0, "colisão com estruturas restaurada após o salto")
+	# Durante o cerco, salta por cima de muros em direção ao núcleo.
+	await _clear_enemies()
+	var core := GameManager.base_core as Node3D
+	var start := core.global_position + Vector3(0, 0, 22)
+	var lp2 := _spawn_def("zombie_leaper", start)
+	lp2.start_siege()
+	var d0 := _flat(lp2.global_position, core.global_position)
+	check(lp2._leap_over_wall(), "Saltador inicia salto sobre o muro")
+	await wait(1.2)
+	check(_flat(lp2.global_position, core.global_position) < d0 - 3.0, "salto sobre o muro aproxima do núcleo (%.1f -> %.1f m)" % [d0, _flat(lp2.global_position, core.global_position)])
+	await _clear_enemies()
+	hero.health.max_health = hero.total_max_health()
+	hero.health.current = hero.health.max_health
+	hero.health.invulnerable = was_invulnerable
+
+func _flat(a: Vector3, b: Vector3) -> float:
+	return Vector2(a.x - b.x, a.z - b.z).length()
 
 func _test_harvest_and_loot() -> void:
 	print("[coleta e saque]")

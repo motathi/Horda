@@ -70,5 +70,23 @@
   "out": "assets/concepts/cart.jpg",
   "size": "2048x2048",
   "prompt": "a broken wooden supply cart wagon loaded with crates and sacks, one wheel broken, stylized hand-painted 3D game asset in the art style of Dota 2 and Warcraft III, isometric three-quarter view from slightly above, entire object visible and centered, plain flat light grey background, soft even lighting, no text, single object only, no ground plane"
+ },
+ {
+  "name": "m_zombie_exploder",
+  "out": "assets/concepts/zombie_exploder.jpg",
+  "size": "2048x2048",
+  "prompt": "A-pose front view of a grotesquely bloated fat zombie, swollen belly covered in glowing toxic green pustules and boils, sickly yellow-green skin, tiny head, ragged stretched clothes, glowing green eyes, stylized hand-painted 3D game character in the art style of Dota 2 and Warcraft III, chunky heroic proportions, clean readable silhouette, painterly textures, full body visible head to feet, centered, plain flat light grey background, soft even studio lighting, no shadows on background, no text, single character only"
+ },
+ {
+  "name": "m_zombie_spitter",
+  "out": "assets/concepts/zombie_spitter.jpg",
+  "size": "2048x2048",
+  "prompt": "A-pose front view of a hunched thin spitter zombie, elongated swollen throat sac glowing acid green, dripping acid from the mouth, mottled grey-purple skin, torn hooded robe, glowing green eyes, stylized hand-painted 3D game character in the art style of Dota 2 and Warcraft III, chunky heroic proportions, clean readable silhouette, painterly textures, full body visible head to feet, centered, plain flat light grey background, soft even studio lighting, no shadows on background, no text, single character only"
+ },
+ {
+  "name": "m_zombie_leaper",
+  "out": "assets/concepts/zombie_leaper.jpg",
+  "size": "2048x2048",
+  "prompt": "A-pose front view of a wiry agile leaper zombie, long powerful digitigrade legs, sharp long claws, exposed ribs, pale bluish skin, tattered bandages, glowing cyan eyes, stylized hand-painted 3D game character in the art style of Dota 2 and Warcraft III, chunky heroic proportions, clean readable silhouette, painterly textures, full body visible head to feet, centered, plain flat light grey background, soft even studio lighting, no shadows on background, no text, single character only"
  }
 ]

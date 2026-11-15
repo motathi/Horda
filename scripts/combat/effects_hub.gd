@@ -161,7 +161,7 @@ static func spawn_ring(pos: Vector3, radius: float, color: Color, duration: floa
 	tw.tween_callback(ring.queue_free)
 
 ## Explosão (esfera brilhante que cresce + clarão + estilhaços).
-static func spawn_explosion(pos: Vector3, radius: float) -> void:
+static func spawn_explosion(pos: Vector3, radius: float, color: Color = Color(0.55, 0.22, 0.95)) -> void:
 	if _inst == null:
 		return
 	var orb := MeshInstance3D.new()
@@ -173,14 +173,14 @@ static func spawn_explosion(pos: Vector3, radius: float) -> void:
 	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	m.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
-	m.albedo_color = Color(0.55, 0.22, 0.95, 0.42)
+	m.albedo_color = Color(color.r, color.g, color.b, 0.42)
 	orb.material_override = m
 	orb.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_inst.add_child(orb)
 	orb.global_position = pos + Vector3.UP * 0.5
 	orb.scale = Vector3.ONE * 0.4
 	var light := OmniLight3D.new()
-	light.light_color = Color(0.8, 0.5, 1.0)
+	light.light_color = color.lightened(0.3)
 	light.light_energy = 3.5
 	light.omni_range = radius * 2.5
 	orb.add_child(light)

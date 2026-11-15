@@ -80,6 +80,17 @@ exporte `TRIPO_API_KEY`. `CharacterModel` usa o GLB rigado quando existe (máqui
 idle/walk/run/slash; `hurt` vira a queda da morte; animação pausada fora da tela) e cai para a malha
 estática animada por código ou para o visual procedural se o arquivo faltar.
 
+## Inimigos especiais
+
+`EnemyDef.Behavior` ganhou `EXPLODER`, `SPITTER` e `LEAPER`, configurados pelos campos `special_*` do
+recurso (raio, alcance, tempo, multiplicador e cor). Em `Enemy`: `_start_fuse()`/`_explode()` (explosão
+em área contra aliados, estruturas e — se abatido — outros zumbis, com crédito de XP para quem matou),
+`AcidProjectile` + `AcidPuddle` (arco balístico, dano a estruturas no impacto e poça que corrói o grupo
+`allies`) e `_begin_leap()`/`_process_leap()` (salto parabólico sem colisão com estruturas; no cerco,
+`_leap_over_wall()` pula em direção ao núcleo). Entram na horda por `data/config/horde_default.tres`
+(estreia nas hordas 4, 7 e 9, anunciada pelo `HordeDirector`) e na Área Contaminada durante o dia.
+Modelos riggados gerados pelo `tools/tripo_pipeline.py`.
+
 ## Roteiro
 
 - **Fase 2 — RPG (em andamento)**: níveis/XP e **habilidades prontas** — `AbilityDef`

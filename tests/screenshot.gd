@@ -87,6 +87,15 @@ func _ready() -> void:
 	await _frames(4)
 	await _shot("13_character")
 	world.hud.character.visible = false
+	hero.health.invulnerable = true
+	var offs := {"zombie_exploder": Vector3(-3.5, 0, 2.5), "zombie_spitter": Vector3(0, 0, 7.5), "zombie_leaper": Vector3(4.5, 0, 3.0)}
+	for id: String in offs:
+		var z := (load("res://scenes/enemies/zombie.tscn") as PackedScene).instantiate() as Enemy
+		z.def = load("res://data/enemies/%s.tres" % id) as EnemyDef
+		world.enemies_root.add_child(z)
+		z.global_position = hero.global_position + offs[id]
+	await get_tree().create_timer(1.1).timeout
+	await _shot("14_especiais")
 	# Cidade
 	hero.global_position = Vector3(70, 0, 8)
 	world.camera_rig.global_position = hero.global_position

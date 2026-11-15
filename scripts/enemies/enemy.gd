@@ -36,6 +36,18 @@ var _burning: float = -1.0
 var _rng := RandomNumberGenerator.new()
 var _last_nav_target: Vector3 = Vector3.INF
 
+# Especiais (explosivo / cuspidor / saltador)
+const LEAP_TIME := 0.6
+const LEAP_HEIGHT := 2.6
+const LEAP_MIN := 3.5
+const LEAP_WINDUP := 0.3
+var _special_cd: float = 0.0
+var _exploded: bool = false
+var _leap_wind: float = -1.0
+var _leap_t: float = -1.0
+var _leap_from: Vector3
+var _leap_to: Vector3
+
 @onready var nav_agent: NavigationAgent3D = $NavigationAgent3D
 
 func _ready() -> void:
@@ -92,7 +104,7 @@ var _stun_left: float = 0.0
 
 ## Atordoa (para de andar e de atacar). Chefes ficam atordoados por menos tempo.
 func stun(seconds: float) -> void:
-	if state == State.DEAD:
+	if state == State.DEAD or _leap_t >= 0.0:
 		return
 	_stun_left = maxf(_stun_left, seconds * (0.35 if is_boss else 1.0))
 
@@ -158,6 +170,10 @@ func _physics_process(delta: float) -> void:
 	# Inimigos diurnos muito longe do herói "dormem" (economia de CPU).
 	if not is_horde and hero and hero.global_position.distance_to(global_position) > SLEEP_DISTANCE:
 		return
+	_special_cd = maxf(0.0, _special_cd - delta)
+	if _leap_wind >= 0.0 or _leap_t >= 0.0:
+		_process_leap(delta)
+		return
 	_attack_cd = maxf(0.0, _attack_cd - delta)
 	_think_left -= delta
 	if _think_left <= 0.0:
@@ -173,6 +189,9 @@ func _physics_process(delta: float) -> void:
 		State.CHASE:
 			if _target_valid():
 				var td := _dist_to(_target)
+				if def.behavior == EnemyDef.Behavior.LEAPER and _special_cd <= 0.0 and td > LEAP_MIN and td <= def.special_range:
+					_begin_leap(_target.global_position)
+					return
 				if td <= def.attack_range + _target_radius():
 					# Chegou ao alcance: para já neste quadro (sem esperar o "pensar").
 					state = State.ATTACK
@@ -192,6 +211,12 @@ func _physics_process(delta: float) -> void:
 		State.ATTACK:
 			if _target_valid():
 				_face(_target.global_position, delta)
+				# Cuspidor mantém distância do herói (recua enquanto cospe).
+				if def.behavior == EnemyDef.Behavior.SPITTER and _target is Hero and _dist_to(_target) < def.special_range:
+					var away := global_position - _target.global_position
+					away.y = 0.0
+					move_dir = away.normalized()
+					speed *= 0.8
 	if _windup >= 0.0:
 		_windup -= delta
 		speed *= 0.2
@@ -206,7 +231,7 @@ func _physics_process(delta: float) -> void:
 	velocity.z = v.z * speed
 	velocity.y = 0.0 if is_on_floor() else velocity.y - 30.0 * delta
 	move_and_slide()
-	if move_dir != Vector3.ZERO:
+	if move_dir != Vector3.ZERO and state != State.ATTACK:
 		_face(global_position + move_dir, delta)
 	_check_blockers()
 	model.animate(delta, Vector2(velocity.x, velocity.z).length() / maxf(0.1, def.move_speed))
@@ -263,14 +288,28 @@ func _think() -> void:
 func _try_attack() -> void:
 	if _attack_cd > 0.0 or _windup >= 0.0:
 		return
+	if def.behavior == EnemyDef.Behavior.EXPLODER:
+		_start_fuse()
+		return
 	_attack_cd = def.attack_cooldown
 	_windup = minf(0.45, def.attack_cooldown * 0.4)
 	model.play_attack(_windup + 0.2)
 
 func _resolve_attack() -> void:
+	if def.behavior == EnemyDef.Behavior.EXPLODER:
+		_explode(true, self)
+		return
 	if not _target_valid():
 		return
 	if _dist_to(_target) > def.attack_range + _target_radius() + 0.8:
+		return
+	if def.behavior == EnemyDef.Behavior.SPITTER:
+		var to := (_target as Structure).closest_point(global_position) if _target is Structure else _target.global_position
+		var fwd := (to - global_position)
+		fwd.y = 0.0
+		var from := global_position + Vector3.UP * 1.6 * def.model_scale + fwd.normalized() * 0.5
+		AcidProjectile.launch(get_parent(), from, to, self, damage_value * def.special_mult, def)
+		AudioManager.play_3d(&"swing", global_position, -4.0)
 		return
 	var info := DamageInfo.make(damage_value, self)
 	info.structure_multiplier = def.structure_damage_mult
@@ -279,7 +318,7 @@ func _resolve_attack() -> void:
 
 # --- Muros e bloqueios ----------------------------------------------------
 
-## Se esbarrar em uma estrutura (muro, portão), passa a atacá-la.
+## Se esbarrar em uma estrutura (muro, portão), passa a atacá-la — o Saltador pula por cima.
 func _check_blockers() -> void:
 	if state == State.ATTACK or state == State.DEAD:
 		return
@@ -288,6 +327,8 @@ func _check_blockers() -> void:
 	for i in get_slide_collision_count():
 		var col := get_slide_collision(i).get_collider() as Node
 		if col and col.is_in_group("structures") and not col.call(&"is_dead"):
+			if def.behavior == EnemyDef.Behavior.LEAPER and _special_cd <= 0.0 and col != GameManager.base_core and _leap_over_wall():
+				return
 			_target = col as Node3D
 			state = State.ATTACK
 			return
@@ -385,7 +426,15 @@ func _on_damaged(info: DamageInfo, _amount: float) -> void:
 	EffectsHub.spawn_blood(global_position + Vector3.UP * 1.1 * def.model_scale, info.is_crit)
 
 func _on_died(info: DamageInfo) -> void:
+	var was_leaping := _leap_t >= 0.0
 	state = State.DEAD
+	_leap_wind = -1.0
+	_leap_t = -1.0
+	if was_leaping:
+		global_position.y = 0.0
+	# Explosivo abatido explode (fere também os zumbis próximos).
+	if def.behavior == EnemyDef.Behavior.EXPLODER and not _exploded and _burning < 0.0:
+		_explode.call_deferred(false, info.source if info else null)
 	collision_layer = 0
 	collision_mask = Layers.WORLD
 	velocity = Vector3.ZERO
@@ -415,3 +464,114 @@ func _process_burn(delta: float) -> void:
 		var info := DamageInfo.make(health.max_health * 0.12, null)
 		info.type = DamageInfo.Type.TRUE
 		health.take_damage(info)
+
+# --- Especiais ------------------------------------------------------------
+
+## Explosivo: incha e brilha durante o pavio, depois explode.
+func _start_fuse() -> void:
+	_attack_cd = 999.0
+	_windup = def.special_time
+	model.play_attack(def.special_time)
+	var glow := OmniLight3D.new()
+	glow.light_color = def.special_color
+	glow.light_energy = 0.0
+	glow.omni_range = def.special_radius
+	glow.position.y = 1.2 * def.model_scale
+	add_child(glow)
+	var tw := create_tween()
+	tw.tween_property(glow, "light_energy", 5.0, def.special_time)
+	tw.parallel().tween_property(model, "scale", model.scale * 1.25, def.special_time)
+	AudioManager.play_3d(&"zombie_hit", global_position, 2.0)
+
+## full = explodiu por conta própria (dano cheio e morre); senão foi abatido
+## (dano menor ao herói, mas fere os zumbis ao redor — crédito para quem o matou).
+func _explode(full: bool, credit: Node) -> void:
+	if _exploded:
+		return
+	_exploded = true
+	var r := def.special_radius
+	var center := global_position
+	center.y = 0.0
+	EffectsHub.spawn_explosion(center, r, def.special_color)
+	AudioManager.play_3d(&"break", center, 6.0)
+	var dmg := damage_value * def.special_mult * (1.0 if full else 0.6)
+	for n: Node in get_tree().get_nodes_in_group("allies"):
+		var a := n as Node3D
+		if a and not a.call(&"is_dead") and _flat_dist(a.global_position, center) <= r + float(a.call(&"get_radius")):
+			a.call(&"take_damage", DamageInfo.make(dmg, self))
+	for n: Node in get_tree().get_nodes_in_group("structures"):
+		var st := n as Structure
+		if st and not st.is_dead() and _flat_dist(st.closest_point(center), center) <= r:
+			var info := DamageInfo.make(dmg, self)
+			info.structure_multiplier = def.structure_damage_mult
+			st.take_damage(info)
+	if not full:
+		for e in all.duplicate():
+			if e != self and is_instance_valid(e) and not e.is_dead() and _flat_dist(e.global_position, center) <= r:
+				e.take_damage(DamageInfo.make(dmg * 1.5, credit if is_instance_valid(credit) else null))
+	if full and state != State.DEAD:
+		var kill := DamageInfo.make(health.current + 9999.0, null)
+		kill.type = DamageInfo.Type.TRUE
+		health.take_damage(kill)
+
+static func _flat_dist(a: Vector3, b: Vector3) -> float:
+	return Vector2(a.x - b.x, a.z - b.z).length()
+
+## Saltador: agacha e salta em arco até o ponto (ignora muros no ar).
+func _begin_leap(to: Vector3) -> void:
+	var d := to - global_position
+	d.y = 0.0
+	if d.length() > def.special_range:
+		d = d.normalized() * def.special_range
+	_leap_from = global_position
+	_leap_to = global_position + d
+	_leap_to.y = 0.0
+	_leap_wind = LEAP_WINDUP
+	_special_cd = def.special_time
+	_windup = -1.0
+	velocity = Vector3.ZERO
+	model.play_attack(LEAP_WINDUP + LEAP_TIME * 0.5)
+
+## Durante o cerco, ao bater num muro, salta na direção do núcleo.
+func _leap_over_wall() -> bool:
+	var core := GameManager.base_core
+	if core == null:
+		return false
+	var to := core.global_position - global_position
+	to.y = 0.0
+	var dist := minf(def.special_range, to.length() - 2.5)
+	if dist < LEAP_MIN:
+		return false
+	_begin_leap(global_position + to.normalized() * dist)
+	return true
+
+func _process_leap(delta: float) -> void:
+	if _leap_wind >= 0.0:
+		_leap_wind -= delta
+		velocity = Vector3.ZERO
+		_face(_leap_to, delta * 3.0)
+		model.animate(delta, 0.0)
+		if _leap_wind < 0.0:
+			_leap_t = 0.0
+			collision_mask = Layers.WORLD
+			AudioManager.play_3d(&"swing", global_position, -2.0)
+		return
+	_leap_t += delta / LEAP_TIME
+	var t := minf(_leap_t, 1.0)
+	var p := _leap_from.lerp(_leap_to, t)
+	p.y = sin(t * PI) * LEAP_HEIGHT
+	global_position = p
+	model.animate(delta, 1.0)
+	if _leap_t < 1.0:
+		return
+	_leap_t = -1.0
+	global_position.y = 0.0
+	collision_mask = Layers.WORLD | Layers.STRUCTURES | Layers.GATE
+	EffectsHub.spawn_ring(global_position + Vector3.UP * 0.1, def.special_radius, def.special_color, 0.35)
+	EffectsHub.spawn_debris(global_position + Vector3.UP * 0.3, false)
+	for n: Node in get_tree().get_nodes_in_group("allies"):
+		var a := n as Node3D
+		if a and not a.call(&"is_dead") and _flat_dist(a.global_position, global_position) <= def.special_radius + float(a.call(&"get_radius")):
+			a.call(&"take_damage", DamageInfo.make(damage_value * def.special_mult, self))
+	_attack_cd = minf(_attack_cd, 0.4)
+	_stuck_time = 0.0

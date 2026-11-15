@@ -18,5 +18,20 @@
   "model": "2eedf0d5-80cd-48d9-a0c7-c9dab101fa5e",
   "rig": "cee9930e-034b-48f9-a9b4-e81153d08d2e",
   "anim": "75299549-4c40-4436-a94f-d072b9760abf"
+ },
+ "zombie_exploder": {
+  "model": "411826dd-4a1d-4445-848e-3750c69f612b",
+  "rig": "fc7751c1-d59a-4d59-a2e3-0e08de3d7eb1",
+  "anim": "d0f4ceeb-47e7-45d0-a1cb-bd630626200d"
+ },
+ "zombie_spitter": {
+  "model": "966d35e3-6cb6-4d5b-bbb1-76094667cf61",
+  "rig": "9ef8a31a-7897-46ca-bd9f-d683dec11c19",
+  "anim": "d7b05aee-4088-47a6-8e9e-e9dca5f75355"
+ },
+ "zombie_leaper": {
+  "model": "b2c2c73f-b1bb-4550-bd31-d30dc2cbe56e",
+  "rig": "4697713a-4d3b-4f9a-91da-dab9c1aa5739",
+  "anim": "c8d34beb-ed3e-4e88-8168-15995969459d"
  }
 }

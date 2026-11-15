@@ -92,7 +92,7 @@ func build_zombie(def: EnemyDef) -> void:
 	hunch = def.hunch
 	if ResourceLoader.exists(RIGGED_DIR + String(def.id) + ".glb"):
 		_build_rigged(String(def.id), 2.0 * def.model_scale)
-		_run_threshold = 0.85 if def.behavior != EnemyDef.Behavior.CHARGER else 0.5
+		_run_threshold = 0.5 if def.behavior in [EnemyDef.Behavior.CHARGER, EnemyDef.Behavior.LEAPER] else 0.85
 		return
 	if ModelLibrary.has(String(def.id)):
 		# Tons diferentes por indivíduo para a horda não parecer clonada.

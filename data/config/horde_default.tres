@@ -1,10 +1,13 @@
-[gd_resource type="Resource" script_class="HordeConfig" load_steps=8 format=3]
+[gd_resource type="Resource" script_class="HordeConfig" load_steps=14 format=3]
 
 [ext_resource type="Script" path="res://scripts/hordes/horde_config.gd" id="1"]
 [ext_resource type="Script" path="res://scripts/hordes/horde_spawn_entry.gd" id="2"]
 [ext_resource type="Resource" path="res://data/enemies/zombie.tres" id="3"]
 [ext_resource type="Resource" path="res://data/enemies/zombie_fast.tres" id="4"]
 [ext_resource type="Resource" path="res://data/enemies/zombie_brute.tres" id="5"]
+[ext_resource type="Resource" path="res://data/enemies/zombie_exploder.tres" id="6"]
+[ext_resource type="Resource" path="res://data/enemies/zombie_spitter.tres" id="7"]
+[ext_resource type="Resource" path="res://data/enemies/zombie_leaper.tres" id="8"]
 
 [sub_resource type="Resource" id="Entry_zombie"]
 script = ExtResource("2")
@@ -33,9 +36,36 @@ weight_growth = 0.06
 max_per_night = 0
 guaranteed = 1
 
+[sub_resource type="Resource" id="Entry_exploder"]
+script = ExtResource("2")
+enemy = ExtResource("6")
+unlock_night = 4
+weight = 0.8
+weight_growth = 0.05
+max_per_night = 0
+guaranteed = 1
+
+[sub_resource type="Resource" id="Entry_spitter"]
+script = ExtResource("2")
+enemy = ExtResource("7")
+unlock_night = 7
+weight = 0.7
+weight_growth = 0.05
+max_per_night = 0
+guaranteed = 2
+
+[sub_resource type="Resource" id="Entry_leaper"]
+script = ExtResource("2")
+enemy = ExtResource("8")
+unlock_night = 9
+weight = 0.7
+weight_growth = 0.05
+max_per_night = 0
+guaranteed = 2
+
 [resource]
 script = ExtResource("1")
-entries = Array[ExtResource("2")]([SubResource("Entry_zombie"), SubResource("Entry_fast"), SubResource("Entry_brute")])
+entries = Array[ExtResource("2")]([SubResource("Entry_zombie"), SubResource("Entry_fast"), SubResource("Entry_brute"), SubResource("Entry_exploder"), SubResource("Entry_spitter"), SubResource("Entry_leaper")])
 base_count = 6.0
 count_linear = 2.6
 count_quadratic = 0.012

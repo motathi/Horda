@@ -73,6 +73,17 @@ func start_night(night: int) -> void:
 	EventBus.banner.emit("HORDA %d / %d" % [night, TimeManager.TOTAL_WAVES], subtitle, Color(0.9, 0.15, 0.1))
 	EventBus.horde_started.emit(night, _grand_total)
 	AudioManager.play(&"horn")
+	_announce_new_enemies(night)
+
+## Apresenta os tipos de inimigo que estreiam nesta horda.
+func _announce_new_enemies(night: int) -> void:
+	var delay := 3.5
+	for e: HordeSpawnEntry in config.entries:
+		if e.unlock_night == night and night > 1 and e.enemy:
+			var d := e.enemy
+			get_tree().create_timer(delay).timeout.connect(func() -> void:
+				EventBus.banner.emit("NOVO INIMIGO: " + d.display_name.to_upper(), d.description, d.special_color if d.special_radius > 0.0 else Color(1.0, 0.6, 0.2)))
+			delay += 4.0
 
 func end_night() -> void:
 	if not _night_active:

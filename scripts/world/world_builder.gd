@@ -391,7 +391,7 @@ func _build_contaminated() -> void:
 		if p3 != null:
 			_add_harvestable(PropFactory.make_rock(rng, true), p3)
 	regions.append({"name": "Área Contaminada", "center": Vector3(c.x, 0, c.y), "radius": 26.0, "max": 9,
-		"enemies": [_enemy("zombie"), _enemy("zombie_fast"), _enemy("zombie_brute")], "weights": [0.4, 0.35, 0.25], "hp_mult": 1.25})
+		"enemies": [_enemy("zombie"), _enemy("zombie_fast"), _enemy("zombie_brute"), _enemy("zombie_exploder"), _enemy("zombie_spitter")], "weights": [0.32, 0.28, 0.2, 0.1, 0.1], "hp_mult": 1.25})
 
 func _scatter_wilds() -> void:
 	# Árvores e pedras esparsas nas áreas de transição.
