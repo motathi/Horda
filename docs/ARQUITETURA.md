@@ -85,7 +85,10 @@ estática animada por código ou para o visual procedural se o arquivo faltar.
 - **Fase 2 — RPG**: experiência/níveis (já há `xp_reward` nos inimigos), atributos (Força, Agilidade,
   Vitalidade, Inteligência, Engenharia), energia, habilidades (ícones de *Golpe Giratório* e *Cura* já
   gerados), equipamentos com raridade e fabricação de armas via `Recipe`.
-- **Fase 3 — Construção**: posicionamento com prévia (reutiliza `Structure`), muros de pedra/ferro,
-  torres automáticas, aprimoramentos.
+- **Fase 3 — Construção (núcleo pronto)**: `BuildManager` (prévia transparente, grade de 0,5 m, rotação,
+  validação por área da base/espaço livre/recursos), `Building` (estende `Structure`: níveis 1–3, torre que
+  dispara `Projectile` com pool, armadilha que fere e se desgasta, demolição com reembolso) e dados em
+  `data/buildings/*.tres` (`BuildingDef`). Falta: muros de ferro, mais torres (balista, canhão, elétrica),
+  portões construíveis, fundações e custo de manutenção.
 - **Fase 4 — Exército**, **Fase 5 — Conteúdo** (ferro, couro, eletrônicos, pólvora, combustível e cristais
   — ícones já gerados — entram junto com os sistemas que os usam), **Fase 6 — Polimento**.

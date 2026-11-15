@@ -11,6 +11,9 @@ var objectives_panel: ObjectivesPanel
 var inventory: InventoryPanel
 var base_panel: BasePanel
 var actions: HudActions
+var build_panel: BuildPanel
+var placement_bar: PlacementBar
+var build_manager: BuildManager
 var _feed: VBoxContainer
 var _banner: VBoxContainer
 var _banner_title: Label
@@ -143,8 +146,15 @@ func _ready() -> void:
 	_death_label.visible = false
 	root.add_child(_death_label)
 
+	placement_bar = PlacementBar.new()
+	_anchor(placement_bar, Control.PRESET_CENTER_BOTTOM, Vector2(0, -14), Control.GROW_DIRECTION_BOTH, Control.GROW_DIRECTION_BEGIN)
+	root.add_child(placement_bar)
+
 	inventory = InventoryPanel.new()
 	_center(inventory, root)
+	build_panel = BuildPanel.new()
+	_center(build_panel, root)
+	actions.build_pressed.connect(_toggle_build)
 	base_panel = BasePanel.new()
 	_center(base_panel, root)
 	_help = _build_help()
@@ -166,10 +176,20 @@ func _ready() -> void:
 func _toggle_inventory() -> void:
 	inventory.visible = not inventory.visible
 	base_panel.visible = false
+	build_panel.visible = false
 
 func _toggle_base() -> void:
 	base_panel.visible = not base_panel.visible
 	inventory.visible = false
+	build_panel.visible = false
+
+func _toggle_build() -> void:
+	if build_manager and build_manager.is_active():
+		build_manager.cancel()
+		return
+	build_panel.visible = not build_panel.visible
+	inventory.visible = false
+	base_panel.visible = false
 
 ## Selo "N" (norte) no topo do minimapa.
 class _NorthBadge extends Control:
@@ -195,13 +215,22 @@ func bind(hero: Hero, services: BaseServices, regions: Array[Dictionary], lootab
 	minimap.regions = regions
 	minimap.lootables = lootables
 
+func bind_build(m: BuildManager) -> void:
+	build_manager = m
+	placement_bar.bind(m)
+	build_panel.chosen.connect(func(d: BuildingDef) -> void: m.start(d))
+	m.mode_changed.connect(func(a: bool) -> void:
+		if a:
+			selection.visible = false)
+
 # --- Entrada -----------------------------------------------------------------
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("pause"):
-		if inventory.visible or base_panel.visible or _help.visible:
+		if inventory.visible or base_panel.visible or _help.visible or build_panel.visible:
 			inventory.visible = false
 			base_panel.visible = false
+			build_panel.visible = false
 			_help.visible = false
 		elif not _game_over.visible:
 			_toggle_pause()
@@ -209,7 +238,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if not GameManager.is_playing() or get_tree().paused:
 		return
-	if event.is_action_pressed("inventory"):
+	if event.is_action_pressed("build_menu"):
+		_toggle_build()
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("inventory"):
 		_toggle_inventory()
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("base_menu"):
@@ -359,6 +391,7 @@ func _build_help() -> Control:
 		["1 / 2", "Comer carne / usar curativo"],
 		["I ou Tab", "Inventário (mochila e armazém)"],
 		["B", "Menu da base: reparar muros/núcleo, afiar arma, fabricar curativos"],
+		["G", "Construir: muros, barricadas, torres de arqueiros e armadilhas (T gira, clique constrói)"],
 		["Roda do mouse", "Zoom"],
 		["Q / R ou botão do meio", "Girar câmera"],
 		["C", "Centralizar câmera no herói"],

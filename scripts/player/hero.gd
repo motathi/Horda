@@ -33,6 +33,8 @@ var weapon_level: int = 0
 ## Modo toque (celular): ataque pelo botão, mira automática, toque no mundo = mover/atacar.
 var touch_mode: bool = false
 var touch_attack_held: bool = false
+## Durante o modo de construção, cliques/toques posicionam a construção.
+var build_mode: bool = false
 var health: HealthComponent
 var model: CharacterModel
 var _camera: Camera3D
@@ -123,7 +125,9 @@ func _physics_process(delta: float) -> void:
 		_has_move_target = false
 		_target_enemy = null
 	var want_attack: bool
-	if touch_mode:
+	if build_mode:
+		want_attack = false
+	elif touch_mode:
 		want_attack = touch_attack_held
 		if want_attack:
 			_auto_aim(dir)
@@ -191,7 +195,7 @@ func _input_direction() -> Vector3:
 	return (right * v.x - fwd * v.y).normalized()
 
 func _unhandled_input(event: InputEvent) -> void:
-	if health.dead or not GameManager.is_playing():
+	if health.dead or not GameManager.is_playing() or build_mode:
 		return
 	if event.is_action_pressed("command") or (touch_mode and event.is_action_pressed("attack")):
 		# No celular, tocar no mundo funciona como o clique direito do PC.

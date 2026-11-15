@@ -14,6 +14,8 @@ const DIFFICULTIES := {
 	"dificil": {"name": "Difícil", "enemy_hp": 1.3, "enemy_damage": 1.35, "horde_count": 1.35},
 }
 
+const STARTER_KIT := {&"wood": 30, &"stone": 15, &"scrap": 8}
+
 var state: State = State.MENU
 var difficulty: String = "normal"
 var cycle_preset: String = "normal"
@@ -43,6 +45,9 @@ func start_new_game(diff: String, cycle: String) -> void:
 	load_from_save = false
 	stats = {"kills": 0, "nights_survived": 0, "items_collected": 0}
 	ResourceManager.reset()
+	# Kit inicial: dá para erguer a primeira defesa já no Dia 1.
+	for id: StringName in STARTER_KIT:
+		ResourceManager.storage.add(id, STARTER_KIT[id])
 	TimeManager.setup(cycle)
 	_change_to_world()
 

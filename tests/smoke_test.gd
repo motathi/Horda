@@ -36,6 +36,7 @@ func _ready() -> void:
 	await _test_combat()
 	await _test_harvest_and_loot()
 	await _test_base_services()
+	await _test_building()
 	await _test_night()
 	await _test_save()
 	_finish()
@@ -157,6 +158,64 @@ func _test_base_services() -> void:
 	hero.use_consumable(&"bandage")
 	await wait(2.0)
 	check(hero.health.current > hp, "curativo cura ao longo do tempo")
+
+func _test_building() -> void:
+	print("[construção]")
+	var bm := world.build_manager
+	for id: StringName in [&"wood", &"stone", &"scrap"]:
+		ResourceManager.storage.add(id, 300)
+	var barricade := Building.load_def(&"barricade")
+	var tower := Building.load_def(&"archer_tower")
+	var spikes := Building.load_def(&"spikes")
+	check(bm.check(barricade, Vector3(70, 0, 0), 0.0) != "", "fora da área da base é inválido")
+	check(bm.check(barricade, Vector3(0, 0, 0), 0.0) != "", "em cima da fortaleza é inválido")
+	var wood0 := ResourceManager.available(&"wood")
+	var reason := bm.check(barricade, Vector3(4, 0, 21), 0.0)
+	check(reason == "", "posição livre fora da muralha é válida (%s)" % reason)
+	var b := bm.place(barricade, Vector3(4, 0, 21), 0.0)
+	await wait(0.2)
+	check(b != null and ResourceManager.available(&"wood") == wood0 - int(barricade.cost[&"wood"]), "barricada construída e paga")
+	check(bm.check(barricade, Vector3(4, 0, 21), 0.0) == "Espaço ocupado", "não sobrepõe construções")
+	# Modo de construção com prévia
+	bm.start(tower)
+	check(bm.is_active() and world.hero.build_mode, "modo de construção ativo (herói não ataca)")
+	bm.cancel()
+	check(not bm.is_active() and not world.hero.build_mode, "modo de construção cancelado")
+	# Torre mata zumbi ao alcance
+	var t := bm.place(tower, Vector3(-8, 0, -4), 0.0)
+	var e := (load("res://scenes/enemies/zombie.tscn") as PackedScene).instantiate() as Enemy
+	world.enemies_root.add_child(e)
+	e.global_position = Vector3(-8, 0, -16)
+	e.configure(load("res://data/enemies/zombie.tres"))
+	var hp0 := e.health.current
+	await wait(5.0)
+	check(e.is_dead() or e.health.current < hp0, "torre de arqueiros atira no zumbi (vida %d -> %d)" % [int(hp0), int(e.health.current) if is_instance_valid(e) else 0])
+	var dmg1 := t.tower_damage()
+	var msg := t.upgrade()
+	check(t.level == 2 and t.tower_damage() > dmg1, "torre melhorada: " + msg)
+	# Armadilha fere quem passa por cima
+	var sp := bm.place(spikes, Vector3(-16, 0, 20), 0.0)
+	var e2 := (load("res://scenes/enemies/zombie.tscn") as PackedScene).instantiate() as Enemy
+	world.enemies_root.add_child(e2)
+	e2.global_position = Vector3(-16, 0, 20)
+	e2.configure(load("res://data/enemies/zombie.tres"))
+	var hp2 := e2.health.current
+	var trap_hp := sp.health.current
+	await wait(2.0)
+	check(e2.is_dead() or e2.health.current < hp2, "espinhos ferem o zumbi")
+	check(sp.health.current < trap_hp, "armadilha desgasta ao ferir")
+	if is_instance_valid(e2) and not e2.is_dead():
+		e2.take_damage(DamageInfo.make(9999, null))
+	# Zumbis atacam construções que bloqueiam o caminho
+	var wall_hp := b.health.current
+	b.take_damage(DamageInfo.make(50, null))
+	check(b.health.current < wall_hp, "construção recebe dano")
+	var save := world.collect_save()
+	check((save.buildings as Array).size() == 3, "construções entram no salvamento (%d)" % (save.buildings as Array).size())
+	var wood1 := ResourceManager.storage.count(&"wood")
+	var back := b.demolish()
+	await wait(0.1)
+	check(not back.is_empty() and ResourceManager.storage.count(&"wood") > wood1, "demolir devolve recursos: " + ResourceManager.cost_to_string(back))
 
 func _test_night() -> void:
 	print("[noite e horda]")

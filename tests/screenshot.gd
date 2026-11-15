@@ -32,6 +32,34 @@ func _ready() -> void:
 	world.camera_rig.global_position = hero.global_position
 	await _frames(60)
 	await _shot("02_base_day")
+	# Construções do jogador
+	for id: StringName in [&"wood", &"stone", &"scrap"]:
+		ResourceManager.storage.add(id, 400)
+	var bm := world.build_manager
+	bm.place(Building.load_def(&"archer_tower"), Vector3(-7, 0, 7), 0.0)
+	bm.place(Building.load_def(&"stone_wall"), Vector3(5, 0, 20), 0.0)
+	bm.place(Building.load_def(&"stone_wall"), Vector3(-0.5, 0, 21), 0.3)
+	bm.place(Building.load_def(&"barricade"), Vector3(10, 0, 19), -0.5)
+	bm.place(Building.load_def(&"spikes"), Vector3(2, 0, 17), 0.0)
+	var t2 := bm.place(Building.load_def(&"archer_tower"), Vector3(8, 0, 9), 0.0)
+	t2.upgrade()
+	t2.upgrade()
+	hero.global_position = Vector3(2, 0, 12)
+	world.camera_rig.global_position = hero.global_position
+	await _frames(40)
+	world.hud.build_panel.visible = true
+	await _frames(10)
+	await _shot("09_build_menu")
+	world.hud.build_panel.visible = false
+	bm.start(Building.load_def(&"archer_tower"))
+	bm._target = Vector3(-12, 0, 17)
+	await _frames(20)
+	await _shot("10_placement")
+	bm.cancel()
+	EventBus.object_selected.emit(t2)
+	await _frames(10)
+	await _shot("11_selected_tower")
+	world.hud.selection.visible = false
 	# Floresta com zumbis
 	hero.global_position = Vector3(-20, 0, -45)
 	world.camera_rig.global_position = hero.global_position

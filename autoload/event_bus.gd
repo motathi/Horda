@@ -15,6 +15,8 @@ signal inventory_full(item_id: StringName)
 signal resources_deposited(summary: Dictionary)
 signal container_looted(container: Node3D)
 signal objectives_changed
+signal building_placed(building: Node3D)
+signal building_changed(building: Node3D)
 
 # --- Mundo ---
 signal structure_damaged(structure: Node3D)

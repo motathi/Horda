@@ -8,6 +8,10 @@ var _name: Label
 var _info: Label
 var _hp: ProgressBar
 var _hp_label: Label
+var _actions: HBoxContainer
+var _upgrade_btn: Button
+var _demolish_btn: Button
+var _sig: String = ""
 
 func _ready() -> void:
 	add_theme_stylebox_override("panel", UIStyle.panel_style())
@@ -36,6 +40,22 @@ func _ready() -> void:
 	_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_info.custom_minimum_size = Vector2(220, 0)
 	col.add_child(_info)
+	_actions = HBoxContainer.new()
+	_actions.add_theme_constant_override("separation", 8)
+	_upgrade_btn = UIStyle.button("Melhorar", 15)
+	_upgrade_btn.icon = UIStyle.hud_icon("upgrade")
+	_upgrade_btn.expand_icon = true
+	_upgrade_btn.custom_minimum_size = Vector2(0, 40)
+	_upgrade_btn.pressed.connect(_on_upgrade)
+	_actions.add_child(_upgrade_btn)
+	_demolish_btn = UIStyle.button("Demolir", 15)
+	_demolish_btn.icon = UIStyle.hud_icon("demolish")
+	_demolish_btn.expand_icon = true
+	_demolish_btn.custom_minimum_size = Vector2(0, 40)
+	_demolish_btn.pressed.connect(_on_demolish)
+	_actions.add_child(_demolish_btn)
+	col.add_child(_actions)
+	_actions.visible = false
 	visible = false
 	EventBus.object_selected.connect(select)
 
@@ -62,6 +82,14 @@ func _refresh() -> void:
 		_name.text = e.display_name()
 		health = e.health
 		_info.text = "%s\nDano %d  •  Armadura %d  •  Vel. %.1f" % [e.def.description, int(e.damage_value), int(e.health.armor), e.def.move_speed]
+	elif _target is Building:
+		var b := _target as Building
+		_portrait.texture = b.def.icon()
+		_name.text = b.display_name()
+		health = b.health
+		var extra := "Destruída — repare no menu da base." if b.is_dead() else b.def.stats_text(b.level)
+		_info.text = extra
+		_update_actions(b)
 	elif _target is Structure:
 		var s := _target as Structure
 		_portrait.texture = load("res://assets/ui/icons/base_core.jpg")
@@ -81,8 +109,37 @@ func _refresh() -> void:
 	else:
 		visible = false
 		return
+	if not (_target is Building):
+		_actions.visible = false
 	_hp.get_parent().visible = health != null
 	if health:
 		_hp.max_value = health.max_health
 		_hp.value = health.current
 		_hp_label.text = "%d / %d" % [int(health.current), int(health.max_health)]
+
+func _update_actions(b: Building) -> void:
+	_actions.visible = true
+	var sig := "%d|%s|%d" % [b.level, b.is_dead(), ResourceManager.storage.to_dict().hash() + ResourceManager.hero_inventory.to_dict().hash()]
+	if sig == _sig:
+		return
+	_sig = sig
+	if b.can_upgrade():
+		var cost := b.next_upgrade_cost()
+		_upgrade_btn.text = "Melhorar: " + ResourceManager.cost_to_string(cost)
+		_upgrade_btn.disabled = not ResourceManager.can_afford(cost)
+	else:
+		_upgrade_btn.text = "Nível máximo" if b.level >= b.def.max_level else "Repare antes"
+		_upgrade_btn.disabled = true
+	_demolish_btn.text = "Demolir (devolve %d%%)" % int(b.def.refund * 100)
+
+func _on_upgrade() -> void:
+	if _target is Building:
+		EventBus.notify((_target as Building).upgrade(), UIStyle.GOLD)
+		_sig = ""
+
+func _on_demolish() -> void:
+	if _target is Building:
+		var back := (_target as Building).demolish()
+		EventBus.notify("Demolido. Devolvido ao armazém: " + (ResourceManager.cost_to_string(back) if not back.is_empty() else "nada"), UIStyle.TEXT)
+		_target = null
+		visible = false

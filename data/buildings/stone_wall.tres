@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="BuildingDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/building/building_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"stone_wall"
+display_name = "Muro de Pedra"
+description = "Muro resistente. Os zumbis precisam derrubá-lo para passar."
+icon_name = "b_stone_wall"
+category = 0
+cost = {
+&"stone": 18,
+&"wood": 6
+}
+max_health = 700.0
+armor = 4.0
+footprint = Vector2(4.0, 1.0)
+height = 2.6
+max_level = 3
+upgrade_cost_mult = 0.9
+refund = 0.5

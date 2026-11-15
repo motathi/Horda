@@ -1,0 +1,263 @@
+class_name Building
+extends Structure
+## Construção posicionada pelo jogador. Reaproveita Structure (vida, dano,
+## destruição, reparo) e acrescenta níveis, torre automática e armadilha.
+
+const DEFS_DIR := "res://data/buildings/"
+
+var def: BuildingDef
+var level: int = 1
+var _cooldown: float = 0.0
+var _trap_t: float = 0.0
+var _rng := RandomNumberGenerator.new()
+
+static func load_def(id: StringName) -> BuildingDef:
+	return load(DEFS_DIR + String(id) + ".tres") as BuildingDef
+
+static func all_defs() -> Array[BuildingDef]:
+	var out: Array[BuildingDef] = []
+	for id in [&"barricade", &"stone_wall", &"archer_tower", &"spikes"]:
+		out.append(load_def(id))
+	return out
+
+func setup(d: BuildingDef, lvl: int = 1) -> void:
+	def = d
+	level = lvl
+	kind = Kind.WALL_WOOD
+
+func _ready() -> void:
+	super._ready()
+	add_to_group("buildings")
+	_rng.randomize()
+	_cooldown = _rng.randf() * 0.5
+
+# --- Ganchos de Structure ---------------------------------------------------------
+
+func _max_hp() -> float:
+	return def.max_health * (1.0 + 0.5 * (level - 1))
+
+func _armor() -> float:
+	return def.armor + (level - 1)
+
+func _layer() -> int:
+	# Armadilhas não bloqueiam a passagem (só podem ser selecionadas).
+	return Layers.INTERACTABLES if def.category == BuildingDef.Category.TRAP else Layers.STRUCTURES
+
+func _bar_height() -> float:
+	return def.height + 0.7
+
+func display_name() -> String:
+	return "%s (nv. %d)" % [def.display_name, level]
+
+func _build() -> void:
+	_visual = Node3D.new()
+	add_child(_visual)
+	_visual.add_child(Building.make_visual(def, level))
+	_rubble = Node3D.new()
+	_rubble.visible = false
+	add_child(_rubble)
+	half_extents = Vector3(def.footprint.x * 0.5, def.height * 0.5, def.footprint.y * 0.5)
+	var col := CollisionShape3D.new()
+	var box := BoxShape3D.new()
+	box.size = Vector3(def.footprint.x, maxf(def.height, 0.5), def.footprint.y)
+	col.shape = box
+	col.position.y = box.size.y * 0.5
+	add_child(col)
+	_build_rubble()
+
+# --- Visual (também usado pela prévia de posicionamento) --------------------------
+
+static func make_visual(d: BuildingDef, lvl: int = 1) -> Node3D:
+	var root := Node3D.new()
+	var s := 1.0 + 0.06 * (lvl - 1)
+	match d.id:
+		&"stone_wall":
+			if ModelLibrary.has("wall"):
+				root.add_child(ModelLibrary.instance_width("wall", d.footprint.x * 1.05))
+			else:
+				_box(root, Vector3(d.footprint.x, d.height, d.footprint.y), Vector3(0, d.height * 0.5, 0), MaterialLib.textured("rock", Color.WHITE, 0.6))
+		&"archer_tower":
+			if ModelLibrary.has("tower"):
+				root.add_child(ModelLibrary.instance_height("tower", d.height))
+			else:
+				_box(root, Vector3(d.footprint.x, d.height, d.footprint.y), Vector3(0, d.height * 0.5, 0), MaterialLib.textured("planks", Color.WHITE))
+			var flag := _box(root, Vector3(0.05, 0.6, 0.9), Vector3(0.1, d.height + 0.8, 0.45), MaterialLib.textured("cloth", Color(0.2, 0.35, 0.9) if lvl < 3 else Color(1.0, 0.8, 0.3), 1.0))
+			flag.rotation_degrees.y = 90
+			_box(root, Vector3(0.06, 1.6, 0.06), Vector3(0, d.height + 0.4, 0), MaterialLib.textured("bark", Color.WHITE))
+		&"barricade":
+			var bark := MaterialLib.textured("bark", Color(0.95, 0.82, 0.68), 1.0)
+			var n := int(d.footprint.x / 0.9)
+			for i in n:
+				var x := -d.footprint.x * 0.5 + (i + 0.5) * d.footprint.x / n
+				for sgn: float in [-1.0, 1.0]:
+					var lg := CylinderMesh.new()
+					lg.top_radius = 0.0
+					lg.bottom_radius = 0.13
+					lg.height = 2.0
+					lg.radial_segments = 6
+					var m := MeshInstance3D.new()
+					m.mesh = lg
+					m.material_override = bark
+					m.position = Vector3(x, 0.75, 0)
+					m.rotation_degrees = Vector3(sgn * 38.0, 0, sgn * 12.0)
+					root.add_child(m)
+			var beam := CylinderMesh.new()
+			beam.top_radius = 0.12
+			beam.bottom_radius = 0.12
+			beam.height = d.footprint.x
+			var bm := MeshInstance3D.new()
+			bm.mesh = beam
+			bm.material_override = bark
+			bm.position = Vector3(0, 0.7, 0)
+			bm.rotation_degrees.z = 90
+			root.add_child(bm)
+		&"spikes":
+			_box(root, Vector3(d.footprint.x, 0.12, d.footprint.y), Vector3(0, 0.06, 0), MaterialLib.textured("planks", Color(0.8, 0.7, 0.6), 1.0))
+			var iron := MaterialLib.textured("metal", Color(0.75, 0.75, 0.8), 1.0, true, 0.35)
+			var cone := CylinderMesh.new()
+			cone.top_radius = 0.0
+			cone.bottom_radius = 0.09
+			cone.height = 0.45
+			cone.radial_segments = 5
+			for gx in 4:
+				for gz in 4:
+					var m2 := MeshInstance3D.new()
+					m2.mesh = cone
+					m2.material_override = iron
+					m2.position = Vector3(-0.75 + gx * 0.5, 0.33, -0.75 + gz * 0.5)
+					root.add_child(m2)
+	root.scale = Vector3.ONE * s
+	return root
+
+static func _box(parent: Node3D, size: Vector3, pos: Vector3, mat: Material) -> MeshInstance3D:
+	var m := MeshInstance3D.new()
+	var b := BoxMesh.new()
+	b.size = size
+	m.mesh = b
+	m.position = pos
+	m.material_override = mat
+	parent.add_child(m)
+	return m
+
+# --- Comportamento ----------------------------------------------------------------
+
+func tower_damage() -> float:
+	return def.tower_damage * (1.0 + 0.4 * (level - 1))
+
+func tower_range() -> float:
+	return def.tower_range + 1.5 * (level - 1)
+
+func trap_damage() -> float:
+	return def.trap_damage * (1.0 + 0.4 * (level - 1))
+
+func _process(delta: float) -> void:
+	if health.dead or def == null:
+		return
+	match def.category:
+		BuildingDef.Category.TOWER:
+			_process_tower(delta)
+		BuildingDef.Category.TRAP:
+			_process_trap(delta)
+
+func _process_tower(delta: float) -> void:
+	_cooldown -= delta
+	if _cooldown > 0.0:
+		return
+	var target := _find_target(tower_range())
+	if target == null:
+		_cooldown = 0.25
+		return
+	_cooldown = 1.0 / (def.attacks_per_second * (1.0 + 0.15 * (level - 1)))
+	var from := global_position + Vector3(0, def.height * 0.85, 0)
+	var info := DamageInfo.make(tower_damage(), self, _rng.randf() < 0.1)
+	if info.is_crit:
+		info.amount *= 1.8
+	EffectsHub.spawn_arrow(from, target, info, def.projectile_speed)
+	AudioManager.play_3d(&"swing", from, -10.0)
+
+func _find_target(radius: float) -> Enemy:
+	var best: Enemy = null
+	var best_d := radius
+	for e in Enemy.all:
+		if not is_instance_valid(e) or e.is_dead():
+			continue
+		var d := e.global_position.distance_to(global_position)
+		if d < best_d:
+			best_d = d
+			best = e
+	return best
+
+func _process_trap(delta: float) -> void:
+	_trap_t -= delta
+	if _trap_t > 0.0:
+		return
+	_trap_t = def.trap_interval
+	var reach := maxf(def.footprint.x, def.footprint.y) * 0.6 * (1.0 + 0.06 * (level - 1))
+	for e in Enemy.all:
+		if not is_instance_valid(e) or e.is_dead():
+			continue
+		var d := e.global_position - global_position
+		d.y = 0.0
+		if d.length() <= reach + e.get_radius():
+			e.take_damage(DamageInfo.make(trap_damage(), self))
+			EffectsHub.spawn_debris(e.global_position + Vector3.UP * 0.4, true)
+			var wear := DamageInfo.make(def.trap_wear, null)
+			wear.type = DamageInfo.Type.TRUE
+			health.take_damage(wear)
+			if health.dead:
+				return
+
+# --- Melhorar / demolir -----------------------------------------------------------
+
+func can_upgrade() -> bool:
+	return level < def.max_level and not health.dead
+
+func next_upgrade_cost() -> Dictionary:
+	return def.upgrade_cost(level + 1)
+
+func upgrade() -> String:
+	if not can_upgrade():
+		return "Nível máximo." if level >= def.max_level else "Repare antes de melhorar."
+	var cost := next_upgrade_cost()
+	if not ResourceManager.spend(cost):
+		return "Recursos insuficientes: " + ResourceManager.cost_to_string(cost)
+	var ratio := health.ratio()
+	level += 1
+	health.max_health = _max_hp()
+	health.armor = _armor()
+	health.current = health.max_health * maxf(ratio, 0.5)
+	health.changed.emit(health.current, health.max_health)
+	for c in _visual.get_children():
+		c.queue_free()
+	_visual.add_child(Building.make_visual(def, level))
+	EffectsHub.spawn_heal(global_position)
+	AudioManager.play(&"deposit")
+	EventBus.building_changed.emit(self)
+	return "%s melhorada para o nível %d!" % [def.display_name, level]
+
+## Total investido (construção + melhorias) — base do reembolso.
+func invested() -> Dictionary:
+	var total := def.cost.duplicate()
+	for l in range(2, level + 1):
+		var c := def.upgrade_cost(l)
+		for id: StringName in c:
+			total[id] = int(total.get(id, 0)) + int(c[id])
+	return total
+
+func demolish() -> Dictionary:
+	var back := {}
+	var inv := invested()
+	var factor := def.refund * (health.ratio() if not health.dead else 0.25)
+	for id: StringName in inv:
+		var n := int(floor(int(inv[id]) * factor))
+		if n > 0:
+			back[id] = n
+			ResourceManager.storage.add(id, n)
+	EffectsHub.spawn_debris(global_position + Vector3.UP, false)
+	AudioManager.play_3d(&"break", global_position)
+	EventBus.building_changed.emit(self)
+	queue_free()
+	return back
+
+func to_save() -> Dictionary:
+	return {"id": String(def.id), "pos": [global_position.x, global_position.z], "rot": rotation.y, "level": level, "hp": health.current, "dead": health.dead}

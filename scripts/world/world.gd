@@ -14,6 +14,7 @@ const HERO_SPAWN := Vector3(0, 0, 5)
 @onready var hud: HUD = $HUD
 @onready var loading: CanvasLayer = $Loading
 var objectives: DailyObjectives
+var build_manager: BuildManager
 
 var builder: WorldBuilder
 var hero: Hero
@@ -43,6 +44,11 @@ func _ready() -> void:
 	objectives.name = "DailyObjectives"
 	add_child(objectives)
 	hud.bind(hero, services, builder.regions, builder.lootables, objectives)
+	build_manager = BuildManager.new()
+	build_manager.name = "BuildManager"
+	add_child(build_manager)
+	build_manager.setup(builder.structures_root, camera_rig.camera)
+	hud.bind_build(build_manager)
 
 	_baking = true
 	builder.nav_region.bake_finished.connect(_on_bake_finished)
@@ -103,6 +109,7 @@ func collect_save() -> Dictionary:
 		"looted": looted,
 		"pickups": hub.pickups_to_save() if hub else [],
 		"objectives": objectives.to_save(),
+		"buildings": get_tree().get_nodes_in_group("buildings").filter(func(b: Node) -> bool: return not b.is_queued_for_deletion()).map(func(b: Node) -> Dictionary: return (b as Building).to_save()),
 	}
 
 func apply_save(d: Dictionary) -> void:
@@ -125,4 +132,9 @@ func apply_save(d: Dictionary) -> void:
 		var pos: Array = p.get("pos", [0, 0])
 		EffectsHub.drop_item(Vector3(pos[0], 0, pos[1]), StringName(p.get("id", "wood")), int(p.get("n", 1)))
 	objectives.from_save(d.get("objectives", []))
+	for bd: Dictionary in d.get("buildings", []):
+		var def := Building.load_def(StringName(bd.get("id", "barricade")))
+		var p: Array = bd.get("pos", [0, 0])
+		var b := build_manager.place(def, Vector3(p[0], 0, p[1]), float(bd.get("rot", 0.0)), false, int(bd.get("level", 1)))
+		b.from_save(bd)
 	camera_rig.set_target(hero)

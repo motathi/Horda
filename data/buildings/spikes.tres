@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="BuildingDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/building/building_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"spikes"
+display_name = "Armadilha de Espinhos"
+description = "Fere quem passar por cima. Desgasta a cada golpe."
+icon_name = "b_spikes"
+category = 2
+cost = {
+&"wood": 8,
+&"scrap": 6
+}
+max_health = 180.0
+armor = 0.0
+footprint = Vector2(2.0, 2.0)
+height = 0.4
+max_level = 3
+upgrade_cost_mult = 0.8
+refund = 0.5
+trap_damage = 16.0
+trap_interval = 0.7
+trap_wear = 6.0

@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="BuildingDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/building/building_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"archer_tower"
+display_name = "Torre de Arqueiros"
+description = "Atira flechas automaticamente nos inimigos ao alcance."
+icon_name = "b_archer_tower"
+category = 1
+cost = {
+&"wood": 28,
+&"stone": 14,
+&"scrap": 6
+}
+max_health = 450.0
+armor = 3.0
+footprint = Vector2(2.4, 2.4)
+height = 6.0
+max_level = 3
+upgrade_cost_mult = 1.0
+refund = 0.5
+tower_range = 15.0
+tower_damage = 20.0
+attacks_per_second = 1.1
+projectile_speed = 32.0

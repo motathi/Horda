@@ -82,5 +82,47 @@
   "out": "assets/ui/hud/src/alert.jpg",
   "size": "1024x1024",
   "prompt": "Game UI icon of a round golden yellow badge with a bold black exclamation mark, glossy stylized hand-painted mobile strategy game UI icon, chunky readable shape, vibrant saturated colors, soft specular highlights, thick dark outline, centered, isolated on pure solid black background, no frame, no border, no text, no ground shadow"
+ },
+ {
+  "name": "ui_build",
+  "out": "assets/ui/hud/src/build.jpg",
+  "size": "1024x1024",
+  "prompt": "Game UI icon of a wooden-handled steel construction hammer crossed with a saw, glossy stylized hand-painted mobile strategy game UI icon, chunky readable shape, vibrant saturated colors, soft specular highlights, thick dark outline, centered, isolated on a completely black #000000 background, the background must be pitch black, no frame, no border, no text"
+ },
+ {
+  "name": "ui_b_archer_tower",
+  "out": "assets/ui/hud/src/b_archer_tower.jpg",
+  "size": "1024x1024",
+  "prompt": "Game UI icon of a small medieval wooden archer watchtower with a blue pointed roof and a bow emblem, glossy stylized hand-painted mobile strategy game UI icon, chunky readable shape, vibrant saturated colors, soft specular highlights, thick dark outline, centered, isolated on a completely black #000000 background, the background must be pitch black, no frame, no border, no text"
+ },
+ {
+  "name": "ui_b_stone_wall",
+  "out": "assets/ui/hud/src/b_stone_wall.jpg",
+  "size": "1024x1024",
+  "prompt": "Game UI icon of a short segment of grey stone castle wall with crenellations, glossy stylized hand-painted mobile strategy game UI icon, chunky readable shape, vibrant saturated colors, soft specular highlights, thick dark outline, centered, isolated on a completely black #000000 background, the background must be pitch black, no frame, no border, no text"
+ },
+ {
+  "name": "ui_b_barricade",
+  "out": "assets/ui/hud/src/b_barricade.jpg",
+  "size": "1024x1024",
+  "prompt": "Game UI icon of a wooden spiked barricade made of sharpened logs crossed in X shapes, glossy stylized hand-painted mobile strategy game UI icon, chunky readable shape, vibrant saturated colors, soft specular highlights, thick dark outline, centered, isolated on a completely black #000000 background, the background must be pitch black, no frame, no border, no text"
+ },
+ {
+  "name": "ui_b_spikes",
+  "out": "assets/ui/hud/src/b_spikes.jpg",
+  "size": "1024x1024",
+  "prompt": "Game UI icon of a floor trap of sharp iron spikes on a wooden plank base, glossy stylized hand-painted mobile strategy game UI icon, chunky readable shape, vibrant saturated colors, soft specular highlights, thick dark outline, centered, isolated on a completely black #000000 background, the background must be pitch black, no frame, no border, no text"
+ },
+ {
+  "name": "ui_upgrade",
+  "out": "assets/ui/hud/src/upgrade.jpg",
+  "size": "1024x1024",
+  "prompt": "Game UI icon of a golden upward arrow with sparkles, glossy stylized hand-painted mobile strategy game UI icon, chunky readable shape, vibrant saturated colors, soft specular highlights, thick dark outline, centered, isolated on a completely black #000000 background, the background must be pitch black, no frame, no border, no text"
+ },
+ {
+  "name": "ui_demolish",
+  "out": "assets/ui/hud/src/demolish.jpg",
+  "size": "1024x1024",
+  "prompt": "Game UI icon of a cracked broken brick with dust, glossy stylized hand-painted mobile strategy game UI icon, chunky readable shape, vibrant saturated colors, soft specular highlights, thick dark outline, centered, isolated on a completely black #000000 background, the background must be pitch black, no frame, no border, no text"
  }
 ]

@@ -10,6 +10,7 @@ func _ready() -> void:
 	EventBus.enemy_killed.connect(_on_kill)
 	EventBus.item_picked_up.connect(_on_pickup)
 	EventBus.container_looted.connect(func(_c: Node3D) -> void: _progress("loot", "", 1))
+	EventBus.building_placed.connect(func(_b: Node3D) -> void: _progress("build", "", 1))
 	TimeManager.phase_changed.connect(_on_phase)
 	generate(TimeManager.day)
 
@@ -21,6 +22,7 @@ func generate(day: int) -> void:
 		_make("collect", "stone", "Colete %d de Pedra", 8 + day * 3, {&"scrap": 3, &"wood": 6}),
 		_make("loot", "", "Saqueie %d locais", 3 + day / 2, {&"herbs": 2, &"cloth": 4}),
 		_make("collect", "scrap", "Colete %d de Sucata", 6 + day * 2, {&"stone": 4, &"wood": 6}),
+		_make("build", "", "Construa %d defesas", 1 + day / 2, {&"scrap": 4, &"stone": 4}),
 	]
 	objectives.clear()
 	for i in 2:

@@ -6,6 +6,8 @@ extends Control
 
 const STICK_RADIUS := 82.0
 
+signal build_pressed
+
 var hero: Hero
 var touch_enabled: bool = false
 var _stick_touch: int = -1
@@ -22,6 +24,7 @@ func _ready() -> void:
 		{"id": "loot", "off": Vector2(-258, -112), "r": 50.0, "key": "E", "icon": UIStyle.hud_icon("loot"), "touch": -99, "glow": 0.0},
 		{"id": "meat", "off": Vector2(-212, -258), "r": 46.0, "key": "1", "icon": UIStyle.hud_icon("meat"), "touch": -99, "glow": 0.0},
 		{"id": "bandage", "off": Vector2(-90, -284), "r": 46.0, "key": "2", "icon": UIStyle.hud_icon("potion"), "touch": -99, "glow": 0.0},
+		{"id": "build", "off": Vector2(-376, -104), "r": 44.0, "key": "G", "icon": UIStyle.hud_icon("build"), "touch": -99, "glow": 0.0},
 	]
 
 func _center(b: Dictionary) -> Vector2:
@@ -92,6 +95,7 @@ func _press(id: String) -> void:
 		"loot": hero.try_interact()
 		"meat": hero.use_consumable(&"meat")
 		"bandage": hero.use_consumable(&"bandage")
+		"build": build_pressed.emit()
 
 func _update_stick(pos: Vector2) -> void:
 	var v := (pos - _stick_center) / STICK_RADIUS

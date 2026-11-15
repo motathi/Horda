@@ -33,6 +33,7 @@ Cada push no GitHub recompila automaticamente no Vercel (`tools/vercel_build.sh`
 | 1 / 2 | Comer carne / usar curativo |
 | I ou Tab | Inventário (mochila + armazém) |
 | B | Base: reparar muros/núcleo, afiar arma, fabricar curativos |
+| G | Construir: barricada, muro de pedra, torre de arqueiros, armadilha de espinhos (T gira, clique constrói, botão direito cancela) |
 | Roda / Q, R / C | Zoom / girar câmera / centralizar |
 | F5 | Salvar (somente de dia; também salva sozinho a cada amanhecer) |
 | F8 | [Depuração] avançar período do dia |

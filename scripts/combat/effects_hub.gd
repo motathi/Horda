@@ -11,6 +11,7 @@ var _debris: ObjectPool
 var _stone: ObjectPool
 var _heal: ObjectPool
 var _pickups: ObjectPool
+var _arrows: ObjectPool
 var _marker: MeshInstance3D
 var _marker_t: float = 0.0
 
@@ -28,6 +29,7 @@ func _ready() -> void:
 	_stone = _make_pool("Stone", func() -> Node: return _make_burst(Color(0.6, 0.6, 0.62), 10, 0.7, 4.5, 0.1), 8)
 	_heal = _make_pool("Heal", func() -> Node: return _make_burst(Color(0.4, 1.0, 0.4), 24, 1.0, 2.0, 0.08, -3.0), 4)
 	_pickups = _make_pool("Pickups", func() -> Node: return ResourcePickup.new(), 24)
+	_arrows = _make_pool("Arrows", func() -> Node: return Projectile.new(), 16)
 	_marker = MeshInstance3D.new()
 	var torus := TorusMesh.new()
 	torus.inner_radius = 0.35
@@ -101,6 +103,10 @@ static func spawn_heal(pos: Vector3) -> void:
 static func drop_item(pos: Vector3, id: StringName, amount: int) -> void:
 	if _inst and amount > 0:
 		(_inst._pickups.acquire() as ResourcePickup).activate(pos, id, amount)
+
+static func spawn_arrow(from: Vector3, target: Enemy, info: DamageInfo, speed: float) -> void:
+	if _inst:
+		(_inst._arrows.acquire() as Projectile).activate(from, target, info, speed)
 
 static func spawn_marker(pos: Vector3) -> void:
 	if _inst:

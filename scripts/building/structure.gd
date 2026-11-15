@@ -22,13 +22,13 @@ var _gate_open: float = 0.0
 
 func _ready() -> void:
 	add_to_group("structures")
-	collision_layer = Layers.GATE if kind == Kind.GATE else Layers.STRUCTURES
+	collision_layer = _layer()
 	collision_mask = 0
 	health = HealthComponent.new()
 	health.name = "Health"
 	health.is_structure = true
 	add_child(health)
-	health.setup(KIND_HP[kind], KIND_ARMOR[kind])
+	health.setup(_max_hp(), _armor())
 	health.died.connect(_on_destroyed)
 	health.damaged.connect(_on_damaged)
 	_build()
@@ -36,11 +36,25 @@ func _ready() -> void:
 	bar.bar_width = 2.6 if kind == Kind.CORE else 1.8
 	bar.color = Color(0.95, 0.75, 0.2) if kind != Kind.CORE else Color(0.3, 0.75, 1.0)
 	bar.hide_when_full = kind != Kind.CORE
-	bar.position.y = 4.6 if kind == Kind.CORE else 3.0
+	bar.position.y = _bar_height()
 	add_child(bar)
 	bar.bind(health)
 	if kind == Kind.CORE:
 		GameManager.base_core = self
+
+# --- Ganchos sobrescritos por construções do jogador (Building) -------------------
+
+func _max_hp() -> float:
+	return KIND_HP[kind]
+
+func _armor() -> float:
+	return KIND_ARMOR[kind]
+
+func _layer() -> int:
+	return Layers.GATE if kind == Kind.GATE else Layers.STRUCTURES
+
+func _bar_height() -> float:
+	return 4.6 if kind == Kind.CORE else 3.0
 
 func display_name() -> String:
 	return KIND_NAMES[kind]
@@ -302,7 +316,7 @@ func _on_destroyed(_info: DamageInfo) -> void:
 func _set_destroyed(d: bool) -> void:
 	_visual.visible = not d
 	_rubble.visible = d
-	collision_layer = 0 if d else (Layers.GATE if kind == Kind.GATE else Layers.STRUCTURES)
+	collision_layer = 0 if d else _layer()
 
 func to_save() -> Dictionary:
 	return {"hp": health.current, "dead": health.dead}
