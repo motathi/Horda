@@ -10,6 +10,10 @@ var _env: Environment
 var _sky: ProceduralSkyMaterial
 var _lights_on: bool = false
 var _groan_t: float = 4.0
+## Direção do sol aplicada; só muda quando a diferença passa de SUN_STEP (graus).
+## Girar a luz um pouquinho a cada quadro faz as sombras "cintilarem".
+var _sun_applied := Vector2(INF, INF)
+const SUN_STEP := 0.5
 
 const DAY_SUN := Color(1.0, 0.9, 0.72)
 const DUSK_SUN := Color(1.0, 0.55, 0.3)
@@ -40,7 +44,10 @@ func _process(delta: float) -> void:
 		elev = deg_to_rad(lerpf(12.0, 62.0, sin(sun_progress * PI)))
 		col = DUSK_SUN.lerp(DAY_SUN, smoothstep(0.3, 0.8, dl))
 	var azim := lerpf(deg_to_rad(-70.0), deg_to_rad(70.0), sun_progress)
-	_sun.rotation = Vector3(-elev, azim, 0)
+	var want := Vector2(rad_to_deg(-elev), rad_to_deg(azim))
+	if absf(want.x - _sun_applied.x) >= SUN_STEP or absf(want.y - _sun_applied.y) >= SUN_STEP:
+		_sun_applied = want
+		_sun.rotation = Vector3(deg_to_rad(want.x), deg_to_rad(want.y), 0)
 	_sun.light_color = col
 	var night_energy := 0.5
 	_sun.light_energy = lerpf(night_energy, 1.45, dl)

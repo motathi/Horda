@@ -17,8 +17,16 @@ void vertex() {
 	float w = sin(TIME * wind_speed + world.x * 0.35 + world.z * 0.22) * wind_strength
 		+ sin(TIME * wind_speed * 2.3 + world.z * 0.9) * wind_strength * 0.3;
 	VERTEX.x += w * h * h;
-	VERTEX.z += w * 0.5 * h * h;
-	// Normal apontando para cima: iluminação igual ao terreno (sem "quads" visíveis).
+	// Tufo sempre de frente para a câmera e inclinado na direção dela: vista de
+	// cima, a grama aparece cheia (antes os planos cruzados viravam um "X").
+	float sc = length(MODEL_MATRIX[0].xyz);
+	vec3 right = normalize(vec3(INV_VIEW_MATRIX[0].x, 0.0, INV_VIEW_MATRIX[0].z));
+	vec3 back = normalize(vec3(INV_VIEW_MATRIX[2].x, 0.0, INV_VIEW_MATRIX[2].z));
+	// Topo inclinado para longe da câmera: a face do tufo fica voltada para ela.
+	vec3 up = normalize(vec3(0.0, 1.0, 0.0) - back * 0.5);
+	vec3 fwd = cross(right, up);
+	MODELVIEW_MATRIX = VIEW_MATRIX * mat4(vec4(right * sc, 0.0), vec4(up * sc, 0.0), vec4(fwd * sc, 0.0), MODEL_MATRIX[3]);
+	// Normal apontando para cima: iluminação igual ao terreno.
 	NORMAL = vec3(0.0, 1.0, 0.0);
 }
 

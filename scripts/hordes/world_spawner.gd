@@ -34,7 +34,7 @@ func _process(delta: float) -> void:
 	_t = check_interval
 	for r in regions:
 		var list: Array = _alive.get(r.name, [])
-		list = list.filter(func(e: Enemy) -> bool: return is_instance_valid(e) and not e.is_dead())
+		list = list.filter(func(e) -> bool: return is_instance_valid(e) and not (e as Enemy).is_dead())
 		_alive[r.name] = list
 		# Regiões ficam mais perigosas com o passar dos dias.
 		var cap := int(r.max) + (TimeManager.day - 1) * 2

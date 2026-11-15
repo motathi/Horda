@@ -17,8 +17,10 @@ func _ready() -> void:
 		# Mesma base virtual do layout de referência (1280x720).
 		get_window().content_scale_size = Vector2i(1280, 720)
 	if low_end:
-		get_viewport().msaa_3d = Viewport.MSAA_DISABLED
-		RenderingServer.directional_shadow_atlas_set_size(2048, true)
+		# MSAA 2x é barato em GPUs de celular (renderização em blocos) e tira o serrilhado.
+		get_viewport().msaa_3d = Viewport.MSAA_2X
+		# Profundidade de 24 bits: 16 bits causava "acne" (sombras piscando).
+		RenderingServer.directional_shadow_atlas_set_size(2048, false)
 	_build_portrait_warning()
 	if OS.has_feature("web") and str(JavaScriptBridge.eval("window.location.search", true)).contains("dbg=1"):
 		var t := Timer.new()

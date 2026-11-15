@@ -231,6 +231,10 @@ func _test_building() -> void:
 	var back := b.demolish()
 	await wait(0.1)
 	check(not back.is_empty() and ResourceManager.storage.count(&"wood") > wood1, "demolir devolve recursos: " + ResourceManager.cost_to_string(back))
+	# Limpa as construções para o teste da noite não depender delas (a torre mataria a horda).
+	for n in get_tree().get_nodes_in_group("buildings"):
+		n.queue_free()
+	await wait(0.1)
 
 func _test_night() -> void:
 	print("[noite e horda]")

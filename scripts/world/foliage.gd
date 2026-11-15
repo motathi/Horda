@@ -15,11 +15,11 @@ func build(map_half: float, density: float, is_grass: Callable, seed_value: int)
 	var grass_mat := ShaderMaterial.new()
 	grass_mat.shader = GRASS_SHADER
 	var quad := QuadMesh.new()
-	quad.size = Vector2(0.75, 0.42)
-	quad.center_offset = Vector3(0, 0.21, 0)
+	quad.size = Vector2(0.9, 0.5)
+	quad.center_offset = Vector3(0, 0.25, 0)
 	quad.material = grass_mat
-	# Dois quads cruzados = tufo visível de qualquer ângulo.
-	var tuft := _cross_mesh(quad)
+	# Um quad por tufo: o shader o vira para a câmera (billboard no eixo Y).
+	var tuft := _single_mesh(quad)
 	var flower_mesh := _flower_mesh()
 	var flower_colors := [Color(1.0, 0.85, 0.3), Color(0.95, 0.4, 0.55), Color(0.65, 0.55, 1.0), Color(1, 1, 1)]
 	var x := -map_half
@@ -60,10 +60,19 @@ func _add_multimesh(mesh: Mesh, xforms: Array[Transform3D], colors: Array) -> vo
 	var mmi := MultiMeshInstance3D.new()
 	mmi.multimesh = mm
 	mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	mmi.visibility_range_end = VIS_RANGE * (0.65 if Platform.low_end else 1.0)
+	mmi.visibility_range_end = VIS_RANGE * (0.8 if Platform.low_end else 1.0)
 	mmi.visibility_range_end_margin = 10.0
 	mmi.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
 	add_child(mmi)
+
+func _single_mesh(quad: QuadMesh) -> ArrayMesh:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	st.append_from(quad, 0, Transform3D.IDENTITY)
+	var m := st.commit()
+	m.surface_set_material(0, quad.material)
+	m.custom_aabb = AABB(Vector3(-0.6, 0, -0.6), Vector3(1.2, 0.8, 1.2))
+	return m
 
 func _cross_mesh(quad: QuadMesh) -> ArrayMesh:
 	var st := SurfaceTool.new()

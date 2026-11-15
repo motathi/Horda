@@ -131,7 +131,7 @@ func _spawn(def: EnemyDef, night: int, elite: bool) -> void:
 
 func _prune() -> void:
 	var before := _alive.size()
-	_alive = _alive.filter(func(e: Enemy) -> bool: return is_instance_valid(e) and not e.is_dead())
+	_alive = _alive.filter(func(e) -> bool: return is_instance_valid(e) and not (e as Enemy).is_dead())
 	if _alive.size() != before:
 		EventBus.horde_progress.emit(remaining(), _total + config.elite_count(TimeManager.night_number()))
 
