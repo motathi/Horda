@@ -148,6 +148,8 @@ func _build_rigged(model_name: String, height: float) -> void:
 		return
 	_anim = players[0] as AnimationPlayer
 	for n in _anim.get_animation_list():
+		_strip_root_motion(_anim.get_animation(n))
+	for n in _anim.get_animation_list():
 		var key := String(n).to_lower().get_slice("|", String(n).get_slice_count("|") - 1)
 		for k: String in ["idle", "walk", "run", "slash", "hurt"]:
 			if key.ends_with(k):
@@ -161,6 +163,32 @@ func _build_rigged(model_name: String, height: float) -> void:
 	vis.screen_entered.connect(func() -> void: _anim.process_mode = Node.PROCESS_MODE_INHERIT)
 	vis.screen_exited.connect(func() -> void: _anim.process_mode = Node.PROCESS_MODE_DISABLED)
 	_play("idle", 0.0)
+
+## As animações da Tripo deslocam o quadril para frente (root motion): o modelo
+## "andava" para longe do personagem e voltava de repente a cada ciclo. Aqui a
+## deriva linear do quadril é removida, mantendo o balanço natural do passo.
+static func _strip_root_motion(a: Animation) -> void:
+	if a == null or a.has_meta("root_fixed"):
+		return
+	a.set_meta("root_fixed", true)
+	for t in a.get_track_count():
+		if a.track_get_type(t) != Animation.TYPE_POSITION_3D:
+			continue
+		var path := String(a.track_get_path(t))
+		if not (path.ends_with(":Hip") or path.ends_with(":Root") or path.ends_with(":Hips")):
+			continue
+		var n := a.track_get_key_count(t)
+		if n < 2:
+			continue
+		var t0 := a.track_get_key_time(t, 0)
+		var t1 := a.track_get_key_time(t, n - 1)
+		var v0: Vector3 = a.track_get_key_value(t, 0)
+		var v1: Vector3 = a.track_get_key_value(t, n - 1)
+		var drift := v1 - v0
+		for k in n:
+			var v: Vector3 = a.track_get_key_value(t, k)
+			var f := (a.track_get_key_time(t, k) - t0) / maxf(0.0001, t1 - t0)
+			a.track_set_key_value(t, k, v - drift * f)
 
 func _play(key: String, blend: float = 0.15, speed: float = 1.0) -> void:
 	if _anim == null or not _anim_names.has(key):

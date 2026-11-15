@@ -62,6 +62,21 @@ func _test_world() -> void:
 func _test_combat() -> void:
 	print("[combate]")
 	var hero := world.hero
+	# Sem root motion: o quadril do modelo acompanha o personagem enquanto anda.
+	var skel := hero.model.find_children("*", "Skeleton3D", true, false)
+	if not skel.is_empty():
+		var sk := skel[0] as Skeleton3D
+		var hip := sk.find_bone("Hip")
+		hero.global_position = Vector3(30, 0, 30)
+		var max_off := 0.0
+		var ap := hero.model.find_children("*", "AnimationPlayer", true, false)[0] as AnimationPlayer
+		hero.model.animate(0.05, 0.4)  # entra no estado "walk"
+		for i in 40:
+			ap.advance(0.05)
+			var hp := (sk.global_transform * sk.get_bone_global_pose(hip)).origin
+			var off := Vector2(hp.x - hero.global_position.x, hp.z - hero.global_position.z).length()
+			max_off = maxf(max_off, off)
+		check(max_off < 0.7, "modelo não se afasta do personagem ao andar (desvio máx. %.2f m)" % max_off)
 	var e := (load("res://scenes/enemies/zombie.tscn") as PackedScene).instantiate() as Enemy
 	world.enemies_root.add_child(e)
 	e.global_position = Vector3(40, 0, 40)

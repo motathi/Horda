@@ -12,6 +12,7 @@ var hero: Hero
 var touch_enabled: bool = false
 var _stick_touch: int = -1
 var _stick_center: Vector2
+var _stick_home: Vector2
 var _stick_vec: Vector2 = Vector2.ZERO
 var _buttons: Array[Dictionary] = []
 var _last_size: Vector2 = Vector2.ZERO
@@ -41,26 +42,38 @@ func _input(event: InputEvent) -> void:
 	if not is_visible_in_tree():
 		return
 	var vs := get_viewport_rect().size
-	_stick_center = Vector2(150, vs.y - 150)
+	_stick_home = Vector2(150, vs.y - 150)
+	if _stick_touch == -1:
+		_stick_center = _stick_home
 	if event is InputEventScreenTouch:
 		var t := event as InputEventScreenTouch
 		if t.pressed:
-			if touch_enabled and _stick_touch == -1 and t.position.distance_to(_stick_center) < STICK_RADIUS * 1.8:
+			if _try_press(t.position, t.index):
+				get_viewport().set_input_as_handled()
+				return
+			# Joystick flutuante: nasce onde o dedo tocar no terço inferior esquerdo.
+			if touch_enabled and _stick_touch == -1 and _in_stick_zone(t.position, vs):
 				_stick_touch = t.index
+				_stick_center = t.position
 				_update_stick(t.position)
 				get_viewport().set_input_as_handled()
 				return
-			if _try_press(t.position, t.index):
-				get_viewport().set_input_as_handled()
 		else:
 			if t.index == _stick_touch:
 				_stick_touch = -1
+				_stick_center = _stick_home
 				_update_stick(_stick_center)
+				get_viewport().set_input_as_handled()
 			_release_index(t.index)
 	elif event is InputEventScreenDrag:
 		var d := event as InputEventScreenDrag
 		if d.index == _stick_touch:
 			_update_stick(d.position)
+			get_viewport().set_input_as_handled()
+	elif event is InputEventMouse and Platform.touch:
+		# O navegador também gera "mouse" a partir do 1º dedo: se esse dedo está no
+		# joystick ou num botão, o evento não pode virar um toque no mundo.
+		if _stick_touch == 0 or _any_button_touch(0) or (event is InputEventMouseButton and (_in_stick_zone(event.position, vs) or is_over_button(event.position))):
 			get_viewport().set_input_as_handled()
 	elif event is InputEventMouseButton and not Platform.touch:
 		var mb := event as InputEventMouseButton
@@ -71,6 +84,15 @@ func _input(event: InputEvent) -> void:
 				get_viewport().set_input_as_handled()
 		else:
 			_release_index(-1)
+
+func _in_stick_zone(p: Vector2, vs: Vector2) -> bool:
+	return p.x < vs.x * 0.38 and p.y > vs.y * 0.45
+
+func _any_button_touch(index: int) -> bool:
+	for b in _buttons:
+		if b.touch == index:
+			return true
+	return false
 
 func _try_press(p: Vector2, index: int) -> bool:
 	for b in _buttons:
@@ -119,7 +141,8 @@ func _process(_delta: float) -> void:
 func _draw() -> void:
 	var vs := get_viewport_rect().size
 	if touch_enabled:
-		_stick_center = Vector2(150, vs.y - 150)
+		if _stick_touch == -1:
+			_stick_center = Vector2(150, vs.y - 150)
 		draw_circle(_stick_center, STICK_RADIUS + 4, Color(0, 0, 0, 0.25))
 		draw_arc(_stick_center, STICK_RADIUS, 0, TAU, 48, Color(UIStyle.GOLD_EDGE, 0.85), 4.0, true)
 		draw_circle(_stick_center + _stick_vec * STICK_RADIUS, 36.0, Color(UIStyle.GOLD_EDGE, 0.55 if _stick_touch >= 0 else 0.35))

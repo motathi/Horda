@@ -9,6 +9,7 @@ const THINK_INTERVAL := 0.25
 const SLEEP_DISTANCE := 75.0
 const LEASH_DISTANCE := 38.0
 const SEPARATION_RADIUS := 1.1
+const DIRECT_CHASE_DISTANCE := 7.0
 
 static var all: Array[Enemy] = []
 
@@ -136,8 +137,19 @@ func _physics_process(delta: float) -> void:
 			speed *= 0.45
 		State.CHASE:
 			if _target_valid():
-				move_dir = _nav_direction(_target.global_position)
-				if def.behavior == EnemyDef.Behavior.CHARGER and _dist_to(_target) < 7.0:
+				var td := _dist_to(_target)
+				if td <= def.attack_range + _target_radius():
+					# Chegou ao alcance: para já neste quadro (sem esperar o "pensar").
+					state = State.ATTACK
+					_try_attack()
+				elif td < DIRECT_CHASE_DISTANCE:
+					# De perto, persegue em linha reta (o caminho da navegação atrasa).
+					var to := _target.global_position - global_position
+					to.y = 0.0
+					move_dir = to.normalized()
+				else:
+					move_dir = _nav_direction(_target.global_position)
+				if def.behavior == EnemyDef.Behavior.CHARGER and td < 7.0:
 					speed *= 1.35
 		State.SIEGE:
 			if GameManager.base_core:
@@ -151,7 +163,8 @@ func _physics_process(delta: float) -> void:
 		if _windup < 0.0:
 			_resolve_attack()
 
-	var v := (move_dir + _separation * 0.6)
+	var sep_w := 0.25 if state == State.ATTACK else 0.6
+	var v := (move_dir + _separation * sep_w)
 	if v.length() > 1.0:
 		v = v.normalized()
 	velocity.x = v.x * speed
@@ -297,6 +310,15 @@ func _update_separation() -> void:
 		var r := SEPARATION_RADIUS * (def.model_scale + o.def.model_scale) * 0.5
 		if l < r and l > 0.001:
 			push += d / l * (1.0 - l / r)
+	# Não entra "dentro" do herói: mantém o raio dele + o próprio.
+	var hero := GameManager.hero as Hero
+	if hero and not hero.is_dead():
+		var dh := p - hero.global_position
+		dh.y = 0.0
+		var lh := dh.length()
+		var rh := hero.get_radius() + get_radius() + 0.35
+		if lh < rh and lh > 0.001:
+			push += dh / lh * (1.0 - lh / rh) * 2.0
 	_separation = push
 
 func _face(point: Vector3, delta: float) -> void:

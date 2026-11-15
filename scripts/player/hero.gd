@@ -182,7 +182,7 @@ func _physics_process(delta: float) -> void:
 	model.animate(delta, Vector2(velocity.x, velocity.z).length() / move_speed)
 
 func _input_direction() -> Vector3:
-	var v := Input.get_vector("move_left", "move_right", "move_up", "move_down")
+	var v := Input.get_vector("move_left", "move_right", "move_up", "move_down", 0.12)
 	if v == Vector2.ZERO or _camera == null:
 		return Vector3.ZERO
 	var basis := _camera.global_transform.basis

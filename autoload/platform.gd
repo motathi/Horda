@@ -22,10 +22,13 @@ func _ready() -> void:
 	_build_portrait_warning()
 	if OS.has_feature("web") and str(JavaScriptBridge.eval("window.location.search", true)).contains("dbg=1"):
 		var t := Timer.new()
-		t.wait_time = 3.0
+		t.wait_time = 0.5
 		t.autostart = true
 		t.timeout.connect(func() -> void:
 			var vp := get_viewport()
+			if GameManager.hero:
+				var hp := GameManager.hero.global_position
+				print("[dbg] hero=%.2f,%.2f" % [hp.x, hp.z])
 			print("[dbg] fps=%d 3D objs=%d draws=%d prims=%d" % [Engine.get_frames_per_second(),
 				vp.get_render_info(Viewport.RENDER_INFO_TYPE_VISIBLE, Viewport.RENDER_INFO_OBJECTS_IN_FRAME),
 				vp.get_render_info(Viewport.RENDER_INFO_TYPE_VISIBLE, Viewport.RENDER_INFO_DRAW_CALLS_IN_FRAME),
