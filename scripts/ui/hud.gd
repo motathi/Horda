@@ -9,6 +9,7 @@ var minimap: Minimap
 var time_panel: TimePanel
 var objectives_panel: ObjectivesPanel
 var inventory: InventoryPanel
+var character: CharacterPanel
 var base_panel: BasePanel
 var actions: HudActions
 var build_panel: BuildPanel
@@ -64,7 +65,7 @@ func _ready() -> void:
 	hero_panel = HeroPanel.new()
 	hero_panel.position = Vector2(12, 10)
 	root.add_child(hero_panel)
-	hero_panel.portrait_pressed.connect(_toggle_inventory)
+	hero_panel.portrait_pressed.connect(_toggle_character)
 
 	objectives_panel = ObjectivesPanel.new()
 	_anchor(objectives_panel, Control.PRESET_TOP_LEFT, Vector2(16, 160), Control.GROW_DIRECTION_END, Control.GROW_DIRECTION_END)
@@ -135,7 +136,7 @@ func _ready() -> void:
 	_interact_box.visible = false
 	root.add_child(_interact_box)
 
-	_hint = UIStyle.label("F1: Controles  •  I: Inventário  •  B: Base  •  Esc: Menu", 14, UIStyle.TEXT_DIM)
+	_hint = UIStyle.label("F1: Controles  •  P: Personagem  •  I: Inventário  •  B: Base  •  Esc: Menu", 14, UIStyle.TEXT_DIM)
 	_anchor(_hint, Control.PRESET_BOTTOM_LEFT, Vector2(14, -10), Control.GROW_DIRECTION_END, Control.GROW_DIRECTION_BEGIN)
 	_hint.visible = not Platform.touch
 	root.add_child(_hint)
@@ -152,6 +153,9 @@ func _ready() -> void:
 
 	inventory = InventoryPanel.new()
 	_center(inventory, root)
+	character = CharacterPanel.new()
+	_center(character, root)
+	character.inventory_requested.connect(_toggle_inventory)
 	build_panel = BuildPanel.new()
 	_center(build_panel, root)
 	actions.build_pressed.connect(_toggle_build)
@@ -178,11 +182,19 @@ func _toggle_inventory() -> void:
 	inventory.visible = not inventory.visible
 	base_panel.visible = false
 	build_panel.visible = false
+	character.visible = false
+
+func _toggle_character() -> void:
+	character.visible = not character.visible
+	inventory.visible = false
+	base_panel.visible = false
+	build_panel.visible = false
 
 func _toggle_base() -> void:
 	base_panel.visible = not base_panel.visible
 	inventory.visible = false
 	build_panel.visible = false
+	character.visible = false
 
 func _toggle_build() -> void:
 	if build_manager and build_manager.is_active():
@@ -191,6 +203,7 @@ func _toggle_build() -> void:
 	build_panel.visible = not build_panel.visible
 	inventory.visible = false
 	base_panel.visible = false
+	character.visible = false
 
 ## Selo "N" (norte) no topo do minimapa.
 class _NorthBadge extends Control:
@@ -211,6 +224,7 @@ func bind(hero: Hero, services: BaseServices, regions: Array[Dictionary], lootab
 	objectives_panel.bind(objectives)
 	actions.hero = hero
 	hero_panel.hero = hero
+	character.hero = hero
 	base_panel.services = services
 	base_panel.hero = hero
 	minimap.regions = regions
@@ -228,7 +242,8 @@ func bind_build(m: BuildManager) -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("pause"):
-		if inventory.visible or base_panel.visible or _help.visible or build_panel.visible:
+		if inventory.visible or base_panel.visible or _help.visible or build_panel.visible or character.visible:
+			character.visible = false
 			inventory.visible = false
 			base_panel.visible = false
 			build_panel.visible = false
@@ -244,6 +259,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("inventory"):
 		_toggle_inventory()
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("character"):
+		_toggle_character()
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("base_menu"):
 		_toggle_base()
@@ -390,6 +408,7 @@ func _build_help() -> Control:
 		["Clique esquerdo / Espaço", "Atacar na direção do cursor (também corta árvores e quebra pedras)"],
 		["E", "Saquear caixas, carros e armários próximos"],
 		["1 / 2", "Comer carne / usar curativo"],
+		["P", "Personagem: pontos de atributo (toque no retrato)"],
 		["I ou Tab", "Inventário (mochila e armazém)"],
 		["B", "Menu da base: reparar muros/núcleo, afiar arma, fabricar curativos"],
 		["G", "Construir: muros, barricadas, torres de arqueiros e armadilhas (T gira, clique constrói)"],

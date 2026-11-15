@@ -34,7 +34,25 @@ func _ready() -> void:
 # --- Ganchos de Structure ---------------------------------------------------------
 
 func _max_hp() -> float:
-	return def.max_health * (1.0 + 0.5 * (level - 1))
+	return def.max_health * (1.0 + 0.5 * (level - 1)) * _eng_hp()
+
+## Bônus de Engenharia do herói (atributo).
+static func _eng_hp() -> float:
+	var h := GameManager.hero as Hero
+	return h.building_hp_mult() if is_instance_valid(h) and h.attr_cfg else 1.0
+
+static func _eng_dmg() -> float:
+	var h := GameManager.hero as Hero
+	return h.building_damage_mult() if is_instance_valid(h) and h.attr_cfg else 1.0
+
+## Reaplica bônus externos (chamado pelo herói ao mudar atributos).
+func refresh_stats() -> void:
+	if health == null or health.dead:
+		return
+	var ratio := health.ratio()
+	health.max_health = _max_hp()
+	health.current = health.max_health * ratio
+	health.changed.emit(health.current, health.max_health)
 
 func _armor() -> float:
 	return def.armor + (level - 1)
@@ -142,13 +160,13 @@ static func _box(parent: Node3D, size: Vector3, pos: Vector3, mat: Material) -> 
 # --- Comportamento ----------------------------------------------------------------
 
 func tower_damage() -> float:
-	return def.tower_damage * (1.0 + 0.4 * (level - 1))
+	return def.tower_damage * (1.0 + 0.4 * (level - 1)) * _eng_dmg()
 
 func tower_range() -> float:
 	return def.tower_range + 1.5 * (level - 1)
 
 func trap_damage() -> float:
-	return def.trap_damage * (1.0 + 0.4 * (level - 1))
+	return def.trap_damage * (1.0 + 0.4 * (level - 1)) * _eng_dmg()
 
 func _process(delta: float) -> void:
 	if health.dead or def == null:

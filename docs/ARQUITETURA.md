@@ -87,8 +87,10 @@ estática animada por código ou para o visual procedural se o arquivo faltar.
   recarga, poder, raio, distância, duração); o `Hero` mantém energia e recargas e expõe
   `cast_ability(i)`/`ability_block_reason(i)`; `Enemy.stun()` (chefes resistem 35%); efeitos
   `EffectsHub.spawn_ring/spawn_explosion`; botões hexagonais em arco no `HudActions` com recarga e cadeado.
-  Falta: atributos (Força, Agilidade, Vitalidade, Inteligência, Engenharia), equipamentos com raridade e
-  fabricação de armas via `Recipe`.
+  **Atributos prontos**: `AttributeConfig` (`data/config/attributes.tres`) define o bônus por ponto; o `Hero`
+  guarda `attributes`/`attr_points` (3 por nível), recalcula vida/energia/regeneração/carga em
+  `_recalc_stats()` e chama `refresh_stats` no grupo `buildings` (Engenharia). `CharacterPanel` (P / retrato)
+  distribui e redistribui pontos. Falta: equipamentos com raridade e fabricação de armas via `Recipe`.
 - **Fase 3 — Construção (núcleo pronto)**: `BuildManager` (prévia transparente, grade de 0,5 m, rotação,
   validação por área da base/espaço livre/recursos), `Building` (estende `Structure`: níveis 1–3, torre que
   dispara `Projectile` com pool, armadilha que fere e se desgasta, demolição com reembolso) e dados em

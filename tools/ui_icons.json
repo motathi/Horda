@@ -154,5 +154,35 @@
   "out": "assets/ui/hud/src/lock.jpg",
   "size": "1024x1024",
   "prompt": "Game ability icon of a heavy iron padlock, glossy stylized hand-painted MOBA ability icon in the style of Dota 2, dynamic composition, glowing magical effects, vibrant saturated colors, thick dark outline, centered, isolated on a completely black #000000 background, the background must be pitch black, no frame, no border, no text"
+ },
+ {
+  "name": "ui_attr_str",
+  "out": "assets/ui/hud/src/attr_str.jpg",
+  "size": "1024x1024",
+  "prompt": "Game ability icon of a muscular clenched fist punching with red energy, glossy stylized hand-painted MOBA ability icon in the style of Dota 2, dynamic composition, glowing magical effects, vibrant saturated colors, thick dark outline, centered, isolated on a completely black #000000 background, the background must be pitch black, no frame, no border, no text"
+ },
+ {
+  "name": "ui_attr_agi",
+  "out": "assets/ui/hud/src/attr_agi.jpg",
+  "size": "1024x1024",
+  "prompt": "Game ability icon of a pair of green winged boots with speed streaks, glossy stylized hand-painted MOBA ability icon in the style of Dota 2, dynamic composition, glowing magical effects, vibrant saturated colors, thick dark outline, centered, isolated on a completely black #000000 background, the background must be pitch black, no frame, no border, no text"
+ },
+ {
+  "name": "ui_attr_vit",
+  "out": "assets/ui/hud/src/attr_vit.jpg",
+  "size": "1024x1024",
+  "prompt": "Game ability icon of a glowing golden-red heart with a leafy vine, glossy stylized hand-painted MOBA ability icon in the style of Dota 2, dynamic composition, glowing magical effects, vibrant saturated colors, thick dark outline, centered, isolated on a completely black #000000 background, the background must be pitch black, no frame, no border, no text"
+ },
+ {
+  "name": "ui_attr_int",
+  "out": "assets/ui/hud/src/attr_int.jpg",
+  "size": "1024x1024",
+  "prompt": "Game ability icon of a glowing blue crystal brain with arcane runes, glossy stylized hand-painted MOBA ability icon in the style of Dota 2, dynamic composition, glowing magical effects, vibrant saturated colors, thick dark outline, centered, isolated on a completely black #000000 background, the background must be pitch black, no frame, no border, no text"
+ },
+ {
+  "name": "ui_attr_eng",
+  "out": "assets/ui/hud/src/attr_eng.jpg",
+  "size": "1024x1024",
+  "prompt": "Game ability icon of a crossed wrench and hammer over a brass gear, glossy stylized hand-painted MOBA ability icon in the style of Dota 2, dynamic composition, glowing magical effects, vibrant saturated colors, thick dark outline, centered, isolated on a completely black #000000 background, the background must be pitch black, no frame, no border, no text"
  }
 ]

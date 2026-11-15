@@ -35,6 +35,7 @@ func _ready() -> void:
 	await _test_world()
 	await _test_combat()
 	await _test_abilities()
+	await _test_attributes()
 	await _test_harvest_and_loot()
 	await _test_base_services()
 	await _test_building()
@@ -188,6 +189,55 @@ func _test_abilities() -> void:
 	hero.energy = hero.max_energy
 	hero.health.invulnerable = false
 	hero.health.heal(9999)
+
+func _test_attributes() -> void:
+	print("[atributos]")
+	var hero := world.hero
+	var lvl0 := hero.level
+	var pts0 := hero.attr_points
+	hero.add_xp(hero.xp_to_next())
+	check(hero.level == lvl0 + 1 and hero.attr_points == pts0 + hero.attr_cfg.points_per_level, "subir de nível dá %d pontos de atributo" % hero.attr_cfg.points_per_level)
+	hero.attr_points = 5
+	var dmg0 := hero.damage()
+	var cap0 := ResourceManager.hero_inventory.capacity
+	check(hero.add_attribute(&"strength") == "", "gasta ponto em Força")
+	check(hero.damage() > dmg0 and ResourceManager.hero_inventory.capacity == cap0 + hero.attr_cfg.str_carry, "Força aumenta dano (%.1f -> %.1f) e carga" % [dmg0, hero.damage()])
+	var hp0 := hero.health.max_health
+	hero.add_attribute(&"vitality")
+	check(is_equal_approx(hero.health.max_health, hp0 + hero.attr_cfg.vit_hp), "Vitalidade aumenta vida máxima")
+	var as0 := hero.attack_speed()
+	var ms0 := hero.current_move_speed()
+	hero.add_attribute(&"agility")
+	check(hero.attack_speed() > as0 and hero.current_move_speed() > ms0, "Agilidade aumenta velocidade de ataque e movimento")
+	var en0 := hero.max_energy
+	hero.add_attribute(&"intelligence")
+	check(hero.max_energy > en0 and hero.ability_power() > 1.0 and hero.cooldown_mult() < 1.0, "Inteligência aumenta energia, poder e reduz recarga")
+	# Engenharia afeta construções já existentes.
+	var def := load("res://data/buildings/stone_wall.tres") as BuildingDef
+	var b := Building.new()
+	b.setup(def, 1)
+	world.add_child(b)
+	b.global_position = world.hero.global_position + Vector3(6, 0, 0)
+	await wait(0.05)
+	var bhp0 := b.health.max_health
+	hero.add_attribute(&"engineering")
+	check(b.health.max_health > bhp0, "Engenharia aumenta vida das construções existentes (%d -> %d)" % [int(bhp0), int(b.health.max_health)])
+	check(hero.attr_points == 0 and hero.add_attribute(&"strength") != "", "sem pontos, não é possível gastar mais")
+	# Redistribuir
+	ResourceManager.storage.add(&"scrap", 50)
+	var spent := hero.spent_points()
+	check(hero.respec() == "" and hero.attr_points == spent and hero.attr(&"strength") == 0, "redistribuir devolve %d pontos" % spent)
+	check(ResourceManager.hero_inventory.capacity == ResourceManager.HERO_CAPACITY, "carga volta ao normal após redistribuir")
+	# Salvar/carregar atributos
+	hero.add_attribute(&"vitality")
+	var saved := hero.to_save()
+	hero.attributes[&"vitality"] = 0
+	hero.attr_points = 0
+	hero.from_save(saved)
+	check(hero.attr(&"vitality") == 1 and hero.attr_points == spent - 1, "atributos persistem no save")
+	hero.respec()
+	hero.attr_points = 0
+	b.queue_free()
 
 func _test_harvest_and_loot() -> void:
 	print("[coleta e saque]")

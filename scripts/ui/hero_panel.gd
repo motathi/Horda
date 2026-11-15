@@ -1,7 +1,7 @@
 class_name HeroPanel
 extends Control
 ## Painel do herói (canto superior esquerdo): retrato com selo de nível, nome,
-## vida e mochila. Tocar/clicar no retrato abre o inventário.
+## vida, energia e mochila. Tocar/clicar no retrato abre o painel do personagem.
 
 signal portrait_pressed
 
@@ -46,7 +46,7 @@ func _ready() -> void:
 	_bag_bar.size = Vector2(W - PORTRAIT - 72, 22)
 	add_child(_bag_bar)
 	_bag_label = _bar_label(_bag_bar)
-	tooltip_text = "Clique no retrato para abrir o inventário"
+	tooltip_text = "Clique no retrato para abrir o personagem (P)"
 
 func _bar_label(bar: ProgressBar) -> Label:
 	var l := UIStyle.label("", 16, Color.WHITE)
@@ -77,8 +77,8 @@ func _process(_delta: float) -> void:
 	_bag_bar.max_value = inv.capacity
 	_bag_bar.value = inv.used_weight()
 	_bag_label.text = "%d / %d" % [inv.used_weight(), inv.capacity]
-	tooltip_text = "Nível %d — XP %d / %d\nDano %d • Armadura %d • Crítico %d%%\nClique no retrato para abrir o inventário" % [
-		hero.level, hero.xp, hero.xp_to_next(), int(hero.damage()), int(h.armor), int(hero.crit_chance * 100)]
+	tooltip_text = "Nível %d — XP %d / %d\nDano %d • Armadura %d • Crítico %d%%\nClique no retrato para abrir o personagem (P)" % [
+		hero.level, hero.xp, hero.xp_to_next(), int(hero.damage()), int(h.armor), roundi(hero.crit() * 100)]
 	queue_redraw()
 
 func _draw() -> void:
@@ -120,3 +120,11 @@ func _draw() -> void:
 	var tw := f.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, 18).x
 	draw_string_outline(f, bc + Vector2(-tw * 0.5, 7), t, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, 4, Color.BLACK)
 	draw_string(f, bc + Vector2(-tw * 0.5, 7), t, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color.WHITE)
+	# Pontos de atributo livres: selo "+" pulsante no canto superior direito do retrato.
+	if hero and hero.attr_points > 0:
+		var pc := Vector2(PORTRAIT - 4, 14)
+		var pulse := 1.0 + 0.12 * sin(Time.get_ticks_msec() * 0.008)
+		draw_circle(pc, 15.0 * pulse, UIStyle.GOLD_DARK)
+		draw_circle(pc, 12.5 * pulse, UIStyle.GOLD)
+		draw_rect(Rect2(pc - Vector2(7, 2), Vector2(14, 4)), Color(0.1, 0.06, 0.02))
+		draw_rect(Rect2(pc - Vector2(2, 7), Vector2(4, 14)), Color(0.1, 0.06, 0.02))

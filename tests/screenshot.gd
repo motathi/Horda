@@ -80,6 +80,13 @@ func _ready() -> void:
 	hero.cast_ability(3)
 	await get_tree().create_timer(0.62).timeout
 	await _shot("12_nova")
+	hero.add_attribute(&"strength")
+	hero.add_attribute(&"strength")
+	hero.add_attribute(&"vitality")
+	world.hud.character.visible = true
+	await _frames(4)
+	await _shot("13_character")
+	world.hud.character.visible = false
 	# Cidade
 	hero.global_position = Vector3(70, 0, 8)
 	world.camera_rig.global_position = hero.global_position

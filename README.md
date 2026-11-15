@@ -31,6 +31,7 @@ Cada push no GitHub recompila automaticamente no Vercel (`tools/vercel_build.sh`
 | Clique esquerdo ou Espaço | Golpe em arco na direção do cursor (também corta árvores e quebra pedras) |
 | E | Saquear caixas, carros e armários |
 | 1 / 2 | Comer carne / usar curativo |
+| P (ou toque no retrato) | Personagem: distribuir pontos de atributo |
 | I ou Tab | Inventário (mochila + armazém) |
 | B | Base: reparar muros/núcleo, afiar arma, fabricar curativos |
 | G | Construir: barricada, muro de pedra, torre de arqueiros, armadilha de espinhos (T gira, clique constrói, botão direito cancela) |
@@ -49,6 +50,12 @@ tudo ao redor; *Investida* avança 8 m invulnerável atordoando quem estiver no 
 cura 30% da vida e dá +6 de armadura por 8 s; *Explosão Arcana* cai sobre o maior grupo de zumbis
 num raio de 14 m e atordoa os sobreviventes. Novas habilidades liberam ao subir de nível. Dados em
 `data/skills/*.tres`.
+
+**Atributos:** cada nível dá **3 pontos** (selo "+" dourado no retrato). *Força* +5% dano e +4 de carga;
+*Agilidade* +4% velocidade de ataque, +2% movimento e +1% crítico; *Vitalidade* +18 de vida e +0,4 vida/s;
+*Inteligência* +8 de energia, +6% poder das habilidades e -2% de recarga; *Engenharia* +6% vida das
+construções e +6% dano de torres e armadilhas. *Redistribuir* devolve os pontos por sucata. Valores em
+`data/config/attributes.tres`.
 
 **Na preparação:** explore as regiões (Floresta, Pedreira, Cidade Abandonada, Fazenda, Área Contaminada),
 mate zumbis, colete madeira/pedra, saqueie e volte à base — a mochila (60 de peso) é guardada

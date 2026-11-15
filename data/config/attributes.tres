@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="AttributeConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/progression/attribute_config.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+points_per_level = 3
+respec_scrap_per_point = 2
+respec_min_scrap = 10
+str_damage_pct = 0.05
+str_carry = 4
+agi_attack_speed_pct = 0.04
+agi_move_speed_pct = 0.02
+agi_crit = 0.01
+agi_move_speed_cap = 0.4
+vit_hp = 18.0
+vit_regen = 0.4
+int_energy = 8.0
+int_energy_regen = 0.5
+int_power_pct = 0.06
+int_cdr_pct = 0.02
+int_cdr_cap = 0.4
+eng_building_hp_pct = 0.06
+eng_building_dmg_pct = 0.06
