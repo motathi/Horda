@@ -41,6 +41,7 @@ func _ready() -> void:
 	await _test_tech()
 	await _test_special_enemies()
 	await _test_fixes()
+	await _test_army()
 	await _test_harvest_and_loot()
 	await _test_base_services()
 	await _test_building()
@@ -592,6 +593,88 @@ func _test_fixes() -> void:
 	trap.queue_free()
 	await wait(0.05)
 
+func _test_army() -> void:
+	print("[exército]")
+	var army := world.army
+	var hero := world.hero
+	await _clear_enemies()
+	var day0 := TimeManager.day
+	TimeManager.day = 6
+	check(army.defs.size() == 4, "4 tipos de soldado (%d)" % army.defs.size())
+	var guard := army.get_def(&"guard")
+	check(army.block_reason(guard).contains("Quartel"), "sem Quartel não recruta")
+	var bar := world.build_manager.place(Building.load_def(&"barracks"), Vector3(-20, 0, 20), 0.0, false)
+	await wait(0.1)
+	check(army.capacity() == 4, "Quartel dá 4 vagas (%d)" % army.capacity())
+	for id: StringName in [&"wood", &"stone", &"scrap", &"cloth", &"herbs"]:
+		ResourceManager.storage.add(id, 300)
+	var msg := army.recruit(guard)
+	check(army.queue.size() == 1, "recrutar coloca na fila de treino (%s)" % msg)
+	army.queue[0]["t"] = 0.05
+	await wait(0.3)
+	check(army.alive_count() == 1 and army.queue.is_empty(), "soldado treinado sai do Quartel")
+	var s := army.soldiers[0]
+	s.health.invulnerable = true
+	s.global_position = s.post
+	# Defender: ataca zumbi que chega perto do posto.
+	hero.global_position = Vector3(60, 0, 60)
+	var z := _spawn_def("zombie_brute", s.post + Vector3(4, 0, 0))
+	z.set_physics_process(false)
+	await wait(0.2)
+	var hp0 := z.health.current
+	await wait(4.0)
+	check(z.health.current < hp0, "Guarda defende o posto e ataca o zumbi (%d -> %d)" % [int(hp0), int(z.health.current)])
+	# Zumbi ataca soldado quando o herói está longe.
+	z.set_physics_process(true)
+	s.health.invulnerable = false
+	var shp := s.health.current
+	await wait(3.0)
+	check(s.health.current < shp, "zumbi revida e ataca o soldado")
+	s.health.invulnerable = true
+	# XP para o herói quando o exército mata.
+	var xp0 := hero.xp
+	var lvl0 := hero.level
+	z.health.current = 1.0
+	await wait(3.0)
+	check(z.is_dead() and (hero.xp > xp0 or hero.level > lvl0), "morte pelo exército dá XP ao herói")
+	await _clear_enemies()
+	# Caçar: vai atrás de zumbi longe do posto.
+	army.set_order(Army.Order.HUNT)
+	var far := _spawn_def("zombie_brute", Vector3(30, 0, -30))
+	far.set_physics_process(false)
+	await wait(0.2)
+	var fhp := far.health.current
+	await wait(14.0)
+	check(far.health.current < fhp, "ordem Caçar: soldado vai até o zumbi distante")
+	await _clear_enemies()
+	# Seguir o herói.
+	hero.global_position = Vector3(-30, 0, -10)
+	army.set_order(Army.Order.FOLLOW, hero)
+	await wait(14.0)
+	check(s.global_position.distance_to(hero.global_position) < 6.0, "ordem Seguir: soldado acompanha o herói (%.1f m)" % s.global_position.distance_to(hero.global_position))
+	army.set_order(Army.Order.DEFEND)
+	# Limite de vagas.
+	for i in 3:
+		army.recruit(guard)
+	check(army.block_reason(guard).contains("limite"), "limite de soldados respeitado")
+	# Salvar/carregar.
+	var saved := army.to_save()
+	check((saved["soldiers"] as Array).size() == 1 and (saved["queue"] as Array).size() == 3, "exército e fila salvos")
+	for so in army.soldiers.duplicate():
+		so.queue_free()
+	army.soldiers.clear()
+	army.queue.clear()
+	await wait(0.1)
+	army.from_save(saved)
+	check(army.alive_count() == 1 and army.queue.size() == 3, "exército restaurado do save")
+	for so in army.soldiers.duplicate():
+		so.queue_free()
+	army.soldiers.clear()
+	army.queue.clear()
+	bar.queue_free()
+	TimeManager.day = day0
+	await wait(0.1)
+
 func _flat(a: Vector3, b: Vector3) -> float:
 	return Vector2(a.x - b.x, a.z - b.z).length()
 
@@ -729,7 +812,7 @@ func _test_defenses() -> void:
 	var bm := world.build_manager
 	var tesla := Building.load_def(&"tesla")
 	var day0 := TimeManager.day
-	check(Building.all_defs().size() == 8, "8 construções no menu")
+	check(Building.all_defs().size() == 9, "9 construções no menu")
 	if day0 < tesla.unlock_wave:
 		check(bm.check(tesla, Vector3(6, 0, 6), 0.0).contains("horda"), "Torre Elétrica bloqueada antes da horda %d" % tesla.unlock_wave)
 	TimeManager.day = 10

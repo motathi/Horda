@@ -342,6 +342,10 @@ func add_xp(amount: int) -> void:
 	stats_changed.emit()
 
 func _on_enemy_killed(_e: Node3D, def: EnemyDef, killer: Node) -> void:
+	# Mortes do exército dão metade do XP ao herói (no coop, a cada jogador).
+	if def and not is_puppet and (killer is Soldier or (killer == null and _e and _e.has_meta(&"soldier_kill"))):
+		add_xp(maxi(1, def.xp_reward / 2))
+		return
 	if killer == self and def and not is_puppet:
 		var mult := 1
 		if _e is Enemy:

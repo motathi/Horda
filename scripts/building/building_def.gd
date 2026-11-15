@@ -2,7 +2,7 @@ class_name BuildingDef
 extends Resource
 ## Dados de uma construção do jogador (muro, torre, armadilha).
 
-enum Category { WALL, TOWER, TRAP }
+enum Category { WALL, TOWER, TRAP, BARRACKS }
 ## Flecha teleguiada, virote perfurante (linha), bala de canhão (área), raio em cadeia.
 enum TowerKind { ARROW, PIERCE, SPLASH, CHAIN }
 
@@ -67,6 +67,8 @@ func stats_text(level: int = 1) -> String:
 				TowerKind.SPLASH: t += "\nExplosão de %.1f m" % splash_radius
 				TowerKind.CHAIN: t += "\nRaio salta em %d alvos" % chain_count
 			return t
+		Category.BARRACKS:
+			return "Vida %d • Treina soldados\n+%d de exército (+%d por nível)" % [hp, Army.PER_BARRACKS, Army.PER_LEVEL]
 		Category.TRAP:
 			return "Durabilidade %d • Dano %d a cada %.1fs" % [hp, int(trap_damage * (1.0 + 0.4 * (level - 1))), trap_interval]
 		_:

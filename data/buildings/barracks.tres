@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="BuildingDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/building/building_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"barracks"
+display_name = "Quartel"
+description = "Treina soldados para defender a base (menu da base, aba Exército)."
+icon_name = "b_barracks"
+category = 3
+cost = {
+&"wood": 40,
+&"stone": 30,
+&"scrap": 10
+}
+max_health = 900.0
+armor = 4.0
+footprint = Vector2(4.4, 4.4)
+height = 4.0
+max_level = 3
+upgrade_cost_mult = 0.9
+refund = 0.5
+unlock_wave = 2

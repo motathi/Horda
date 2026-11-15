@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="SoldierDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/army/soldier_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"battlemage"
+display_name = "Mago de Batalha"
+description = "Bolas arcanas que explodem em área no meio da horda."
+skin = "mage"
+attack = 2
+max_health = 110.0
+armor = 1.0
+damage = 20.0
+attack_range = 12.0
+attack_cooldown = 2.2
+move_speed = 4.0
+aggro_range = 15.0
+splash_radius = 2.6
+cost = {
+&"scrap": 20,
+&"herbs": 10,
+&"cloth": 6
+}
+train_time = 18.0
+unlock_wave = 6

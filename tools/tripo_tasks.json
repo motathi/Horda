@@ -45,5 +45,8 @@
  },
  "iron_wall": {
   "model": "56276710-6d20-417e-a1a1-8bcbaec4bf90"
+ },
+ "barracks": {
+  "model": "5c9d2cfb-b5f3-4f00-a364-129f0cd47988"
  }
 }

@@ -16,7 +16,7 @@ static func load_def(id: StringName) -> BuildingDef:
 
 static func all_defs() -> Array[BuildingDef]:
 	var out: Array[BuildingDef] = []
-	for id in [&"barricade", &"stone_wall", &"iron_wall", &"spikes", &"archer_tower", &"ballista", &"cannon", &"tesla"]:
+	for id in [&"barricade", &"stone_wall", &"iron_wall", &"spikes", &"archer_tower", &"ballista", &"cannon", &"tesla", &"barracks"]:
 		out.append(load_def(id))
 	return out
 
@@ -102,6 +102,14 @@ static func make_visual(d: BuildingDef, lvl: int = 1) -> Node3D:
 				orb.material_override = MaterialLib.flat(Color(0.4, 0.75, 1.0), 0.3, 3.0)
 				orb.position.y = d.height + 0.2
 				root.add_child(orb)
+		&"barracks":
+			if ModelLibrary.has("barracks"):
+				root.add_child(ModelLibrary.instance_footprint("barracks", maxf(d.footprint.x, d.footprint.y) * 1.05))
+			else:
+				_box(root, Vector3(d.footprint.x, 2.6, d.footprint.y), Vector3(0, 1.3, 0), MaterialLib.textured("planks", Color.WHITE))
+				_box(root, Vector3(d.footprint.x + 0.4, 0.5, d.footprint.y + 0.4), Vector3(0, 2.9, 0), MaterialLib.flat(Color(0.2, 0.35, 0.8)))
+			var flag := _box(root, Vector3(0.05, 0.9, 1.2), Vector3(d.footprint.x * 0.5 - 0.2, 4.2, 0), MaterialLib.textured("cloth", Color(0.2, 0.35, 0.9), 1.0))
+			flag.rotation_degrees.y = 90
 		&"iron_wall":
 			if ModelLibrary.has("iron_wall"):
 				# A malha gerada é comprida no eixo Z: gira 90° e ajusta a altura à do muro.

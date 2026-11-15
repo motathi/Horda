@@ -63,6 +63,14 @@ pontas de aço, recarga, lunetas, munição pesada, muralhas de ferro, pedreiros
 **Economia** (ferramentas, mochilas, saqueadores, coletores que produzem recursos, oficina avançada) e
 **Herói** (treinamento, medicina, foco arcano, veterano). Dados em `data/tech/*.tres`.
 
+**Exército:** construa um **Quartel** (horda 2; 4 vagas, +2 por nível, até 12 — 8 no celular) e recrute na
+aba *Exército* do menu da base: **Guarda** (tanque), **Arqueiro** (à distância, horda 3), **Bárbaro** (dano
+alto, horda 4) e **Mago de Batalha** (magia em área, horda 6). Cada soldado treina alguns segundos no Quartel.
+Três ordens para todo o exército — **Defender a base** (postos dentro da paliçada), **Seguir o herói** e
+**Caçar zumbis** (até 65 m da base) — trocadas na aba, na pílula do topo da tela ou com **V**. Soldados usam
+uma malha de navegação própria (contornam paliçada e construções e passam pelos portões); zumbis revidam e
+atacam soldados próximos; mortes do exército dão metade do XP ao herói. No coop o exército é compartilhado.
+
 **Inimigos especiais:** a partir da horda 4 surge o *Zumbi Explosivo* (incha e explode ao alcançar o alvo,
 arrasando muros; abatido, explode ferindo os zumbis ao redor), na 7 o *Cuspidor* (cospe ácido de 10 m,
 inclusive por cima dos muros, deixando poças corrosivas, e recua se você se aproximar) e na 9 o *Saltador*

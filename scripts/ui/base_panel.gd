@@ -9,7 +9,8 @@ var _status: Label
 var _where: Label
 var _t: float = 0.0
 var _signature: String = ""
-var _tab: int = 0  # 0 = Oficina, 1 = Forja, 2 = Pesquisa
+var _tab: int = 0  # 0 = Oficina, 1 = Forja, 2 = Pesquisa, 3 = Exército
+var army: Army
 var _research_bar: ProgressBar
 var _research_label: Label
 var _tabs: Array[Button] = []
@@ -33,8 +34,8 @@ func _ready() -> void:
 	tabs.add_theme_constant_override("separation", 6)
 	col.add_child(tabs)
 	var group := ButtonGroup.new()
-	for i in 3:
-		var tb := UIStyle.button(["Oficina", "Forja", "Pesquisa"][i], 17)
+	for i in 4:
+		var tb := UIStyle.button(["Oficina", "Forja", "Pesquisa", "Exército"][i], 17)
 		tb.toggle_mode = true
 		tb.button_group = group
 		tb.button_pressed = i == 0
@@ -78,7 +79,8 @@ func _process(delta: float) -> void:
 func _make_signature() -> String:
 	if services == null or hero == null:
 		return ""
-	return "%s|%s|%d|%s|%d|%d|%d|%s|%s|%d|%d" % [Tech.active, Tech.done.keys(), _tab, BaseZone.hero_inside, int(services.walls_missing_hp()), int(services.core_missing_hp()),
+	var army_sig := "%d|%d|%d|%d" % [army.alive_count(), army.queue.size(), army.order, army.capacity()] if army else ""
+	return army_sig + "%s|%s|%d|%s|%d|%d|%d|%s|%s|%d|%d" % [Tech.active, Tech.done.keys(), _tab, BaseZone.hero_inside, int(services.walls_missing_hp()), int(services.core_missing_hp()),
 		hero.weapon_level, ResourceManager.storage.to_dict(), ResourceManager.hero_inventory.to_dict(), hero.gear_bag.size(), TimeManager.wave()]
 
 func _rebuild() -> void:
@@ -96,6 +98,9 @@ func _rebuild() -> void:
 	if _tab == 2:
 		_build_research()
 		return
+	if _tab == 3:
+		_build_army()
+		return
 	var wall_cost := services.wall_repair_cost()
 	_add_row("Reparar muros e portões", "Vida faltando: %d" % int(services.walls_missing_hp()), wall_cost,
 		func() -> String: return services.repair_walls(), not wall_cost.is_empty(), true)
@@ -110,6 +115,39 @@ func _rebuild() -> void:
 	for r in services.recipes:
 		_add_row("Fabricar: %s" % r.display_name, r.description, r.inputs,
 			func() -> String: return services.craft(r), true, false)
+
+func _build_army() -> void:
+	if army == null:
+		return
+	var head := UIStyle.label("Soldados: %d / %d  •  Quartéis: %d  •  Ordem: %s" % [army.alive_count(), army.capacity(), army.barracks().size(), Army.ORDER_NAMES[army.order]], 16, UIStyle.GOLD)
+	_rows.add_child(head)
+	var orders := HBoxContainer.new()
+	orders.add_theme_constant_override("separation", 6)
+	for o in 3:
+		var b := UIStyle.button(Army.ORDER_NAMES[o], 15)
+		b.toggle_mode = true
+		b.button_pressed = army.order == o
+		b.icon = UIStyle.hud_icon(["o_defend", "o_follow", "o_hunt"][o])
+		b.expand_icon = false
+		b.add_theme_constant_override("icon_max_width", 26)
+		b.custom_minimum_size = Vector2(0, 42)
+		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		b.pressed.connect(func() -> void:
+			_status.text = army.set_order(o, hero)
+			_rebuild())
+		orders.add_child(b)
+	_rows.add_child(orders)
+	if not army.queue.is_empty():
+		var q := army.queue[0]
+		_rows.add_child(UIStyle.label("Treinando: %s (%ds)%s" % [(q["def"] as SoldierDef).display_name, ceili(float(q["t"])), "  +%d na fila" % (army.queue.size() - 1) if army.queue.size() > 1 else ""], 14, Color(0.6, 0.85, 1.0)))
+	if army.barracks().is_empty():
+		_rows.add_child(UIStyle.label("Construa um Quartel (menu Construir, G) para recrutar soldados.", 14, UIStyle.RED))
+	for d in army.defs:
+		var why := army.block_reason(d)
+		var sub := "%s\n%s  •  treino %ds" % [d.description, d.stats_text(), int(d.train_time)]
+		if why != "" and not why.begins_with("Faltam"):
+			sub += "\n" + why
+		_add_row(d.display_name, sub, d.cost, func() -> String: return army.recruit(d), why == "" or why.begins_with("Faltam"), false, d.portrait(), "Recrutar")
 
 func _build_research() -> void:
 	var top := PanelContainer.new()

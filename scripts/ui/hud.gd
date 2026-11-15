@@ -274,6 +274,38 @@ func bind(hero: Hero, services: BaseServices, regions: Array[Dictionary], lootab
 	minimap.regions = regions
 	minimap.lootables = lootables
 
+var army: Army
+var _army_pill: Button
+
+## Exército: aba no menu da base + pílula no topo (toque troca a ordem; tecla V).
+func bind_army(a: Army) -> void:
+	army = a
+	base_panel.army = a
+	_army_pill = Button.new()
+	_army_pill.focus_mode = Control.FOCUS_NONE
+	_army_pill.icon = UIStyle.hud_icon("army")
+	_army_pill.expand_icon = false
+	_army_pill.add_theme_constant_override("icon_max_width", 28)
+	_army_pill.add_theme_font_size_override("font_size", 14)
+	_army_pill.add_theme_stylebox_override("normal", UIStyle.hud_panel_style(UIStyle.PANEL_BG, 8))
+	_army_pill.add_theme_stylebox_override("hover", UIStyle.hud_panel_style(Color(0.15, 0.13, 0.1, 0.95), 8))
+	_army_pill.add_theme_stylebox_override("pressed", UIStyle.hud_panel_style(Color(0.15, 0.13, 0.1, 0.95), 8))
+	_army_pill.tooltip_text = "Toque para trocar a ordem do exército (V)"
+	_army_pill.pressed.connect(func() -> void: _on_message(army.cycle_order(), Color(0.55, 0.85, 1.0)))
+	_anchor(_army_pill, Control.PRESET_CENTER_TOP, Vector2(0, 100), Control.GROW_DIRECTION_BOTH, Control.GROW_DIRECTION_END)
+	_research_pill.get_parent().add_child(_army_pill)
+	# Fica atrás dos painéis (menus abrem por cima).
+	_army_pill.get_parent().move_child(_army_pill, _research_pill.get_index() + 1)
+	_army_pill.visible = false
+	a.changed.connect(_update_army_pill)
+
+func _update_army_pill() -> void:
+	if _army_pill == null:
+		return
+	var n := army.alive_count()
+	_army_pill.visible = n > 0 or not army.queue.is_empty()
+	_army_pill.text = "Exército %d/%d — %s" % [n, army.capacity(), Army.ORDER_NAMES[army.order]]
+
 func bind_build(m: BuildManager) -> void:
 	build_manager = m
 	placement_bar.bind(m)
@@ -307,6 +339,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event.is_action_pressed("character"):
 		_toggle_character()
 		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("army_order") and army:
+		_on_message(army.cycle_order(), Color(0.55, 0.85, 1.0))
+		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("base_menu"):
 		_toggle_base()
 		get_viewport().set_input_as_handled()
@@ -329,6 +364,8 @@ func _quick_save() -> void:
 func _process(_delta: float) -> void:
 	if _research_pill:
 		_process_research_pill()
+	if _army_pill and Engine.get_process_frames() % 15 == 0:
+		_update_army_pill()
 	if _hero and _hero.is_dead() and GameManager.is_playing():
 		_death_label.visible = true
 		_death_label.text = "Você caiu!\nRenascendo em %d..." % ceili(_hero.respawn_seconds_left())
@@ -493,6 +530,7 @@ func _build_help() -> Control:
 		["E", "Saquear caixas, carros e armários próximos"],
 		["1 / 2", "Comer carne / usar curativo"],
 		["P", "Personagem: pontos de atributo (toque no retrato)"],
+		["V", "Exército: trocar a ordem (defender / seguir / caçar)"],
 		["I ou Tab", "Inventário (mochila e armazém)"],
 		["B", "Menu da base: reparar muros/núcleo, afiar arma, fabricar curativos"],
 		["G", "Construir: muros, barricadas, torres de arqueiros e armadilhas (T gira, clique constrói)"],

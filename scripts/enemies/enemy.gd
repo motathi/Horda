@@ -190,7 +190,7 @@ func _physics_process(delta: float) -> void:
 		return
 	var hero := nearest_hero()
 	# Inimigos diurnos muito longe do herói "dormem" (economia de CPU).
-	if not is_horde and hero and hero.global_position.distance_to(global_position) > SLEEP_DISTANCE:
+	if not is_horde and hero and hero.global_position.distance_to(global_position) > SLEEP_DISTANCE and not _soldier_near(25.0):
 		return
 	_special_cd = maxf(0.0, _special_cd - delta)
 	if _leap_wind >= 0.0 or _leap_t >= 0.0:
@@ -277,12 +277,18 @@ func _think() -> void:
 			_try_attack()
 			return
 
-	# Alvos vivos próximos têm prioridade.
+	# Alvos vivos próximos têm prioridade (herói; senão um soldado por perto).
+	var sol: Soldier = null
+	if not (hero_ok and hero_d <= def.aggro_range) and (not _target_valid() or (_target is Structure and state != State.ATTACK)):
+		sol = _nearest_soldier(def.aggro_range)
 	if hero_ok and hero_d <= def.aggro_range:
 		if _target != hero:
 			# Avistou o herói: rosnado de alerta.
 			AudioManager.play_3d(&"skeleton" if _is_skeleton() else &"groan", global_position, -2.0, 1.0 / maxf(0.7, def.model_scale), 350)
 		_target = hero
+		state = State.CHASE
+	elif sol:
+		_target = sol
 		state = State.CHASE
 	elif state == State.CHASE:
 		if not _target_valid() or (_target is Hero and hero_d > def.aggro_range * 1.8):
@@ -702,3 +708,20 @@ func set_beacon(on: bool) -> void:
 		add_child(b)
 	elif not on and b:
 		b.queue_free()
+
+func _nearest_soldier(radius: float) -> Soldier:
+	var best: Soldier = null
+	var bd := radius * radius
+	for so in Soldier.all:
+		if is_instance_valid(so) and not so.is_dead():
+			var d := so.global_position.distance_squared_to(global_position)
+			if d < bd:
+				bd = d
+				best = so
+	return best
+
+func _soldier_near(r: float) -> bool:
+	for so in Soldier.all:
+		if is_instance_valid(so) and not so.is_dead() and so.global_position.distance_squared_to(global_position) < r * r:
+			return true
+	return false

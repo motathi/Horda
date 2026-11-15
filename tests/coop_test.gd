@@ -103,6 +103,9 @@ func _run_host() -> void:
 	ResourceManager.storage.add(&"stone", 100)
 	step.rpc("storage_sent")
 	check(await wait_until(func() -> bool: return get_tree().get_nodes_in_group("buildings").size() > 0, 15.0), "construção pedida pelo cliente foi feita pelo anfitrião")
+	var army := world.get(&"army") as Army
+	army.spawn(army.get_def(&"guard"), Vector3(4, 0, 9))
+	step.rpc("soldier_sent")
 	await wait_step("client_done", 40.0)
 
 # --- Cliente ---
@@ -160,4 +163,6 @@ func _run_client() -> void:
 	bm.confirm()
 	check(await wait_until(func() -> bool: return get_tree().get_nodes_in_group("buildings").size() > 0, 10.0), "construção replicada de volta ao cliente")
 	bm.cancel()
+	await wait_step("soldier_sent")
+	check(await wait_until(func() -> bool: return Soldier.all.any(func(so: Soldier) -> bool: return so.puppet), 8.0), "soldado do anfitrião aparece no cliente")
 	step.rpc_id(1, "client_done")

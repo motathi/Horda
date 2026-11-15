@@ -14,6 +14,8 @@ var world: Node = null
 var remote_heroes: Dictionary = {}   # peer_id -> Hero (fantoche)
 var enemies: Dictionary = {}         # net_id -> Enemy
 var pickups: Dictionary = {}         # net_id -> Node3D (ResourcePickup / GearPickup)
+var soldiers: Dictionary = {}        # net_id -> Soldier
+var _next_soldier: int = 1
 var _next_enemy: int = 1
 var _next_pickup: int = 1
 var _t_hero: float = 0.0
@@ -42,6 +44,7 @@ func attach(w: Node) -> void:
 	remote_heroes.clear()
 	enemies.clear()
 	pickups.clear()
+	soldiers.clear()
 	_struct_hp.clear()
 	_next_enemy = 1
 	_next_pickup = 1
@@ -57,6 +60,7 @@ func attach(w: Node) -> void:
 		er.child_entered_tree.connect(_on_enemy_added)
 		ResourceManager.storage.changed.connect(func() -> void: _storage_dirty = STORAGE_DEBOUNCE)
 		Tech.changed.connect(_send_tech)
+		(w.get(&"army") as Army).changed.connect(func() -> void: army_state(int((w.get(&"army") as Army).order)))
 		EventBus.horde_started.connect(func(n: int, total: int) -> void: _event.rpc("horde_started", [n, total]))
 		EventBus.horde_ended.connect(func(n: int) -> void: _event.rpc("horde_ended", [n]))
 		EventBus.horde_progress.connect(func(r: int, t: int) -> void: _event.rpc("horde_progress", [r, t]))
@@ -74,6 +78,7 @@ func detach() -> void:
 	remote_heroes.clear()
 	enemies.clear()
 	pickups.clear()
+	soldiers.clear()
 
 func remove_player(pid: int) -> void:
 	var h := remote_heroes.get(pid) as Node
@@ -98,6 +103,7 @@ func _process(delta: float) -> void:
 		if _t_enemy <= 0.0:
 			_t_enemy = ENEMY_RATE
 			_send_enemies()
+			_send_soldiers()
 		_t_struct -= delta
 		if _t_struct <= 0.0:
 			_t_struct = STRUCT_RATE
@@ -221,6 +227,8 @@ func enemy_died(e: Enemy, killer: Node) -> void:
 	var kp := 0
 	if killer is Hero:
 		kp = (killer as Hero).net_peer
+	elif killer is Soldier:
+		kp = -1
 	_enemy_died.rpc(int(e.get_meta(&"net_id")), kp)
 	enemies.erase(int(e.get_meta(&"net_id")))
 
@@ -229,6 +237,8 @@ func _enemy_died(id: int, killer_peer: int) -> void:
 	var e := enemies.get(id) as Enemy
 	enemies.erase(id)
 	if e and is_instance_valid(e):
+		if killer_peer == -1:
+			e.set_meta(&"soldier_kill", true)
 		e.puppet_die(local_hero() if killer_peer == Net.my_id() else null)
 
 ## Golpe de um jogador num inimigo. No anfitrião aplica; no cliente envia ao anfitrião.
@@ -592,6 +602,12 @@ func _request(action: String, args: Array) -> void:
 		"call_horde":
 			TimeManager.start_horde_now()
 			msg = "Horda chamada!"
+		"recruit":
+			var army := w.get(&"army") as Army
+			var sd := army.get_def(StringName(str(args[0])))
+			msg = army.recruit(sd) if sd else "Tipo de soldado desconhecido."
+		"army_order":
+			msg = (w.get(&"army") as Army).set_order(int(args[0]), remote_heroes.get(who) as Node3D)
 	_reply.rpc_id(who, action, msg)
 
 @rpc("authority", "call_remote", "reliable")
@@ -602,3 +618,86 @@ func _reply(action: String, msg: String) -> void:
 		cb.call(msg)
 	elif msg != "":
 		EventBus.notify(msg, UIStyle.GOLD)
+
+# --- Exército ----------------------------------------------------------------------------
+
+func soldier_spawned(so: Soldier) -> void:
+	if not is_host():
+		return
+	var id := _next_soldier
+	_next_soldier += 1
+	so.set_meta(&"net_id", id)
+	soldiers[id] = so
+	_soldier_spawn.rpc(id, String(so.def.id), so.global_position, so.health.max_health)
+
+@rpc("authority", "call_remote", "reliable")
+func _soldier_spawn(id: int, def_id: String, pos: Vector3, max_hp: float) -> void:
+	if world == null or soldiers.has(id):
+		return
+	var army := world.get(&"army") as Army
+	var d := army.get_def(StringName(def_id))
+	if d == null:
+		return
+	var so := Army.SOLDIER_SCENE.instantiate() as Soldier
+	so.def = d
+	so.puppet = true
+	so.army = army
+	world.add_child(so)
+	so.global_position = pos
+	so.health.max_health = max_hp
+	so.health.current = max_hp
+	so.set_meta(&"net_id", id)
+	soldiers[id] = so
+	army.soldiers.append(so)
+	army.changed.emit()
+
+func soldier_died(so: Soldier) -> void:
+	if is_host() and so.has_meta(&"net_id"):
+		soldiers.erase(int(so.get_meta(&"net_id")))
+		_soldier_died.rpc(int(so.get_meta(&"net_id")))
+
+@rpc("authority", "call_remote", "reliable")
+func _soldier_died(id: int) -> void:
+	var so := soldiers.get(id) as Soldier
+	soldiers.erase(id)
+	if so and is_instance_valid(so):
+		so.puppet_die()
+
+func _send_soldiers() -> void:
+	var data := PackedFloat32Array()
+	for id: int in soldiers.keys():
+		var so := soldiers[id] as Soldier
+		if not is_instance_valid(so) or so.is_dead():
+			soldiers.erase(id)
+			continue
+		data.append_array([float(id), so.global_position.x, so.global_position.y, so.global_position.z, so.model.rotation.y,
+			so.health.current, Vector2(so.velocity.x, so.velocity.z).length() / maxf(0.1, so.def.move_speed), float(so.net_attack_count)])
+	if not data.is_empty():
+		_soldier_snap.rpc(data)
+
+@rpc("authority", "call_remote", "unreliable_ordered")
+func _soldier_snap(data: PackedFloat32Array) -> void:
+	for i in range(0, data.size(), 8):
+		var so := soldiers.get(int(data[i])) as Soldier
+		if so and is_instance_valid(so) and not so.is_dead():
+			so.apply_net_state(Vector3(data[i + 1], data[i + 2], data[i + 3]), data[i + 4], data[i + 5], data[i + 6], int(data[i + 7]))
+
+## Anfitrião: ordem atual e fila de treino (para a interface dos clientes).
+func army_state(o: int) -> void:
+	if not is_host() or world == null:
+		return
+	var army := world.get(&"army") as Army
+	_army_state.rpc(o, army.queue.map(func(q: Dictionary) -> Array: return [String((q["def"] as SoldierDef).id), float(q["t"])]))
+
+@rpc("authority", "call_remote", "reliable")
+func _army_state(o: int, q: Array) -> void:
+	if world == null:
+		return
+	var army := world.get(&"army") as Army
+	army.order = o as Army.Order
+	army.queue.clear()
+	for e: Array in q:
+		var d := army.get_def(StringName(str(e[0])))
+		if d:
+			army.queue.append({"def": d, "t": float(e[1])})
+	army.changed.emit()

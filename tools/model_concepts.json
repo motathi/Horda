@@ -112,5 +112,11 @@
   "out": "assets/concepts/iron_wall.jpg",
   "size": "2048x2048",
   "prompt": "a straight section of heavy fortified wall made of riveted dark iron plates over stone blocks, metal spikes on top, long horizontal rectangular wall segment seen from the front, stylized hand-painted 3D game asset in the art style of Dota 2 and Warcraft III, isometric three-quarter view from slightly above, entire object visible and centered, plain flat light grey background, soft even lighting, no text, single object only, no ground plane"
+ },
+ {
+  "name": "m_barracks",
+  "out": "assets/concepts/barracks.jpg",
+  "size": "2048x2048",
+  "prompt": "a sturdy medieval military barracks building with timber frame walls on a stone foundation, sloped blue tiled roof, blue banners with a sword emblem, a weapon rack with spears and shields beside the door, stylized hand-painted 3D game asset in the art style of Dota 2 and Warcraft III, isometric three-quarter view from slightly above, entire object visible and centered, plain flat light grey background, soft even lighting, no text, single object only, no ground plane"
  }
 ]

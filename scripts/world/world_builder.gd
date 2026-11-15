@@ -18,6 +18,8 @@ var _loot_count: int = 0
 
 ## Saídas usadas pelo World
 var nav_region: NavigationRegion3D
+## Malha só dos aliados (soldados): contorna paliçada e construções, passa pelos portões.
+var ally_nav_region: NavigationRegion3D
 var structures_root: Node3D
 var harvestables: Dictionary = {}  # id -> Harvestable
 var lootables: Dictionary = {}     # id -> Lootable
@@ -36,6 +38,17 @@ func build(world: Node3D, seed_value: int) -> void:
 	world.add_child(nav_region)
 	structures_root = Node3D.new()
 	structures_root.name = "Structures"
+	ally_nav_region = NavigationRegion3D.new()
+	ally_nav_region.name = "AllyNavRegion"
+	ally_nav_region.navigation_layers = 2
+	var anm := _make_navmesh()
+	anm.geometry_collision_mask = Layers.WORLD | Layers.STRUCTURES
+	anm.geometry_source_geometry_mode = NavigationMesh.SOURCE_GEOMETRY_GROUPS_WITH_CHILDREN
+	anm.geometry_source_group_name = &"ally_nav_source"
+	ally_nav_region.navigation_mesh = anm
+	world.add_child(ally_nav_region)
+	nav_region.add_to_group(&"ally_nav_source")
+	structures_root.add_to_group(&"ally_nav_source")
 	world.add_child(structures_root)
 
 	_define_roads()

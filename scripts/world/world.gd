@@ -17,8 +17,30 @@ var objectives: DailyObjectives
 var build_manager: BuildManager
 
 var builder: WorldBuilder
+var army: Army
 var hero: Hero
 var _nav_dirty: bool = false
+var _ally_dirty: float = -1.0
+var _ally_baking: bool = false
+
+## Refaz a malha dos soldados (em segundo plano) quando construções mudam.
+func bake_ally_nav() -> void:
+	if _ally_baking:
+		_ally_dirty = 1.0
+		return
+	_ally_baking = true
+	if not builder.ally_nav_region.bake_finished.is_connected(_on_ally_baked):
+		builder.ally_nav_region.bake_finished.connect(_on_ally_baked)
+	builder.ally_nav_region.bake_navigation_mesh(true)
+
+func _on_ally_baked() -> void:
+	_ally_baking = false
+
+func _process(delta: float) -> void:
+	if _ally_dirty > 0.0:
+		_ally_dirty -= delta
+		if _ally_dirty <= 0.0:
+			bake_ally_nav()
 var _baking: bool = false
 
 func _ready() -> void:
@@ -54,12 +76,21 @@ func _ready() -> void:
 	build_manager.name = "BuildManager"
 	add_child(build_manager)
 	build_manager.setup(builder.structures_root, camera_rig.camera)
+	army = Army.new()
+	army.name = "Army"
+	army.parent_root = self
+	add_child(army)
+	hud.bind_army(army)
 	hud.bind_build(build_manager)
 
 	_baking = true
 	builder.nav_region.bake_finished.connect(_on_bake_finished)
 	builder.nav_region.bake_navigation_mesh(true)
 	await builder.nav_region.bake_finished
+	bake_ally_nav()
+	EventBus.building_placed.connect(func(_b: Node3D) -> void: _ally_dirty = 1.5)
+	EventBus.building_changed.connect(func(_b: Node3D) -> void: _ally_dirty = 1.5)
+	EventBus.structure_destroyed.connect(func(_s: Node3D) -> void: _ally_dirty = 1.5)
 	spawner.populate_initial()
 	Coop.attach(self)
 	TimeManager.phase_changed.connect(_on_phase_changed)
@@ -118,6 +149,7 @@ func collect_save() -> Dictionary:
 		"looted": looted,
 		"pickups": hub.pickups_to_save() if hub else [],
 		"objectives": objectives.to_save(),
+		"army": army.to_save(),
 		"buildings": get_tree().get_nodes_in_group("buildings").filter(func(b: Node) -> bool: return not b.is_queued_for_deletion()).map(func(b: Node) -> Dictionary: return (b as Building).to_save()),
 	}
 
@@ -146,4 +178,5 @@ func apply_save(d: Dictionary) -> void:
 		var p: Array = bd.get("pos", [0, 0])
 		var b := build_manager.place(def, Vector3(p[0], 0, p[1]), float(bd.get("rot", 0.0)), false, int(bd.get("level", 1)))
 		b.from_save(bd)
+	army.from_save(d.get("army", {}))
 	camera_rig.set_target(hero)

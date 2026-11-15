@@ -155,6 +155,27 @@ func _ready() -> void:
 	await _frames(6)
 	await _shot("16_menu_construir")
 	world.hud.build_panel.visible = false
+	var army := world.army
+	world.build_manager.place(Building.load_def(&"barracks"), base + Vector3(-12, 0, 16), 0.6, false)
+	var spots := [Vector3(-3, 0, 17), Vector3(-1, 0, 18), Vector3(1.5, 0, 17.5), Vector3(-5, 0, 19)]
+	for i in 4:
+		army.spawn(army.defs[i], base + spots[i]).health.invulnerable = true
+	army.set_order(Army.Order.HUNT)
+	for i in 4:
+		var zz := (load("res://scenes/enemies/zombie.tscn") as PackedScene).instantiate() as Enemy
+		zz.def = load("res://data/enemies/zombie.tres") as EnemyDef
+		world.enemies_root.add_child(zz)
+		zz.global_position = base + Vector3(-6 + i * 1.5, 0, 21)
+	hero.global_position = base + Vector3(-7, 0, 19)
+	await get_tree().create_timer(1.2).timeout
+	await _shot("25_exercito")
+	world.hud.base_panel.visible = true
+	world.hud.base_panel._tab = 3
+	world.hud.base_panel._rebuild()
+	await _frames(6)
+	await _shot("26_aba_exercito")
+	world.hud.base_panel.visible = false
+	world.hud.base_panel._tab = 0
 	hero.global_position = Vector3(82, 0, -82)
 	await _frames(40)
 	await _shot("17_cemiterio")

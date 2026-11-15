@@ -370,5 +370,35 @@
   "out": "assets/ui/hud/src/t_veteran.jpg",
   "size": "1024x1024",
   "prompt": "Game upgrade icon of a golden laurel wreath around a battle scarred helmet, glossy stylized hand-painted MOBA upgrade icon in the style of Dota 2, dynamic composition, vibrant saturated colors, soft specular highlights, thick dark outline, centered, isolated on a completely black #000000 background, the background must be pitch black, no frame, no border, no text"
+ },
+ {
+  "name": "ui_b_barracks",
+  "out": "assets/ui/hud/src/b_barracks.jpg",
+  "size": "1024x1024",
+  "prompt": "Game UI icon of a small medieval barracks building with a blue roof and crossed swords banner, glossy stylized hand-painted mobile strategy game UI icon, chunky readable shape, vibrant saturated colors, soft specular highlights, thick dark outline, centered, isolated on a completely black #000000 background, the background must be pitch black, no frame, no border, no text"
+ },
+ {
+  "name": "ui_army",
+  "out": "assets/ui/hud/src/army.jpg",
+  "size": "1024x1024",
+  "prompt": "Game UI icon of a blue heraldic shield with two crossed swords, glossy stylized hand-painted mobile strategy game UI icon, chunky readable shape, vibrant saturated colors, soft specular highlights, thick dark outline, centered, isolated on a completely black #000000 background, the background must be pitch black, no frame, no border, no text"
+ },
+ {
+  "name": "ui_o_defend",
+  "out": "assets/ui/hud/src/o_defend.jpg",
+  "size": "1024x1024",
+  "prompt": "Game UI icon of a blue tower shield in front of a castle gate, glossy stylized hand-painted mobile strategy game UI icon, chunky readable shape, vibrant saturated colors, soft specular highlights, thick dark outline, centered, isolated on a completely black #000000 background, the background must be pitch black, no frame, no border, no text"
+ },
+ {
+  "name": "ui_o_follow",
+  "out": "assets/ui/hud/src/o_follow.jpg",
+  "size": "1024x1024",
+  "prompt": "Game UI icon of a blue flag on a pole with a forward arrow, glossy stylized hand-painted mobile strategy game UI icon, chunky readable shape, vibrant saturated colors, soft specular highlights, thick dark outline, centered, isolated on a completely black #000000 background, the background must be pitch black, no frame, no border, no text"
+ },
+ {
+  "name": "ui_o_hunt",
+  "out": "assets/ui/hud/src/o_hunt.jpg",
+  "size": "1024x1024",
+  "prompt": "Game UI icon of a red crosshair over a zombie skull, glossy stylized hand-painted mobile strategy game UI icon, chunky readable shape, vibrant saturated colors, soft specular highlights, thick dark outline, centered, isolated on a completely black #000000 background, the background must be pitch black, no frame, no border, no text"
  }
 ]

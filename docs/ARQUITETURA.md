@@ -80,6 +80,15 @@ exporte `TRIPO_API_KEY`. `CharacterModel` usa o GLB rigado quando existe (máqui
 idle/walk/run/slash; `hurt` vira a queda da morte; animação pausada fora da tela) e cai para a malha
 estática animada por código ou para o visual procedural se o arquivo faltar.
 
+## Exército
+
+`SoldierDef` (`data/soldiers`), `Soldier` (`scenes/army/soldier.tscn`: IA com alvo por ordem, ataque corpo a
+corpo/flecha/magia em área, desvio de obstáculos, modo fantoche no coop) e `Army` (nó do World: quartéis =
+`BuildingDef.Category.BARRACKS`, capacidade, fila de treino, ordens DEFEND/FOLLOW/HUNT, postos, formação, save).
+Soldados navegam pela `WorldBuilder.ally_nav_region` (camada de navegação 2, recorta paliçada e construções,
+rebake em segundo plano quando algo é construído/destruído). `Enemy` alvo em soldados próximos e não "dorme"
+perto deles. Coop: `Coop.soldier_spawned/_soldier_snap/_soldier_died/_army_state` e pedidos `recruit`/`army_order`.
+
 ## Coop online
 
 - `Net` (autoload): salas e lobby. No navegador, `WebRTCMultiplayerPeer` com uma `WebRTCPeerConnection` por

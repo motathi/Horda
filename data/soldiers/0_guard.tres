@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="SoldierDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/army/soldier_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"guard"
+display_name = "Guarda"
+description = "Escudo e espada: segura a linha e aguenta muito dano."
+skin = "knight"
+attack = 0
+max_health = 220.0
+armor = 6.0
+damage = 13.0
+attack_range = 1.9
+attack_cooldown = 1.1
+move_speed = 4.2
+aggro_range = 13.0
+splash_radius = 0.0
+cost = {
+&"wood": 10,
+&"scrap": 12,
+&"cloth": 2
+}
+train_time = 10.0
+unlock_wave = 2

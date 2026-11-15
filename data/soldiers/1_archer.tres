@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="SoldierDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/army/soldier_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"archer"
+display_name = "Arqueiro"
+description = "Atira de longe nos zumbis que se aproximam."
+skin = "ranger"
+attack = 1
+max_health = 120.0
+armor = 2.0
+damage = 15.0
+attack_range = 13.0
+attack_cooldown = 1.2
+move_speed = 4.6
+aggro_range = 16.0
+splash_radius = 0.0
+cost = {
+&"wood": 18,
+&"scrap": 10
+}
+train_time = 12.0
+unlock_wave = 3

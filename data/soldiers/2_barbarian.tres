@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="SoldierDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/army/soldier_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"barbarian"
+display_name = "Bárbaro"
+description = "Machado pesado: o maior dano corpo a corpo."
+skin = "barbarian"
+attack = 0
+max_health = 190.0
+armor = 3.0
+damage = 24.0
+attack_range = 2.0
+attack_cooldown = 1.3
+move_speed = 4.8
+aggro_range = 14.0
+splash_radius = 0.0
+cost = {
+&"scrap": 18,
+&"herbs": 4,
+&"cloth": 2
+}
+train_time = 14.0
+unlock_wave = 4
