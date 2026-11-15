@@ -6,6 +6,8 @@ var top_bar: TopBar
 var bottom_bar: BottomBar
 var selection: SelectionPanel
 var minimap: Minimap
+var time_panel: TimePanel
+var objectives_panel: ObjectivesPanel
 var inventory: InventoryPanel
 var base_panel: BasePanel
 var _feed: VBoxContainer
@@ -43,11 +45,22 @@ func _ready() -> void:
 	top_bar.position.y = 8
 	root.add_child(top_bar)
 
+	time_panel = TimePanel.new()
+	time_panel.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	time_panel.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	time_panel.position = Vector2(-12, 8)
+	root.add_child(time_panel)
+
+	objectives_panel = ObjectivesPanel.new()
+	objectives_panel.position = Vector2(12, 10)
+	root.add_child(objectives_panel)
+
 	var mm_frame := UIStyle.panel()
-	mm_frame.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	mm_frame.grow_horizontal = Control.GROW_DIRECTION_BEGIN
-	mm_frame.position = Vector2(-12, 90)
+	mm_frame.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
+	mm_frame.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	mm_frame.position = Vector2(12, -34)
 	minimap = Minimap.new()
+	minimap.custom_minimum_size = Vector2(250, 250)
 	mm_frame.add_child(minimap)
 	root.add_child(mm_frame)
 
@@ -67,7 +80,7 @@ func _ready() -> void:
 
 	_feed = VBoxContainer.new()
 	_feed.set_anchors_preset(Control.PRESET_CENTER_LEFT)
-	_feed.position = Vector2(14, -40)
+	_feed.position = Vector2(14, -110)
 	_feed.custom_minimum_size = Vector2(460, 0)
 	_feed.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(_feed)
@@ -140,8 +153,9 @@ func _center(c: Control, root: Control) -> void:
 	c.grow_vertical = Control.GROW_DIRECTION_BOTH
 	root.add_child(c)
 
-func bind(hero: Hero, services: BaseServices, regions: Array[Dictionary], lootables: Dictionary) -> void:
+func bind(hero: Hero, services: BaseServices, regions: Array[Dictionary], lootables: Dictionary, objectives: DailyObjectives) -> void:
 	_hero = hero
+	objectives_panel.bind(objectives)
 	bottom_bar.bind(hero)
 	base_panel.services = services
 	base_panel.hero = hero

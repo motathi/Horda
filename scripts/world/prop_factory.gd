@@ -40,6 +40,13 @@ static func make_tree(rng: RandomNumberGenerator, dead: bool = false) -> Harvest
 	sh.height = 4.0
 	_collision(h, sh, Vector3(0, 2, 0))
 	var v := Node3D.new()
+	if not dead and ModelLibrary.has("tree"):
+		var g := rng.randf_range(0.85, 1.1)
+		var t := ModelLibrary.instance_height("tree", rng.randf_range(5.5, 8.5), Color(g * rng.randf_range(0.9, 1.05), g, g * rng.randf_range(0.85, 1.0)))
+		t.rotation.y = rng.randf() * TAU
+		v.add_child(t)
+		h.setup_visual(v)
+		return h
 	var s := rng.randf_range(0.85, 1.35)
 	v.scale = Vector3.ONE * s
 	v.rotation.y = rng.randf() * TAU
@@ -92,6 +99,19 @@ static func make_rock(rng: RandomNumberGenerator, big: bool = true) -> Harvestab
 	sh.radius = r * 0.95
 	_collision(h, sh, Vector3(0, r * 0.4, 0))
 	var v := Node3D.new()
+	if ModelLibrary.has("rock"):
+		var g := rng.randf_range(0.6, 0.8)
+		var rm := ModelLibrary.instance_footprint("rock", r * 2.3, Color(g, g, g * 1.05))
+		rm.rotation.y = rng.randf() * TAU
+		rm.scale.y *= rng.randf_range(0.9, 1.5)
+		v.add_child(rm)
+		if big:
+			var r2 := ModelLibrary.instance_footprint("rock", r * 1.2, Color(g * 0.95, g * 0.95, g))
+			r2.position = Vector3(r * 0.9, 0, r * 0.4)
+			r2.rotation.y = rng.randf() * TAU
+			v.add_child(r2)
+		h.setup_visual(v)
+		return h
 	var mat := MaterialLib.textured("rock", Color(0.95, 0.95, 1.0), 0.6)
 	var m := SphereMesh.new()
 	m.radius = r
@@ -115,6 +135,19 @@ static func make_lootable(kind: String, rng: RandomNumberGenerator) -> Lootable:
 	var l := Lootable.new()
 	var v := Node3D.new()
 	match kind:
+		"cart":
+			l.display_label = "Carroça Abandonada"
+			l.loot = load(LOOT_DIR + "farm_crate.tres")
+			l.duration = 2.0
+			l.restock_days = 3
+			if ModelLibrary.has("cart"):
+				var c := ModelLibrary.instance_footprint("cart", 3.4)
+				v.add_child(c)
+			else:
+				_mi(v, _box_mesh(Vector3(1.6, 0.8, 3.0)), Vector3(0, 0.7, 0), MaterialLib.textured("planks", Color.WHITE))
+			var shc := BoxShape3D.new()
+			shc.size = Vector3(1.8, 1.6, 3.2)
+			_collision(l, shc, Vector3(0, 0.8, 0))
 		"car":
 			l.display_label = "Carro Destruído"
 			l.loot = load(LOOT_DIR + "car_wreck.tres")
@@ -166,6 +199,15 @@ static func make_house(rng: RandomNumberGenerator, ruined: bool) -> StaticBody3D
 	var b := StaticBody3D.new()
 	b.collision_layer = Layers.WORLD
 	b.collision_mask = 0
+	if ModelLibrary.has("house"):
+		var g := rng.randf_range(0.85, 1.05)
+		var m := ModelLibrary.instance_footprint("house", rng.randf_range(8.0, 10.0), Color(g, g * 0.97, g * 0.93))
+		b.add_child(m)
+		var sz := ModelLibrary.size_of("house") * m.scale.x
+		var shm := BoxShape3D.new()
+		shm.size = Vector3(sz.x * 0.85, sz.y * 0.6, sz.z * 0.85)
+		_collision(b, shm, Vector3(0, sz.y * 0.3, 0))
+		return b
 	var w := rng.randf_range(6, 9)
 	var d := rng.randf_range(5, 8)
 	var h := rng.randf_range(3.2, 4.2) * (0.6 if ruined else 1.0)

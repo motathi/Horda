@@ -7,7 +7,7 @@ extends Node3D
 @export var pitch_degrees: float = 56.0
 @export var min_distance: float = 12.0
 @export var max_distance: float = 42.0
-@export var distance: float = 20.0
+@export var distance: float = 18.0
 @export var follow_speed: float = 8.0
 @export var rotate_speed: float = 1.8
 

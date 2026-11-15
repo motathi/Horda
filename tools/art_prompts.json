@@ -171,7 +171,7 @@
   "name": "portrait_hero",
   "out": "assets/characters/portrait_hero.jpg",
   "size": "2048x2048",
-  "prompt": "Square character portrait for a strategy game HUD, head and shoulders, three-quarter view, dramatic rim lighting, dark background, no text, rugged human survivor warrior with a scarred face, short beard, red bandana, steel shoulder pauldron, holding a large axe, in the art style of Dota 2 and Warcraft III, hand-painted, painterly stylized fantasy, rich saturated colors, high detail"
+  "prompt": "Square character portrait for a strategy game HUD, head and shoulders, three-quarter view, dramatic rim lighting, dark background, no text, a rugged hooded human survivor warrior with a dark blue hood and cloak, short beard, determined eyes, leather and steel armor with blue cloth accents, in the art style of Dota 2 and Warcraft III, hand-painted, painterly stylized fantasy, rich saturated colors, high detail"
  },
  {
   "name": "portrait_zombie",

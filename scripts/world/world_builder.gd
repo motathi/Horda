@@ -50,6 +50,7 @@ func build(world: Node3D, seed_value: int) -> void:
 	_build_base(world)
 	_define_spawns()
 	_apply_terrain_material()
+	_build_foliage(world)
 
 func _make_navmesh() -> NavigationMesh:
 	var nm := NavigationMesh.new()
@@ -107,6 +108,40 @@ func _apply_terrain_material() -> void:
 	mat.set_shader_parameter("noise_tex", nt)
 	mat.set_shader_parameter("map_size", MAP_HALF * 2.0)
 	_ground_mesh.material_override = mat
+
+# --- Vegetação decorativa ------------------------------------------------------------
+
+var _blocked: PackedByteArray
+
+func _build_foliage(world: Node3D) -> void:
+	# Grade de 1 m marcando onde NÃO plantar (props, base).
+	var n := int(MAP_HALF * 2)
+	_blocked = PackedByteArray()
+	_blocked.resize(n * n)
+	for o in _occupied:
+		var r := int(o.y * 0.7)
+		var cx := int(o.x + MAP_HALF)
+		var cz := int(o.z + MAP_HALF)
+		for z in range(cz - r, cz + r + 1):
+			for x in range(cx - r, cx + r + 1):
+				if x >= 0 and z >= 0 and x < n and z < n and (x - cx) * (x - cx) + (z - cz) * (z - cz) <= r * r:
+					_blocked[z * n + x] = 1
+	var f := Foliage.new()
+	f.name = "Foliage"
+	world.add_child(f)
+	f.build(MAP_HALF - 2.0, 0.55, _is_grass, rng.seed + 7)
+
+func _is_grass(p: Vector3) -> bool:
+	var n := int(MAP_HALF * 2)
+	var x := int(p.x + MAP_HALF)
+	var z := int(p.z + MAP_HALF)
+	if x < 0 or z < 0 or x >= n or z >= n or _blocked[z * n + x] == 1:
+		return false
+	if p.length() < BASE_RADIUS + 2.5:
+		return false
+	var c := _px(Vector2(p.x, p.z))
+	var col := _splat.get_pixel(clampi(c.x, 0, SPLAT_RES - 1), clampi(c.y, 0, SPLAT_RES - 1))
+	return col.r < 0.35 and col.g < 0.35 and col.b < 0.35
 
 func _px(p: Vector2) -> Vector2i:
 	return Vector2i(int((p.x / (MAP_HALF * 2) + 0.5) * SPLAT_RES), int((p.y / (MAP_HALF * 2) + 0.5) * SPLAT_RES))
@@ -238,6 +273,13 @@ func _build_forest() -> void:
 		var p2: Variant = _try_place(c, half, 1.2)
 		if p2 != null:
 			_add_lootable(PropFactory.make_lootable("crate", rng), p2, rng.randf() * TAU)
+	# Carroças abandonadas à beira da estrada da floresta
+	for i in 3:
+		var rp: Vector2 = _roads[0][8 + i * 12]
+		var cpos := Vector3(rp.x + 5.0, 0, rp.y)
+		if _free_at(cpos, 2.0):
+			_reserve(cpos, 2.0)
+			_add_lootable(PropFactory.make_lootable("cart", rng), cpos, rng.randf() * TAU)
 	for i in 8:
 		var p3: Variant = _try_place(c, half, 1.5)
 		if p3 != null:
@@ -321,6 +363,10 @@ func _build_farm() -> void:
 		var lp: Variant = _try_place(c, Vector2(35, 30), 1.2)
 		if lp != null:
 			_add_lootable(PropFactory.make_lootable("farm", rng), lp, rng.randf() * TAU)
+	for i in 4:
+		var cp: Variant = _try_place(c, Vector2(35, 30), 2.2)
+		if cp != null:
+			_add_lootable(PropFactory.make_lootable("cart", rng), cp, rng.randf() * TAU)
 	for i in 16:
 		var tp: Variant = _try_place(c, Vector2(40, 34), 1.3)
 		if tp != null:
@@ -437,15 +483,20 @@ func _build_base(world: Node3D) -> void:
 		torch.position = Vector3(sin(ang) * (BASE_RADIUS - 2.5), 0, cos(ang) * (BASE_RADIUS - 2.5))
 		structures_root.add_child(torch)
 	# Armazém visual (pilhas de caixas)
-	for p in [Vector3(-5, 0, 3), Vector3(-5.8, 0, 4.4), Vector3(5, 0, -3.5)]:
-		var crate := MeshInstance3D.new()
-		var b := BoxMesh.new()
-		b.size = Vector3(1.2, 1.0, 1.2)
-		crate.mesh = b
-		crate.material_override = MaterialLib.textured("planks", Color.WHITE)
-		crate.position = p + Vector3(0, 0.5, 0)
-		crate.rotation.y = rng.randf() * TAU
-		structures_root.add_child(crate)
+	for p in [Vector3(-6.5, 0, 3.5), Vector3(6.5, 0, -2.5)]:
+		var wagon: Node3D
+		if ModelLibrary.has("cart"):
+			wagon = ModelLibrary.instance_footprint("cart", 3.2)
+		else:
+			wagon = MeshInstance3D.new()
+			var b := BoxMesh.new()
+			b.size = Vector3(1.2, 1.0, 1.2)
+			(wagon as MeshInstance3D).mesh = b
+			(wagon as MeshInstance3D).material_override = MaterialLib.textured("planks", Color.WHITE)
+			wagon.position.y = 0.5
+		wagon.position += p
+		wagon.rotation.y = rng.randf() * TAU
+		structures_root.add_child(wagon)
 	var zone := BaseZone.new()
 	zone.name = "BaseZone"
 	zone.radius = BASE_RADIUS - 0.5

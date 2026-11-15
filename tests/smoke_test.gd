@@ -53,6 +53,10 @@ func _test_world() -> void:
 	check(nm.get_polygon_count() > 100, "malha de navegação assada (%d polígonos)" % nm.get_polygon_count())
 	check(BaseZone.hero_inside, "herói começa dentro da base")
 	check(TimeManager.phase == TimeManager.Phase.DAY and TimeManager.day == 1, "começa no Dia 1")
+	check(world.objectives.objectives.size() == 3, "3 objetivos do dia gerados")
+	# Objetivo "estar na base ao anoitecer" é verificado no início da noite.
+	var ret: Dictionary = world.objectives.objectives[2]
+	check(ret.kind == "return" and not ret.done, "objetivo de retorno pendente")
 
 func _test_combat() -> void:
 	print("[combate]")
@@ -159,6 +163,7 @@ func _test_night() -> void:
 		TimeManager.advance_phase()
 	await wait(0.5)
 	check(world.horde.is_active(), "horda iniciou na noite 1 (%d inimigos)" % world.horde.remaining())
+	check(bool(world.objectives.objectives[2].done), "objetivo 'na base ao anoitecer' concluído")
 	TimeManager.time_scale = 1.0
 	Engine.time_scale = 4.0
 	var hit_structures := false

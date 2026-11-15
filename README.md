@@ -4,7 +4,8 @@ Jogo de sobrevivência cooperativa contra hordas de zumbis (estratégia + RPG + 
 inspirado em *Night of the Dead: Aftermath* (Warcraft III). Feito em **Godot 4.3+ / GDScript tipado**.
 
 > Estado atual: **Fase 1 — protótipo jogável** concluída.
-> Arte (texturas, retratos, ícones, tela de título) gerada com BytePlus ARK (Seedream), estilo pintado à mão Dota 2 / Warcraft III.
+> Arte gerada por IA no estilo Dota 2 / Warcraft III: texturas, retratos, ícones e conceitos na BytePlus ARK (Seedream);
+> **modelos 3D texturizados** (herói, zumbis, fortaleza, muralhas, torres, árvores, casas...) via image-to-3D. Veja o pipeline em docs/ARQUITETURA.md.
 
 ## Como jogar
 

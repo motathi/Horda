@@ -27,9 +27,20 @@ var _flash_t: float = 0.0
 var _dead: bool = false
 var _idle_t: float = 0.0
 var _rest_arm_angle: float = 0.15
+# Modo "modelo gerado": malha única (sem esqueleto) animada pelo corpo inteiro.
+var _model_mode: bool = false
+var _body_mesh: MeshInstance3D
+var _body_base_scale: Vector3 = Vector3.ONE
+var _weapon_pivot: Node3D
+var _height: float = 2.0
+var _lean: float = 0.0
 
 func build_hero() -> void:
 	kind = Kind.HERO
+	if ModelLibrary.has("hero"):
+		_build_from_model("hero", 2.2, Color.WHITE)
+		_attach_axe(Vector3(0.42, 1.45, 0.0))
+		return
 	var skin := MaterialLib.flat(Color(0.86, 0.66, 0.5), 0.7)
 	var armor := MaterialLib.textured("armor", Color(1, 1, 1), 1.5)
 	var cloth := MaterialLib.textured("cloth", Color(0.45, 0.32, 0.22), 2.0)
@@ -68,6 +79,11 @@ func build_hero() -> void:
 func build_zombie(def: EnemyDef) -> void:
 	kind = Kind.ZOMBIE
 	hunch = def.hunch
+	if ModelLibrary.has(String(def.id)):
+		# Tons diferentes por indivíduo para a horda não parecer clonada.
+		var v := randf_range(0.85, 1.05)
+		_build_from_model(String(def.id), 2.0 * def.model_scale, Color(v, v * randf_range(0.95, 1.05), v))
+		return
 	var skin := MaterialLib.textured("zombie_skin", def.skin_tint, 1.2)
 	var cloth := MaterialLib.textured("cloth", def.cloth_tint, 1.8)
 	var dark := MaterialLib.flat(def.cloth_tint.darkened(0.5))
@@ -93,6 +109,71 @@ func build_zombie(def: EnemyDef) -> void:
 	_head.rotation.x = hunch * 0.6
 	_rest_arm_angle = deg_to_rad(75.0)
 	scale = Vector3.ONE * def.model_scale * MODEL_SCALE
+
+func _build_from_model(model_name: String, height: float, tint: Color) -> void:
+	_model_mode = true
+	_height = height
+	_rig = Node3D.new()
+	add_child(_rig)
+	_body_mesh = ModelLibrary.instance_height(model_name, height, tint)
+	_body_base_scale = _body_mesh.scale
+	_rig.add_child(_body_mesh)
+	_meshes.append(_body_mesh)
+
+## Machado procedural na mão direita (o modelo gerado não trouxe a arma).
+func _attach_axe(shoulder: Vector3) -> void:
+	_weapon_pivot = Node3D.new()
+	_weapon_pivot.position = shoulder
+	_rig.add_child(_weapon_pivot)
+	var axe := Node3D.new()
+	axe.position = Vector3(0, -0.75, -0.1)
+	axe.rotation_degrees = Vector3(-80, 0, 0)
+	_weapon_pivot.add_child(axe)
+	_capsule(axe, 0.05, 1.4, Vector3(0, 0.35, 0), MaterialLib.textured("bark", Color(0.75, 0.55, 0.38), 1.0))
+	var blade := _box(axe, Vector3(0.08, 0.55, 0.6), Vector3(0, 0.9, -0.24), MaterialLib.textured("metal", Color(0.85, 0.88, 0.95), 1.0, true, 0.3))
+	blade.rotation_degrees.x = 8.0
+	_box(axe, Vector3(0.11, 0.09, 0.18), Vector3(0, 1.05, 0.12), MaterialLib.flat(Color(0.2, 0.2, 0.24)))
+	_weapon_pivot.rotation.x = 0.25
+
+func _animate_model(delta: float, speed_ratio: float) -> void:
+	_idle_t += delta
+	var amp := clampf(speed_ratio, 0.0, 1.0)
+	if amp > 0.05:
+		_walk_phase += delta * (8.0 + 5.0 * amp) * (0.7 if kind == Kind.ZOMBIE else 1.0)
+	var s := sin(_walk_phase)
+	var sway := 0.13 if kind == Kind.ZOMBIE else 0.05
+	var base_lean := -hunch * 0.35 if kind == Kind.ZOMBIE else 0.0
+	_lean = lerpf(_lean, base_lean - 0.12 * amp, clampf(delta * 8.0, 0.0, 1.0))
+	var pos := Vector3(0, absf(s) * 0.09 * amp, 0)
+	var rot := Vector3(_lean, 0, s * sway * amp + (sin(_idle_t * 1.7) * 0.03 if kind == Kind.ZOMBIE else 0.0))
+	# Respiração / passos (leve squash & stretch)
+	var breathe := 1.0 + sin(_idle_t * 2.2) * 0.012 + absf(s) * 0.03 * amp
+	_body_mesh.scale = _body_base_scale * Vector3(1.0 / sqrt(breathe), breathe, 1.0 / sqrt(breathe))
+	if _attack_t >= 0.0:
+		_attack_t += delta
+		var t := clampf(_attack_t / _attack_dur, 0.0, 1.0)
+		if t < 0.35:
+			var k := t / 0.35
+			rot.x += 0.18 * k
+			if _weapon_pivot:
+				_weapon_pivot.rotation.x = lerpf(0.25, deg_to_rad(170.0), k)
+		else:
+			var k2 := ease((t - 0.35) / 0.65, 0.4)
+			var strike := sin(k2 * PI)
+			rot.x += 0.18 * (1.0 - k2) - 0.35 * strike
+			pos.z -= 0.45 * strike
+			if _weapon_pivot:
+				_weapon_pivot.rotation.x = lerpf(deg_to_rad(170.0), deg_to_rad(-15.0), k2)
+		if t >= 1.0:
+			_attack_t = -1.0
+	elif _weapon_pivot:
+		_weapon_pivot.rotation.x = lerpf(_weapon_pivot.rotation.x, 0.25 + s * 0.3 * amp, clampf(delta * 10.0, 0.0, 1.0))
+	_rig.position = pos
+	_rig.rotation = rot
+	if _flash_t > 0.0:
+		_flash_t -= delta
+		if _flash_t <= 0.0:
+			_set_overlay(null)
 
 func _build_skeleton(bulk: float) -> void:
 	_rig = Node3D.new()
@@ -144,6 +225,9 @@ func _capsule(parent: Node3D, r: float, h: float, pos: Vector3, mat: Material) -
 ## speed_ratio: 0 parado .. 1 velocidade máxima.
 func animate(delta: float, speed_ratio: float) -> void:
 	if _dead or _rig == null:
+		return
+	if _model_mode:
+		_animate_model(delta, speed_ratio)
 		return
 	_idle_t += delta
 	var moving := speed_ratio > 0.05
@@ -208,3 +292,5 @@ func reset_pose() -> void:
 	_rig.rotation = Vector3.ZERO
 	_rig.position = Vector3.ZERO
 	_attack_t = -1.0
+	if _body_mesh:
+		_body_mesh.scale = _body_base_scale

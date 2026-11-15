@@ -63,6 +63,7 @@ func interact(_hero: Hero) -> void:
 		if got < amount:
 			EffectsHub.drop_item(global_position, id, amount - got)
 	AudioManager.play_3d(&"loot", global_position)
+	EventBus.container_looted.emit(self)
 	_set_looted(true)
 	restock_day = TimeManager.day + restock_days if restock_days > 0 else -1
 

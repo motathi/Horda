@@ -13,6 +13,8 @@ signal hero_respawned
 signal item_picked_up(item_id: StringName, amount: int)
 signal inventory_full(item_id: StringName)
 signal resources_deposited(summary: Dictionary)
+signal container_looted(container: Node3D)
+signal objectives_changed
 
 # --- Mundo ---
 signal structure_damaged(structure: Node3D)

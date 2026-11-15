@@ -1,0 +1,74 @@
+[
+ {
+  "name": "m_hero",
+  "out": "assets/concepts/hero.jpg",
+  "size": "2048x2048",
+  "prompt": "A-pose front view of a hooded human survivor warrior hero, dark blue hood and cloak, leather and steel armor with blue cloth accents, belts and pouches, holding a large battle axe in the right hand pointing down, stylized hand-painted 3D game character in the art style of Dota 2 and Warcraft III, chunky heroic proportions, clean readable silhouette, painterly textures, full body visible head to feet, centered, plain flat light grey background, soft even studio lighting, no shadows on background, no text, single character only"
+ },
+ {
+  "name": "m_zombie",
+  "out": "assets/concepts/zombie.jpg",
+  "size": "2048x2048",
+  "prompt": "A-pose front view of a shambling undead zombie, rotting green-grey skin, torn ragged peasant clothes, glowing yellow eyes, long bony arms, stylized hand-painted 3D game character in the art style of Dota 2 and Warcraft III, chunky heroic proportions, clean readable silhouette, painterly textures, full body visible head to feet, centered, plain flat light grey background, soft even studio lighting, no shadows on background, no text, single character only"
+ },
+ {
+  "name": "m_zombie_fast",
+  "out": "assets/concepts/zombie_fast.jpg",
+  "size": "2048x2048",
+  "prompt": "A-pose front view of a lean feral runner zombie, gaunt pale body, long claws, tattered red rags, glowing red eyes, stylized hand-painted 3D game character in the art style of Dota 2 and Warcraft III, chunky heroic proportions, clean readable silhouette, painterly textures, full body visible head to feet, centered, plain flat light grey background, soft even studio lighting, no shadows on background, no text, single character only"
+ },
+ {
+  "name": "m_zombie_brute",
+  "out": "assets/concepts/zombie_brute.jpg",
+  "size": "2048x2048",
+  "prompt": "A-pose front view of a huge hulking brute zombie abomination, bloated muscular grey-purple body, rusty iron armor plates bolted into the flesh, chains, massive fists, stylized hand-painted 3D game character in the art style of Dota 2 and Warcraft III, chunky heroic proportions, clean readable silhouette, painterly textures, full body visible head to feet, centered, plain flat light grey background, soft even studio lighting, no shadows on background, no text, single character only"
+ },
+ {
+  "name": "m_keep",
+  "out": "assets/concepts/keep.jpg",
+  "size": "2048x2048",
+  "prompt": "a fortified medieval stone and timber keep town hall with blue slate roofs, blue banners, wooden balconies, torches, glowing blue crystal on top, stylized hand-painted 3D game asset in the art style of Dota 2 and Warcraft III, isometric three-quarter view from slightly above, entire object visible and centered, plain flat light grey background, soft even lighting, no text, single object only, no ground plane"
+ },
+ {
+  "name": "m_wall",
+  "out": "assets/concepts/wall.jpg",
+  "size": "2048x2048",
+  "prompt": "a straight segment of a medieval fortress wall made of grey stone blocks with a wooden walkway, crenellations on top, small blue banner, side view three-quarter, stylized hand-painted 3D game asset in the art style of Dota 2 and Warcraft III, isometric three-quarter view from slightly above, entire object visible and centered, plain flat light grey background, soft even lighting, no text, single object only, no ground plane"
+ },
+ {
+  "name": "m_tower",
+  "out": "assets/concepts/tower.jpg",
+  "size": "2048x2048",
+  "prompt": "a medieval stone and wood watchtower with a pointed blue roof, archer platform, torches and blue banner, stylized hand-painted 3D game asset in the art style of Dota 2 and Warcraft III, isometric three-quarter view from slightly above, entire object visible and centered, plain flat light grey background, soft even lighting, no text, single object only, no ground plane"
+ },
+ {
+  "name": "m_gate",
+  "out": "assets/concepts/gate.jpg",
+  "size": "2048x2048",
+  "prompt": "a medieval fortress gatehouse with two stone towers and a heavy reinforced wooden double door between them, blue banners, stylized hand-painted 3D game asset in the art style of Dota 2 and Warcraft III, isometric three-quarter view from slightly above, entire object visible and centered, plain flat light grey background, soft even lighting, no text, single object only, no ground plane"
+ },
+ {
+  "name": "m_tree",
+  "out": "assets/concepts/tree.jpg",
+  "size": "2048x2048",
+  "prompt": "a single stylized pine fir tree with chunky layered foliage, dark green, brown trunk, stylized hand-painted 3D game asset in the art style of Dota 2 and Warcraft III, isometric three-quarter view from slightly above, entire object visible and centered, plain flat light grey background, soft even lighting, no text, single object only, no ground plane"
+ },
+ {
+  "name": "m_rock",
+  "out": "assets/concepts/rock.jpg",
+  "size": "2048x2048",
+  "prompt": "a cluster of stylized grey granite boulders with moss patches, stylized hand-painted 3D game asset in the art style of Dota 2 and Warcraft III, isometric three-quarter view from slightly above, entire object visible and centered, plain flat light grey background, soft even lighting, no text, single object only, no ground plane"
+ },
+ {
+  "name": "m_house",
+  "out": "assets/concepts/house.jpg",
+  "size": "2048x2048",
+  "prompt": "an abandoned ruined timber and stone peasant house with a broken roof, boarded windows, stylized hand-painted 3D game asset in the art style of Dota 2 and Warcraft III, isometric three-quarter view from slightly above, entire object visible and centered, plain flat light grey background, soft even lighting, no text, single object only, no ground plane"
+ },
+ {
+  "name": "m_cart",
+  "out": "assets/concepts/cart.jpg",
+  "size": "2048x2048",
+  "prompt": "a broken wooden supply cart wagon loaded with crates and sacks, one wheel broken, stylized hand-painted 3D game asset in the art style of Dota 2 and Warcraft III, isometric three-quarter view from slightly above, entire object visible and centered, plain flat light grey background, soft even lighting, no text, single object only, no ground plane"
+ }
+]

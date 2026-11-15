@@ -13,6 +13,7 @@ const HERO_SPAWN := Vector3(0, 0, 5)
 @onready var services: BaseServices = $BaseServices
 @onready var hud: HUD = $HUD
 @onready var loading: CanvasLayer = $Loading
+var objectives: DailyObjectives
 
 var builder: WorldBuilder
 var hero: Hero
@@ -38,7 +39,10 @@ func _ready() -> void:
 
 	horde.spawn_points = builder.spawn_points
 	spawner.regions = builder.regions
-	hud.bind(hero, services, builder.regions, builder.lootables)
+	objectives = DailyObjectives.new()
+	objectives.name = "DailyObjectives"
+	add_child(objectives)
+	hud.bind(hero, services, builder.regions, builder.lootables, objectives)
 
 	_baking = true
 	builder.nav_region.bake_finished.connect(_on_bake_finished)
@@ -98,6 +102,7 @@ func collect_save() -> Dictionary:
 		"depleted": depleted,
 		"looted": looted,
 		"pickups": hub.pickups_to_save() if hub else [],
+		"objectives": objectives.to_save(),
 	}
 
 func apply_save(d: Dictionary) -> void:
@@ -119,4 +124,5 @@ func apply_save(d: Dictionary) -> void:
 	for p: Dictionary in d.get("pickups", []):
 		var pos: Array = p.get("pos", [0, 0])
 		EffectsHub.drop_item(Vector3(pos[0], 0, pos[1]), StringName(p.get("id", "wood")), int(p.get("n", 1)))
+	objectives.from_save(d.get("objectives", []))
 	camera_rig.set_target(hero)

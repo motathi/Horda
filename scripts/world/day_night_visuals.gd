@@ -11,7 +11,7 @@ var _sky: ProceduralSkyMaterial
 var _lights_on: bool = false
 var _groan_t: float = 4.0
 
-const DAY_SUN := Color(1.0, 0.95, 0.85)
+const DAY_SUN := Color(1.0, 0.9, 0.72)
 const DUSK_SUN := Color(1.0, 0.55, 0.3)
 const NIGHT_MOON := Color(0.45, 0.55, 0.95)
 
@@ -43,10 +43,10 @@ func _process(delta: float) -> void:
 	_sun.rotation = Vector3(-elev, azim, 0)
 	_sun.light_color = col
 	var night_energy := 0.5
-	_sun.light_energy = lerpf(night_energy, 1.25, dl)
+	_sun.light_energy = lerpf(night_energy, 1.45, dl)
 	# Ambiente / céu
 	var night_amb := Color(0.24, 0.28, 0.5)
-	var day_amb := Color(0.75, 0.75, 0.8)
+	var day_amb := Color(0.62, 0.7, 0.85)
 	_env.ambient_light_color = night_amb.lerp(day_amb, dl)
 	_env.ambient_light_energy = lerpf(0.7, 0.65, dl)
 	_sky.sky_top_color = Color(0.03, 0.04, 0.1).lerp(Color(0.32, 0.55, 0.9), dl)
@@ -57,7 +57,7 @@ func _process(delta: float) -> void:
 	_env.fog_enabled = true
 	_env.fog_light_color = Color(0.06, 0.07, 0.14).lerp(Color(0.75, 0.78, 0.85), dl)
 	_env.fog_density = lerpf(0.012, 0.0015, dl)
-	_env.adjustment_saturation = lerpf(0.75, 1.15, dl)
+	_env.adjustment_saturation = lerpf(0.8, 1.22, dl)
 	# Tochas acendem ao entardecer.
 	var want_lights := dl < 0.55
 	if want_lights != _lights_on:

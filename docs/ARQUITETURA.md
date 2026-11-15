@@ -56,6 +56,27 @@
 - **Renderização**: Forward+ (SSAO, glow, sombras). Shaders evitam `instance uniform` para também
   rodar no renderizador Compatibility.
 
+## Arte 3D gerada por IA
+
+Os modelos (herói, 3 zumbis, fortaleza, muralha, portão, torre, pinheiro, rocha, casa em ruínas,
+carroça) seguem um pipeline reprodutível:
+
+1. **Conceito** — `tools/gen_image.py tools/model_concepts.json` gera, na BytePlus ARK (Seedream),
+   imagens de personagem/objeto isolado em fundo neutro, no estilo Dota 2 / Warcraft III.
+2. **Imagem → 3D** — Higgsfield *SAM 3D* (malha texturizada GLB) → `assets/models/raw/` (ignorado
+   pelo importador do Godot via `.gdignore`).
+3. **Correção** — `tools/fix_glb.py` adiciona normais (os GLBs vêm sem), centraliza e apoia a base em y=0.
+4. **Bake** — `tools/bake_models.gd` decima com o meshoptimizer do Godot para um orçamento de
+   triângulos por modelo, gera LODs e extrai a textura → `assets/models/<nome>.res` + `textures/`.
+   Tudo junto: `tools/build_models.sh`.
+5. **Uso** — `ModelLibrary` instancia os modelos já escalados; se um modelo não existir, o jogo usa
+   automaticamente o visual procedural antigo (nada quebra).
+
+Os modelos não têm esqueleto: `CharacterModel` anima o corpo inteiro por código (balanço da passada,
+inclinação, respiração, investida no ataque, queda na morte) e o machado do herói é uma peça separada
+que gira no golpe. Para animação com esqueleto, o próximo passo é rigar (Meshy rigging ou ativar o
+Hyper3D/Hitem3D na ARK) e trocar os `.res` por cenas com `AnimationPlayer`.
+
 ## Roteiro
 
 - **Fase 2 — RPG**: experiência/níveis (já há `xp_reward` nos inimigos), atributos (Força, Agilidade,

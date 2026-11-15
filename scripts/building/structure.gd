@@ -5,7 +5,7 @@ extends StaticBody3D
 
 enum Kind { WALL_WOOD, GATE, CORE }
 
-const KIND_NAMES := {Kind.WALL_WOOD: "Paliçada de Madeira", Kind.GATE: "Portão", Kind.CORE: "Núcleo da Base"}
+const KIND_NAMES := {Kind.WALL_WOOD: "Muralha", Kind.GATE: "Portão", Kind.CORE: "Fortaleza (Núcleo)"}
 const KIND_HP := {Kind.WALL_WOOD: 450.0, Kind.GATE: 600.0, Kind.CORE: 1500.0}
 const KIND_ARMOR := {Kind.WALL_WOOD: 2.0, Kind.GATE: 3.0, Kind.CORE: 4.0}
 
@@ -86,13 +86,23 @@ func _build() -> void:
 	match kind:
 		Kind.WALL_WOOD:
 			half_extents = Vector3(length * 0.5, 1.3, 0.45)
-			_build_palisade()
+			if ModelLibrary.has("wall"):
+				_build_wall_model()
+			else:
+				_build_palisade()
 		Kind.GATE:
 			half_extents = Vector3(length * 0.5, 1.5, 0.45)
-			_build_gate()
+			if ModelLibrary.has("gate") and ModelLibrary.has("tower"):
+				_build_gate_model()
+			else:
+				_build_gate()
 		Kind.CORE:
 			half_extents = Vector3(1.9, 2.0, 1.9)
-			_build_core()
+			if ModelLibrary.has("keep"):
+				half_extents = Vector3(3.0, 2.5, 2.6)
+				_build_core_model()
+			else:
+				_build_core()
 	box.size = half_extents * 2.0
 	col.shape = box
 	col.position.y = half_extents.y
@@ -107,6 +117,47 @@ func _mesh(parent: Node3D, mesh: Mesh, pos: Vector3, mat: Material, rot: Vector3
 	mi.material_override = mat
 	parent.add_child(mi)
 	return mi
+
+# --- Versões com modelos 3D gerados ---------------------------------------------
+
+func _build_wall_model() -> void:
+	# Muralha de pedra: o segmento é esticado levemente para fechar as juntas do anel.
+	var w := ModelLibrary.instance_width("wall", length * 1.12)
+	w.rotation.y = 0.0 if (int(structure_id.trim_prefix("wall")) % 2 == 0) else PI
+	_visual.add_child(w)
+
+func _build_gate_model() -> void:
+	var hinge := Node3D.new()
+	hinge.position = Vector3(-length * 0.42, 0, 0)
+	_visual.add_child(hinge)
+	var door := ModelLibrary.instance_width("gate", length * 0.84)
+	door.position = Vector3(length * 0.42, 0, 0)
+	door.rotation.y = 0.0
+	hinge.add_child(door)
+	hinge.set_meta("side", -1.0)
+	_gate_doors.append(hinge)
+	for sx: float in [-1.0, 1.0]:
+		var tower := ModelLibrary.instance_height("tower", 5.0)
+		tower.position = Vector3(sx * (length * 0.5 + 0.6), 0, 0.3)
+		tower.rotation.y = PI if sx < 0.0 else 0.0
+		_visual.add_child(tower)
+
+func _build_core_model() -> void:
+	var keep := ModelLibrary.instance_footprint("keep", 7.5)
+	_visual.add_child(keep)
+	# Brilho do cristal no topo + luz quente da entrada.
+	var crystal := OmniLight3D.new()
+	crystal.light_color = Color(0.35, 0.65, 1.0)
+	crystal.light_energy = 2.5
+	crystal.omni_range = 14.0
+	crystal.position = Vector3(0, ModelLibrary.size_of("keep").y * keep.scale.y * 0.9, 0)
+	_visual.add_child(crystal)
+	var warm := OmniLight3D.new()
+	warm.light_color = Color(1.0, 0.62, 0.25)
+	warm.light_energy = 2.0
+	warm.omni_range = 9.0
+	warm.position = Vector3(0, 1.8, 4.0)
+	_visual.add_child(warm)
 
 func _build_palisade() -> void:
 	var bark := MaterialLib.textured("bark", Color(0.95, 0.8, 0.65), 1.0)
