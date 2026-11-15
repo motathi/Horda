@@ -21,7 +21,7 @@ func _ready() -> void:
 	print("== Smoke test Fase 1 ==")
 	GameManager.difficulty = "normal"
 	ResourceManager.reset()
-	TimeManager.setup("rapido")
+	TimeManager.setup("normal")
 	world = (load("res://scenes/world/main.tscn") as PackedScene).instantiate() as World
 	add_child(world)
 	var t0 := Time.get_ticks_msec()
@@ -39,6 +39,7 @@ func _ready() -> void:
 	await _test_building()
 	await _test_night()
 	await _test_save()
+	await _test_wave_flow()
 	_finish()
 
 func _test_world() -> void:
@@ -53,7 +54,8 @@ func _test_world() -> void:
 	var nm := b.nav_region.navigation_mesh
 	check(nm.get_polygon_count() > 100, "malha de navegação assada (%d polígonos)" % nm.get_polygon_count())
 	check(BaseZone.hero_inside, "herói começa dentro da base")
-	check(TimeManager.phase == TimeManager.Phase.DAY and TimeManager.day == 1, "começa no Dia 1")
+	var c := TimeManager.config
+	check(TimeManager.day == 1 and absf(c.dawn_duration + c.day_duration + c.dusk_duration - 120.0) < 0.01, "começa na horda 1 com 2 minutos de preparação")
 	check(world.objectives.objectives.size() == 3, "3 objetivos do dia gerados")
 	# Objetivo "estar na base ao anoitecer" é verificado no início da noite.
 	var ret: Dictionary = world.objectives.objectives[2]
@@ -241,9 +243,10 @@ func _test_night() -> void:
 	var hero := world.hero
 	hero.health.invulnerable = true
 	hero.global_position = Vector3(0, 0, 0)
-	while TimeManager.phase != TimeManager.Phase.NIGHT:
-		TimeManager.advance_phase()
+	check(TimeManager.prep_seconds_left() > 0.0 and TimeManager.prep_seconds_left() <= 120.0, "contagem da preparação ativa (%.0fs restantes)" % TimeManager.prep_seconds_left())
+	TimeManager.start_horde_now()
 	await wait(0.5)
+	check(TimeManager.is_night(), "'Chamar agora' inicia a horda")
 	check(world.horde.is_active(), "horda iniciou na noite 1 (%d inimigos)" % world.horde.remaining())
 	check(bool(world.objectives.objectives[2].done), "objetivo 'na base ao anoitecer' concluído")
 	TimeManager.time_scale = 1.0
@@ -286,13 +289,40 @@ func _test_night() -> void:
 	var cfg := world.horde.config
 	var rng := RandomNumberGenerator.new()
 	var n1 := cfg.compose(1, rng)
-	var n5 := cfg.compose(5, rng)
-	var has_brute := n5.any(func(d: EnemyDef) -> bool: return d.id == &"zombie_brute")
-	var has_fast := n5.any(func(d: EnemyDef) -> bool: return d.id == &"zombie_fast")
-	check(n5.size() > n1.size(), "noite 5 maior que noite 1 (%d > %d)" % [n5.size(), n1.size()])
-	check(has_brute and has_fast, "noite 5 contém zumbis rápidos e resistentes")
-	check(n1.all(func(d: EnemyDef) -> bool: return d.id == &"zombie"), "noite 1 só tem zumbis comuns")
-	check(cfg.is_blood_moon(7) and cfg.elite_count(7) > 0, "noite 7: lua de sangue com elite")
+	var n6 := cfg.compose(6, rng)
+	var has_brute := n6.any(func(d: EnemyDef) -> bool: return d.id == &"zombie_brute")
+	var has_fast := n6.any(func(d: EnemyDef) -> bool: return d.id == &"zombie_fast")
+	check(n6.size() > n1.size(), "horda 6 maior que horda 1 (%d > %d)" % [n6.size(), n1.size()])
+	check(has_brute and has_fast, "horda 6 contém zumbis rápidos e resistentes")
+	check(n1.all(func(d: EnemyDef) -> bool: return d.id == &"zombie"), "horda 1 só tem zumbis comuns")
+	check(cfg.elite_count(5) == 1 and cfg.boss_count(10) == 1 and cfg.boss_count(9) == 0, "elite na horda 5, chefe na horda 10")
+	var c100 := cfg.total_count(100)
+	check(c100 > 300 and c100 < 450 and cfg.hp_multiplier(100) > 8.0 and cfg.hp_multiplier(100) < 12.0, "horda 100: %d zumbis, vida x%.1f" % [c100, cfg.hp_multiplier(100)])
+
+func _test_wave_flow() -> void:
+	print("[fluxo das hordas]")
+	# Horda termina sozinha quando todos os zumbis morrem.
+	TimeManager.start_horde_now()
+	await wait(0.3)
+	var w := TimeManager.wave()
+	check(world.horde.is_active(), "horda %d começou" % w)
+	world.hero.health.invulnerable = true
+	var t := 0.0
+	while world.horde.is_active() and t < 60.0:
+		for e in Enemy.all.duplicate():
+			if is_instance_valid(e) and e.is_horde and not e.is_dead():
+				e.take_damage(DamageInfo.make(99999, null))
+		await wait(0.5)
+		t += 0.5
+	check(not world.horde.is_active() and TimeManager.phase == TimeManager.Phase.DAWN and TimeManager.wave() == w + 1, "horda vencida inicia a próxima preparação (%.0fs)" % t)
+	# Vitória ao vencer a horda 100.
+	TimeManager.set_state(TimeManager.Phase.DUSK, TimeManager.TOTAL_WAVES, 0.0)
+	TimeManager.start_horde_now()
+	await wait(0.3)
+	world.horde.end_night()
+	await wait(0.2)
+	check(GameManager.state == GameManager.State.VICTORY, "vitória ao vencer a horda %d" % TimeManager.TOTAL_WAVES)
+	world.hero.health.invulnerable = false
 
 func _test_save() -> void:
 	print("[salvamento]")

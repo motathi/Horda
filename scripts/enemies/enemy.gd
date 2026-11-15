@@ -87,12 +87,31 @@ func make_elite() -> void:
 	aura.position.y = 1.5
 	add_child(aura)
 
+var is_boss: bool = false
+
+## Chefe das hordas 10, 20, ...: gigante, muito resistente e com aura vermelha.
+func make_boss() -> void:
+	is_boss = true
+	is_elite = true
+	health.setup(health.max_health * 12.0, health.armor + 6.0)
+	damage_value *= 2.2
+	speed_value *= 0.85
+	model.scale *= 1.7
+	($HealthBar as HealthBar3D).position.y *= 1.7
+	(($CollisionShape3D as CollisionShape3D).shape as CapsuleShape3D).radius *= 1.6
+	var aura := OmniLight3D.new()
+	aura.light_color = Color(1.0, 0.15, 0.1)
+	aura.light_energy = 3.0
+	aura.omni_range = 6.0
+	aura.position.y = 2.5
+	add_child(aura)
+
 func start_siege() -> void:
 	is_horde = true
 	state = State.SIEGE
 
 func display_name() -> String:
-	return ("Elite: " if is_elite else "") + def.display_name
+	return ("Chefe: " if is_boss else ("Elite: " if is_elite else "")) + def.display_name
 
 func is_dead() -> bool:
 	return state == State.DEAD
@@ -360,7 +379,7 @@ func _on_died(info: DamageInfo) -> void:
 	AudioManager.play_3d(&"zombie_death", global_position, -4.0)
 	var burned := _burning >= 0.0
 	if not burned and def.loot:
-		var drops := def.loot.roll(_rng, 2.5 if is_elite else 1.0)
+		var drops := def.loot.roll(_rng, 8.0 if is_boss else (2.5 if is_elite else 1.0))
 		for id: StringName in drops:
 			EffectsHub.drop_item(global_position, id, drops[id])
 	EventBus.enemy_killed.emit(self, def, info.source if info else null)

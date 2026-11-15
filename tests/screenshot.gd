@@ -28,7 +28,7 @@ func _ready() -> void:
 	var hero := world.hero
 	hero.health.invulnerable = true
 	await _frames(30)
-	TimeManager.phase_time = 200.0
+	TimeManager.set_state(TimeManager.Phase.DAY, 1, 25.0)
 	world.camera_rig.global_position = hero.global_position
 	await _frames(60)
 	await _shot("02_base_day")

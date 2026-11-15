@@ -37,7 +37,7 @@ func _process(delta: float) -> void:
 		list = list.filter(func(e) -> bool: return is_instance_valid(e) and not (e as Enemy).is_dead())
 		_alive[r.name] = list
 		# Regiões ficam mais perigosas com o passar dos dias.
-		var cap := int(r.max) + (TimeManager.day - 1) * 2
+		var cap := int(r.max) + mini(TimeManager.day - 1, 8)
 		if list.size() < cap:
 			_spawn_in(r, false)
 

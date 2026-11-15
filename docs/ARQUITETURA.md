@@ -21,7 +21,7 @@
 |---|---|
 | `EventBus` | Sinais globais (dano, abates, coleta, hordas, mensagens/banners) |
 | `GameManager` | Estado da partida, dificuldade, troca de cena, fim de jogo, estatísticas |
-| `TimeManager` | Relógio e ciclo Amanhecer/Dia/Entardecer/Noite (config `DayNightConfig`) |
+| `TimeManager` | Rodadas: 2 min de preparação (amanhecer/dia/entardecer) + horda (noite) que termina quando todos morrem; 100 hordas (`TOTAL_WAVES`) |
 | `ResourceManager` | Catálogo de itens, mochila do herói (capacidade por peso) e armazém da base |
 | `SaveManager` | Salvamento JSON em `user://savegame.json` (cada sistema serializa a si mesmo) |
 | `AudioManager` | Pool de players 2D/3D com limitação de repetição |
@@ -33,7 +33,7 @@
 | `core/` | `HealthComponent`, `DamageInfo`, `ObjectPool`, `Layers`, `DayNightConfig` |
 | `player/` | `Hero` (movimento WASD/clique, ataque em arco, interação, consumíveis, morte/renascimento), `CameraRig` |
 | `enemies/` | `Enemy` (IA em estados: vagar, perseguir, atacar, cerco, voltar), `EnemyDef`, `LootTable` |
-| `hordes/` | `HordeConfig` (progressão por dados), `HordeDirector` (ondas, direções, elites, lua de sangue), `WorldSpawner` (população diurna por região) |
+| `hordes/` | `HordeConfig` (curva das 100 hordas: quantidade, vida, dano, velocidade, elites a cada 5, chefe a cada 10), `HordeDirector` (levas, direções, fim automático da horda, vitória), `WorldSpawner` (população por região na preparação) |
 | `building/` | `Structure` (paliçada, portão só para aliados, núcleo), `BaseZone` (depósito automático) |
 | `economy/` `crafting/` | `BaseServices` (reparos, afiar arma, fabricação), `Recipe`, `BaseServicesConfig` |
 | `world/` | `World` (orquestra a partida), `WorldBuilder` (mapa determinístico por semente), `PropFactory`, `Harvestable`, `Lootable`, `ResourcePickup`, `DayNightVisuals` |

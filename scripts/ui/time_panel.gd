@@ -1,7 +1,8 @@
 class_name TimePanel
 extends PanelContainer
-## Painel do ciclo (canto superior direito): ícone de sol/lua, "DIA N"/"NOITE N"
-## e contagem regressiva. Tocar/clicar pausa o jogo.
+## Painel da rodada (canto superior direito): "HORDA N/100", contagem da
+## preparação (com botão "Chamar agora") ou zumbis restantes durante a horda.
+## Tocar/clicar no painel pausa o jogo.
 
 signal pressed
 
@@ -9,10 +10,11 @@ var _icon: TextureRect
 var _title: Label
 var _caption: Label
 var _timer: Label
-var _sub: Label
+var _call_btn: Button
 var _sun: Texture2D
 var _moon: Texture2D
 var _remaining: int = 0
+var _total: int = 0
 
 func _ready() -> void:
 	add_theme_stylebox_override("panel", UIStyle.hud_panel_style(Color(0.06, 0.05, 0.06, 0.9), 12))
@@ -27,11 +29,11 @@ func _ready() -> void:
 	add_child(col)
 	var head := HBoxContainer.new()
 	head.alignment = BoxContainer.ALIGNMENT_CENTER
-	head.add_theme_constant_override("separation", 14)
+	head.add_theme_constant_override("separation", 12)
 	head.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_icon = UIStyle.icon(_sun, 46)
+	_icon = UIStyle.icon(_sun, 44)
 	_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_title = UIStyle.label("DIA 1", 30, Color.WHITE)
+	_title = UIStyle.label("HORDA 1/100", 26, Color.WHITE)
 	head.add_child(_icon)
 	head.add_child(_title)
 	col.add_child(head)
@@ -42,11 +44,16 @@ func _ready() -> void:
 	_timer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_timer.add_theme_constant_override("outline_size", 6)
 	col.add_child(_timer)
-	_sub = UIStyle.label("", 14, UIStyle.TEXT_DIM)
-	_sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	col.add_child(_sub)
-	EventBus.horde_started.connect(func(_n: int, total: int) -> void: _remaining = total)
-	EventBus.horde_progress.connect(func(rem: int, _t: int) -> void: _remaining = rem)
+	_call_btn = UIStyle.button("Chamar agora", 13)
+	_call_btn.tooltip_text = "Pula o resto da preparação e chama a horda"
+	_call_btn.pressed.connect(func() -> void: TimeManager.start_horde_now())
+	col.add_child(_call_btn)
+	EventBus.horde_started.connect(func(_n: int, total: int) -> void:
+		_total = total
+		_remaining = total)
+	EventBus.horde_progress.connect(func(rem: int, total: int) -> void:
+		_remaining = rem
+		_total = total)
 
 func set_compact() -> void:
 	pass
@@ -59,20 +66,18 @@ func _gui_input(event: InputEvent) -> void:
 func _process(_delta: float) -> void:
 	var night := TimeManager.is_night()
 	_icon.texture = _moon if night else _sun
-	_title.text = ("NOITE %d" if night else "DIA %d") % TimeManager.day
+	_title.text = "HORDA %d/%d" % [TimeManager.wave(), TimeManager.TOTAL_WAVES]
+	_call_btn.visible = not night
 	if night:
-		_caption.text = "AMANHECER EM:"
-		_timer.text = _fmt(TimeManager.phase_duration(TimeManager.phase) - TimeManager.phase_time)
+		_caption.text = "ZUMBIS RESTANTES:"
+		_timer.text = str(_remaining)
 		_timer.add_theme_color_override("font_color", Color(1.0, 0.85, 0.35))
-		_sub.text = "%d zumbis restantes" % _remaining
-		_sub.visible = true
 	else:
-		_caption.text = "HORDA CHEGANDO EM:"
-		var left := TimeManager.seconds_until_night()
+		_caption.text = "PRÓXIMA HORDA EM:"
+		var left := TimeManager.prep_seconds_left()
 		_timer.text = _fmt(left)
-		_timer.add_theme_color_override("font_color", Color(1.0, 0.27, 0.25))
-		_sub.visible = false
+		_timer.add_theme_color_override("font_color", Color(1.0, 0.27, 0.25) if left < 30.0 else Color(1.0, 0.55, 0.4))
 
 static func _fmt(s: float) -> String:
-	var t := maxi(0, int(s))
-	return "%02d:%02d:%02d" % [t / 3600, (t / 60) % 60, t % 60]
+	var t := maxi(0, int(ceil(s)))
+	return "%02d:%02d" % [t / 60, t % 60]

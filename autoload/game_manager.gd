@@ -2,7 +2,7 @@ extends Node
 ## Estado global da partida: configurações, registro de entidades-chave,
 ## pausa, fim de jogo e troca de cenas.
 
-enum State { MENU, LOADING, PLAYING, GAME_OVER }
+enum State { MENU, LOADING, PLAYING, GAME_OVER, VICTORY }
 
 const WORLD_SCENE := "res://scenes/world/main.tscn"
 const MENU_SCENE := "res://scenes/ui/main_menu.tscn"
@@ -38,7 +38,7 @@ func _ready() -> void:
 func diff_value(key: String) -> float:
 	return float(DIFFICULTIES.get(difficulty, DIFFICULTIES.normal)[key])
 
-func start_new_game(diff: String, cycle: String) -> void:
+func start_new_game(diff: String, cycle: String = "normal") -> void:
 	difficulty = diff
 	cycle_preset = cycle
 	world_seed = 1337
@@ -95,10 +95,20 @@ func set_paused(p: bool) -> void:
 		return
 	get_tree().paused = p
 
+## Horda 100 vencida.
+func victory() -> void:
+	if state != State.PLAYING:
+		return
+	state = State.VICTORY
+	TimeManager.running = false
+	SaveManager.delete_save()
+	EventBus.banner.emit("VITÓRIA!", "Você sobreviveu às %d hordas!" % TimeManager.TOTAL_WAVES, Color(1.0, 0.85, 0.3))
+	EventBus.victory.emit()
+
 func _on_base_core_destroyed() -> void:
 	if state != State.PLAYING:
 		return
 	state = State.GAME_OVER
 	TimeManager.running = false
 	SaveManager.delete_save()
-	EventBus.banner.emit("A BASE CAIU", "Você sobreviveu %d noite(s)." % stats.nights_survived, Color(0.9, 0.2, 0.15))
+	EventBus.banner.emit("A BASE CAIU", "Você sobreviveu a %d de %d hordas." % [stats.nights_survived, TimeManager.TOTAL_WAVES], Color(0.9, 0.2, 0.15))

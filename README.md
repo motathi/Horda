@@ -39,7 +39,11 @@ Cada push no GitHub recompila automaticamente no Vercel (`tools/vercel_build.sh`
 | F8 | [Depuração] avançar período do dia |
 | F1 / Esc | Controles / pausa |
 
-**Ciclo:** de dia explore as regiões (Floresta, Pedreira, Cidade Abandonada, Fazenda, Área Contaminada),
+**100 hordas:** antes de cada horda há **2 minutos de preparação** (ou toque em "Chamar agora"). A horda
+termina quando o último zumbi cai — e já começa a próxima preparação. Elites a cada 5 hordas, **chefe** a
+cada 10 (atacando de todas as direções). Vencer a horda 100 = vitória.
+
+**Na preparação:** explore as regiões (Floresta, Pedreira, Cidade Abandonada, Fazenda, Área Contaminada),
 mate zumbis, colete madeira/pedra, saqueie e volte à base — a mochila (60 de peso) é guardada
 automaticamente ao entrar. Ao entardecer soa o aviso; à noite a horda vem pelas bordas do mapa,
 quebra a paliçada e tenta destruir o **Núcleo**. Sobreviva até o amanhecer: o sol queima os zumbis restantes.

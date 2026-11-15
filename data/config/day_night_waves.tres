@@ -4,8 +4,8 @@
 
 [resource]
 script = ExtResource("1")
-dawn_duration = 120.0
-day_duration = 600.0
-dusk_duration = 120.0
-night_duration = 480.0
-night_warning_time = 60.0
+dawn_duration = 10.0
+day_duration = 90.0
+dusk_duration = 20.0
+night_duration = 300.0
+night_warning_time = 20.0

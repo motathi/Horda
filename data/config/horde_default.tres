@@ -18,32 +18,36 @@ guaranteed = 0
 [sub_resource type="Resource" id="Entry_fast"]
 script = ExtResource("2")
 enemy = ExtResource("4")
-unlock_night = 4
+unlock_night = 3
 weight = 2.5
-weight_growth = 0.6
+weight_growth = 0.15
 max_per_night = 0
 guaranteed = 3
 
 [sub_resource type="Resource" id="Entry_brute"]
 script = ExtResource("2")
 enemy = ExtResource("5")
-unlock_night = 5
+unlock_night = 6
 weight = 0.6
-weight_growth = 0.25
+weight_growth = 0.06
 max_per_night = 0
 guaranteed = 1
 
 [resource]
 script = ExtResource("1")
 entries = Array[ExtResource("2")]([SubResource("Entry_zombie"), SubResource("Entry_fast"), SubResource("Entry_brute")])
-base_count = 10
-count_per_night = 6.0
-late_growth = 1.12
-max_alive = 140
-hp_growth_per_night = 0.08
-damage_growth_per_night = 0.05
-spawn_window = 0.6
+base_count = 6.0
+count_linear = 2.6
+count_quadratic = 0.012
+max_alive = 110
+max_alive_mobile = 60
+hp_linear = 0.05
+hp_quadratic = 0.0004
+damage_linear = 0.03
+speed_bonus_max = 0.25
+seconds_per_enemy = 0.55
+min_spawn_window = 15.0
+max_spawn_window = 110.0
 waves = 3
-elite_nights = PackedInt32Array(3, 5, 7, 9)
-elite_every_after = 10
-blood_moon_every = 7
+elite_every = 5
+boss_every = 10

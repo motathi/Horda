@@ -105,7 +105,10 @@ func add_xp(amount: int) -> void:
 
 func _on_enemy_killed(_e: Node3D, def: EnemyDef, killer: Node) -> void:
 	if killer == self and def:
-		add_xp(def.xp_reward)
+		var mult := 1
+		if _e is Enemy:
+			mult = 15 if (_e as Enemy).is_boss else (4 if (_e as Enemy).is_elite else 1)
+		add_xp(def.xp_reward * mult)
 
 func is_dead() -> bool:
 	return health.dead

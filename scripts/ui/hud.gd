@@ -84,7 +84,7 @@ func _ready() -> void:
 
 	var mm_holder := Control.new()
 	mm_holder.custom_minimum_size = Vector2(196, 196)
-	_anchor(mm_holder, Control.PRESET_TOP_RIGHT, Vector2(-14, 158), Control.GROW_DIRECTION_BEGIN, Control.GROW_DIRECTION_END)
+	_anchor(mm_holder, Control.PRESET_TOP_RIGHT, Vector2(-14, 172), Control.GROW_DIRECTION_BEGIN, Control.GROW_DIRECTION_END)
 	mm_holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(mm_holder)
 	var mm_frame := PanelContainer.new()
@@ -169,6 +169,7 @@ func _ready() -> void:
 	EventBus.interaction_progress.connect(_on_interaction)
 	EventBus.inventory_full.connect(func(_id: StringName) -> void: _on_message("Mochila cheia! Volte à base para guardar os recursos.", Color(1, 0.55, 0.3)))
 	EventBus.base_core_destroyed.connect(func() -> void: get_tree().create_timer(2.5).timeout.connect(_show_game_over))
+	EventBus.victory.connect(func() -> void: get_tree().create_timer(3.0).timeout.connect(_show_game_over.bind(true)))
 	EventBus.hero_damaged.connect(func(_a: float) -> void: _flash_vignette())
 	TimeManager.night_warning.connect(_on_night_warning)
 	TimeManager.phase_changed.connect(_on_phase_changed)
@@ -325,14 +326,14 @@ func _on_interaction(label: String, ratio: float) -> void:
 	_interact_bar.value = ratio * 100.0
 
 func _on_night_warning(seconds: float) -> void:
-	show_banner("A NOITE SE APROXIMA", "A horda chega em %d segundos. Volte para a base!" % int(seconds), Color(1.0, 0.55, 0.2))
+	show_banner("A HORDA SE APROXIMA", "Horda %d chega em %d segundos. Volte para a base!" % [TimeManager.wave(), int(seconds)], Color(1.0, 0.55, 0.2))
 	AudioManager.play(&"bell")
 
 func _on_phase_changed(phase: int, day: int) -> void:
 	if phase == TimeManager.Phase.DUSK:
-		_on_message("O sol está se pondo... prepare as defesas.", Color(1.0, 0.6, 0.3))
-	elif phase == TimeManager.Phase.DAY and day > 1:
-		_on_message("Dia %d começou. Explore e colete recursos." % day, Color(1.0, 0.9, 0.5))
+		_on_message("O sol está se pondo... volte e prepare as defesas.", Color(1.0, 0.6, 0.3))
+	elif phase == TimeManager.Phase.DAWN and day > 1:
+		_on_message("Preparação: a horda %d chega em 2 minutos. Colete, construa e melhore!" % day, Color(1.0, 0.9, 0.5))
 
 # --- Menus -------------------------------------------------------------------
 
@@ -410,7 +411,7 @@ func _build_help() -> Control:
 	if Platform.touch:
 		col.add_child(UIStyle.label("Celular: joystick à esquerda para andar • botão das espadas ataca (mira automática)\nToque no chão para ir até lá, num inimigo para atacá-lo • E saqueia • 1/2 curam • pinça = zoom", 15, UIStyle.GOLD))
 	col.add_child(UIStyle.label("Retrato do herói = inventário • \"+\" nos recursos = menu da base • painel do dia = pausar", 15, UIStyle.GOLD))
-	var goal := UIStyle.label("Objetivo: explore de dia, colete recursos e volte antes do anoitecer.\nÀ noite a horda ataca a base — proteja o Núcleo até o amanhecer.", 15, UIStyle.TEXT_DIM)
+	var goal := UIStyle.label("Objetivo: sobreviver a 100 hordas. Antes de cada uma há 2 minutos de preparação\n(colete, construa, melhore — ou toque em \"Chamar agora\"). A horda acaba quando o último zumbi cai.", 15, UIStyle.TEXT_DIM)
 	col.add_child(goal)
 	var close := UIStyle.button("Fechar")
 	close.pressed.connect(func() -> void: panel.visible = false)
@@ -429,19 +430,21 @@ func _build_game_over() -> Control:
 	panel.visible = false
 	return panel
 
-func _show_game_over() -> void:
+func _show_game_over(won: bool = false) -> void:
 	var col := _game_over.get_node("Col") as VBoxContainer
 	for c in col.get_children():
 		c.queue_free()
-	var t := UIStyle.label("A BASE CAIU", 36, UIStyle.RED)
+	var t := UIStyle.label("VITÓRIA!" if won else "A BASE CAIU", 36, UIStyle.GOLD if won else UIStyle.RED)
 	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	col.add_child(t)
 	var s := GameManager.stats
-	col.add_child(UIStyle.label("Noites sobrevividas: %d" % int(s.nights_survived), 18))
+	col.add_child(UIStyle.label("Hordas vencidas: %d / %d" % [int(s.nights_survived), TimeManager.TOTAL_WAVES], 18))
+	if _hero:
+		col.add_child(UIStyle.label("Nível do herói: %d" % _hero.level, 18))
 	col.add_child(UIStyle.label("Zumbis eliminados: %d" % int(s.kills), 18))
 	col.add_child(UIStyle.label("Recursos coletados: %d" % int(s.items_collected), 18))
 	var again := UIStyle.button("Jogar novamente")
-	again.pressed.connect(func() -> void: GameManager.start_new_game(GameManager.difficulty, GameManager.cycle_preset))
+	again.pressed.connect(func() -> void: GameManager.start_new_game(GameManager.difficulty))
 	col.add_child(again)
 	var menu := UIStyle.button("Menu principal")
 	menu.pressed.connect(func() -> void: GameManager.return_to_menu())

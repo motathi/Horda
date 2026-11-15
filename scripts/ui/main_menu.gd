@@ -64,7 +64,7 @@ func _build_main() -> Control:
 	cont.disabled = not SaveManager.has_save()
 	if SaveManager.has_save():
 		var meta := SaveManager.peek_meta()
-		cont.text = "Continuar (Dia %d)" % int(meta.get("day", 1))
+		cont.text = "Continuar (Horda %d)" % int(meta.get("day", 1))
 	cont.pressed.connect(func() -> void: GameManager.continue_game())
 	col.add_child(cont)
 	var new := UIStyle.button("Novo jogo", 22)
@@ -92,8 +92,7 @@ func _build_new_game() -> Control:
 	col.add_child(UIStyle.label("Novo jogo", 28, UIStyle.GOLD))
 	col.add_child(UIStyle.label("Dificuldade", 18))
 	col.add_child(_choice_row({"facil": "Fácil", "normal": "Normal", "dificil": "Difícil"}, "normal", func(k: String) -> void: _diff = k))
-	col.add_child(UIStyle.label("Duração do ciclo dia/noite", 18))
-	col.add_child(_choice_row({"normal": "Normal (22 min)", "rapido": "Rápido (11 min)"}, "normal", func(k: String) -> void: _cycle = k))
+	col.add_child(UIStyle.label("100 hordas • 2 minutos de preparação antes de cada uma", 16, UIStyle.GOLD))
 	if SaveManager.has_save():
 		col.add_child(UIStyle.label("Atenção: iniciar um novo jogo substitui o salvamento atual no próximo amanhecer.", 13, Color(1, 0.6, 0.4)))
 	var row := HBoxContainer.new()

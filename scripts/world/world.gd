@@ -59,8 +59,8 @@ func _ready() -> void:
 	GameManager.world_ready(self)
 	loading.visible = false
 	hud.visible = true
-	if TimeManager.day == 1 and TimeManager.phase == TimeManager.Phase.DAY and TimeManager.phase_time < 1.0:
-		EventBus.banner.emit("DIA 1", "Explore, colete recursos e volte antes do anoitecer.", Color(1.0, 0.85, 0.4))
+	if TimeManager.day == 1 and TimeManager.phase == TimeManager.Phase.DAWN and TimeManager.phase_time < 1.0:
+		EventBus.banner.emit("100 HORDAS", "Você tem 2 minutos antes de cada horda. Colete, construa e defenda a fortaleza!", Color(1.0, 0.85, 0.4))
 		EventBus.notify("Dica: pressione F1 para ver os controles.", UIStyle.TEXT_DIM)
 
 func _on_bake_finished() -> void:

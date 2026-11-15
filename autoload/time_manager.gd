@@ -1,12 +1,14 @@
 extends Node
-## Relógio interno e ciclo dia/noite. Fonte única de verdade sobre o período atual.
+## Relógio interno e ciclo de rodadas: 2 minutos de preparação (amanhecer, dia,
+## entardecer) e a horda (noite), que termina quando todos os zumbis morrem
+## (ou no limite de tempo, quando o sol queima os restantes). 100 hordas no total.
 
 enum Phase { DAWN, DAY, DUSK, NIGHT }
 const PHASE_NAMES := ["Amanhecer", "Dia", "Entardecer", "Noite"]
 const PRESETS := {
-	"normal": "res://data/config/day_night_normal.tres",
-	"rapido": "res://data/config/day_night_fast.tres",
+	"normal": "res://data/config/day_night_waves.tres",
 }
+const TOTAL_WAVES := 100
 
 signal phase_changed(phase: Phase, day: int)
 signal night_warning(seconds_left: float)
@@ -25,7 +27,7 @@ func _ready() -> void:
 func setup(preset: String) -> void:
 	config = load(PRESETS.get(preset, PRESETS.normal)) as DayNightConfig
 	day = 1
-	phase = Phase.DAY
+	phase = Phase.DAWN  # a 1ª rodada também tem os 2 minutos completos
 	phase_time = 0.0
 	_warned = false
 	running = false
@@ -69,6 +71,24 @@ func set_state(p: Phase, d: int, t: float) -> void:
 
 func is_night() -> bool:
 	return phase == Phase.NIGHT
+
+## Rodada atual (1..TOTAL_WAVES). A horda da rodada N é a "noite" do dia N.
+func wave() -> int:
+	return day
+
+## Pula o resto da preparação e chama a horda agora.
+func start_horde_now() -> void:
+	if phase != Phase.NIGHT and running:
+		set_state(Phase.NIGHT, day, 0.0)
+
+## Encerra a horda (todos os zumbis mortos): começa a próxima preparação.
+func finish_horde() -> void:
+	if phase == Phase.NIGHT:
+		advance_phase()
+
+## Tempo restante da preparação (0 durante a horda).
+func prep_seconds_left() -> float:
+	return seconds_until_night()
 
 func phase_ratio() -> float:
 	return clampf(phase_time / phase_duration(phase), 0.0, 1.0)

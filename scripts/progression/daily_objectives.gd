@@ -16,19 +16,27 @@ func _ready() -> void:
 
 func generate(day: int) -> void:
 	_rng.seed = hash(day * 7919 + GameManager.world_seed)
+	# Metas curtas: cabem em uma rodada (2 min de preparação + a horda).
+	var r := 1.0 + minf(day, 60) * 0.05  # recompensas crescem com as hordas
 	var pool: Array[Dictionary] = [
-		_make("kill", "", "Elimine %d zumbis", 6 + day * 2, {&"herbs": 3, &"cloth": 3}),
-		_make("collect", "wood", "Colete %d de Madeira", 15 + day * 5, {&"scrap": 4, &"stone": 2}),
-		_make("collect", "stone", "Colete %d de Pedra", 8 + day * 3, {&"scrap": 3, &"wood": 6}),
-		_make("loot", "", "Saqueie %d locais", 3 + day / 2, {&"herbs": 2, &"cloth": 4}),
-		_make("collect", "scrap", "Colete %d de Sucata", 6 + day * 2, {&"stone": 4, &"wood": 6}),
-		_make("build", "", "Construa %d defesas", 1 + day / 2, {&"scrap": 4, &"stone": 4}),
+		_make("kill", "", "Elimine %d zumbis", mini(5 + day, 40), _rw({&"herbs": 3, &"cloth": 3}, r)),
+		_make("collect", "wood", "Colete %d de Madeira", mini(10 + day * 2, 60), _rw({&"scrap": 4, &"stone": 3}, r)),
+		_make("collect", "stone", "Colete %d de Pedra", mini(6 + day, 40), _rw({&"scrap": 3, &"wood": 6}, r)),
+		_make("loot", "", "Saqueie %d locais", mini(2 + day / 4, 6), _rw({&"herbs": 2, &"cloth": 4}, r)),
+		_make("collect", "scrap", "Colete %d de Sucata", mini(4 + day, 40), _rw({&"stone": 4, &"wood": 6}, r)),
+		_make("build", "", "Construa %d defesas", mini(1 + day / 5, 4), _rw({&"scrap": 4, &"stone": 4}, r)),
 	]
 	objectives.clear()
 	for i in 2:
 		objectives.append(pool.pop_at(_rng.randi() % pool.size()))
-	objectives.append(_make("return", "", "Esteja na base ao anoitecer", 1, {&"wood": 8, &"stone": 4}))
+	objectives.append(_make("return", "", "Esteja na base quando a horda chegar", 1, _rw({&"wood": 8, &"stone": 4}, r)))
 	EventBus.objectives_changed.emit()
+
+func _rw(base: Dictionary, mult: float) -> Dictionary:
+	var out := {}
+	for id in base:
+		out[id] = int(round(int(base[id]) * mult))
+	return out
 
 func _make(kind: String, item: String, fmt: String, target: int, reward: Dictionary) -> Dictionary:
 	return {"kind": kind, "item": item, "text": fmt % target if fmt.contains("%d") else fmt, "target": target, "progress": 0, "done": false, "reward": reward}

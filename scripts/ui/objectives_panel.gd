@@ -15,7 +15,7 @@ func _ready() -> void:
 	head.add_theme_constant_override("separation", 10)
 	var badge := UIStyle.icon(UIStyle.hud_icon("alert"), 34)
 	head.add_child(badge)
-	var t := UIStyle.label("Objetivos do Dia", 20, Color.WHITE)
+	var t := UIStyle.label("Objetivos da Rodada", 20, Color.WHITE)
 	t.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	head.add_child(t)
 	col.add_child(head)

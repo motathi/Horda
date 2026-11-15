@@ -22,6 +22,7 @@ signal building_changed(building: Node3D)
 signal structure_damaged(structure: Node3D)
 signal structure_destroyed(structure: Node3D)
 signal base_core_destroyed
+signal victory
 signal object_selected(obj: Node)
 signal object_deselected
 

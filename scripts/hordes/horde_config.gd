@@ -1,62 +1,79 @@
 class_name HordeConfig
 extends Resource
-## Parâmetros de progressão das hordas noturnas (100% orientado a dados).
+## Progressão das 100 hordas (orientada a dados). A dificuldade cresce em
+## quantidade, força, variedade, elites, chefes e direções de ataque.
 
 @export var entries: Array[HordeSpawnEntry] = []
 @export_group("Quantidade")
-@export var base_count: int = 10
-@export var count_per_night: float = 6.0
-## Crescimento exponencial suave após a noite 6.
-@export var late_growth: float = 1.12
-@export var max_alive: int = 140
+## total = (base + linear * h + quad * h²) * dificuldade
+@export var base_count: float = 6.0
+@export var count_linear: float = 2.6
+@export var count_quadratic: float = 0.012
+@export var max_alive: int = 110
+@export var max_alive_mobile: int = 60
 @export_group("Força")
-## Bônus de vida/dano por noite (0.08 = +8% por noite).
-@export var hp_growth_per_night: float = 0.08
-@export var damage_growth_per_night: float = 0.05
+## vida = 1 + hp_linear*(h-1) + hp_quadratic*(h-1)²
+@export var hp_linear: float = 0.05
+@export var hp_quadratic: float = 0.0004
+@export var damage_linear: float = 0.03
+@export var speed_bonus_max: float = 0.25
 @export_group("Ritmo")
-## Fração da noite usada para liberar a horda (o resto é para limpar).
-@export_range(0.1, 1.0) var spawn_window: float = 0.6
-## Ondas por noite (inimigos chegam em levas).
+## Segundos para liberar a horda inteira (por zumbi), com limites.
+@export var seconds_per_enemy: float = 0.55
+@export var min_spawn_window: float = 15.0
+@export var max_spawn_window: float = 110.0
+## Levas por horda (pausa curta entre elas).
 @export var waves: int = 3
 @export_group("Eventos especiais")
-## Noites com um inimigo de elite (aura dourada, 3x vida).
-@export var elite_nights: PackedInt32Array = PackedInt32Array([3, 5, 7, 9])
-## A partir desta noite, todas as noites têm elites (1 a cada `elite_every` noites a mais).
-@export var elite_every_after: int = 10
-## Noites de "lua de sangue": horda 50% maior vinda de todas as direções.
-@export var blood_moon_every: int = 7
+## A cada N hordas aparece um elite (aura dourada, 3x vida).
+@export var elite_every: int = 5
+## A cada N hordas: CHEFE + ataque de todas as direções.
+@export var boss_every: int = 10
 
-func is_blood_moon(night: int) -> bool:
-	return blood_moon_every > 0 and night % blood_moon_every == 0
+func is_boss_wave(h: int) -> bool:
+	return boss_every > 0 and h % boss_every == 0
 
-func elite_count(night: int) -> int:
-	var n := 1 if elite_nights.has(night) else 0
-	if night >= elite_every_after:
-		n += 1 + (night - elite_every_after) / 3
-	return n
+## Mantido por compatibilidade: lua de sangue = horda de chefe.
+func is_blood_moon(h: int) -> bool:
+	return is_boss_wave(h)
 
-func total_count(night: int) -> int:
-	var c := base_count + count_per_night * (night - 1)
-	if night > 6:
-		c *= pow(late_growth, night - 6)
-	if is_blood_moon(night):
-		c *= 1.5
+func elite_count(h: int) -> int:
+	if elite_every <= 0 or h < elite_every:
+		return 0
+	var n := 1 if h % elite_every == 0 else 0
+	return n + h / 25
+
+func boss_count(h: int) -> int:
+	return (1 + h / 50) if is_boss_wave(h) else 0
+
+func total_count(h: int) -> int:
+	var c := base_count + count_linear * h + count_quadratic * h * h
 	return int(round(c * GameManager.diff_value("horde_count")))
 
-func hp_multiplier(night: int) -> float:
-	return 1.0 + hp_growth_per_night * (night - 1)
+func hp_multiplier(h: int) -> float:
+	var x := float(h - 1)
+	return 1.0 + hp_linear * x + hp_quadratic * x * x
 
-func damage_multiplier(night: int) -> float:
-	return 1.0 + damage_growth_per_night * (night - 1)
+func damage_multiplier(h: int) -> float:
+	return 1.0 + damage_linear * (h - 1)
 
-## Composição da noite: Array de EnemyDef (embaralhado), incluindo garantidos.
-func compose(night: int, rng: RandomNumberGenerator) -> Array[EnemyDef]:
-	var total := total_count(night)
+func speed_multiplier(h: int) -> float:
+	return 1.0 + speed_bonus_max * clampf((h - 1) / 99.0, 0.0, 1.0)
+
+func alive_cap() -> int:
+	return max_alive_mobile if Platform.low_end else max_alive
+
+func spawn_window(h: int) -> float:
+	return clampf(total_count(h) * seconds_per_enemy, min_spawn_window, max_spawn_window)
+
+## Composição da horda: Array de EnemyDef (embaralhado), incluindo garantidos.
+func compose(h: int, rng: RandomNumberGenerator) -> Array[EnemyDef]:
+	var total := total_count(h)
 	var out: Array[EnemyDef] = []
 	var counts := {}
 	var pool: Array[HordeSpawnEntry] = []
 	for e in entries:
-		if night >= e.unlock_night:
+		if h >= e.unlock_night:
 			pool.append(e)
 			for i in e.guaranteed:
 				if out.size() < total:
@@ -69,10 +86,10 @@ func compose(night: int, rng: RandomNumberGenerator) -> Array[EnemyDef]:
 		guard += 1
 		var sum := 0.0
 		for e in pool:
-			sum += _weight(e, night)
+			sum += _weight(e, h)
 		var r := rng.randf() * sum
 		for e in pool:
-			r -= _weight(e, night)
+			r -= _weight(e, h)
 			if r <= 0.0:
 				if e.max_per_night > 0 and int(counts.get(e, 0)) >= e.max_per_night:
 					break
@@ -82,13 +99,13 @@ func compose(night: int, rng: RandomNumberGenerator) -> Array[EnemyDef]:
 	out.shuffle()
 	return out
 
-func _weight(e: HordeSpawnEntry, night: int) -> float:
-	return e.weight + e.weight_growth * (night - e.unlock_night)
+func _weight(e: HordeSpawnEntry, h: int) -> float:
+	return e.weight + e.weight_growth * (h - e.unlock_night)
 
-## Inimigo mais forte disponível (usado para elites).
-func strongest(night: int) -> EnemyDef:
+## Inimigo mais forte disponível (base de elites e chefes).
+func strongest(h: int) -> EnemyDef:
 	var best: EnemyDef = null
 	for e in entries:
-		if night >= e.unlock_night and (best == null or e.enemy.max_health > best.max_health):
+		if h >= e.unlock_night and (best == null or e.enemy.max_health > best.max_health):
 			best = e.enemy
 	return best
