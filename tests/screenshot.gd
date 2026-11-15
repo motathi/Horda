@@ -120,6 +120,10 @@ func _ready() -> void:
 	hero.global_position = Vector3(-30, 0, -66)
 	await _frames(40)
 	await _shot("18_floresta")
+	world.hud._toggle_pause()
+	await _frames(4)
+	await _shot("19_pausa_som")
+	world.hud._toggle_pause()
 	for b in placed:
 		b.queue_free()
 	# Cidade

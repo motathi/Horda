@@ -58,7 +58,6 @@ static func button(text: String, size: int = 18) -> Button:
 	b.add_theme_stylebox_override("pressed", pressed)
 	b.add_theme_stylebox_override("disabled", disabled)
 	b.add_theme_stylebox_override("focus", hover)
-	b.pressed.connect(func() -> void: AudioManager.play(&"ui_click", -4.0))
 	return b
 
 static func bar(fill: Color, height: float = 18.0) -> ProgressBar:

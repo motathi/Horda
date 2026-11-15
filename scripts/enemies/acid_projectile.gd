@@ -60,7 +60,7 @@ func _physics_process(delta: float) -> void:
 
 func _impact() -> void:
 	set_physics_process(false)
-	AudioManager.play_3d(&"zombie_hit", _to, -2.0)
+	AudioManager.play_3d(&"acid", _to, -2.0)
 	# Estruturas atingidas diretamente.
 	for n: Node in get_tree().get_nodes_in_group("structures"):
 		var s := n as Structure

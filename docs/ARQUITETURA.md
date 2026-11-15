@@ -91,6 +91,15 @@ em área contra aliados, estruturas e — se abatido — outros zumbis, com cré
 (estreia nas hordas 4, 7 e 9, anunciada pelo `HordeDirector`) e na Área Contaminada durante o dia.
 Modelos riggados gerados pelo `tools/tripo_pipeline.py`.
 
+## Áudio
+
+`AudioManager` (autoload) cria os canais `Music`, `SFX`, `Ambient` e `UI`; `play(id)`/`play_3d(id, pos, vol, pitch,
+gap_ms)` sorteiam entre as variações `assets/sounds/<id>_<n>.ogg` (sem repetir a última) e limitam repetições
+no mesmo instante. A música é escolhida a cada quadro pelo estado (`GameManager.state`, `horde_started` /
+`horde_ended`, `HordeConfig.is_boss_wave`) com crossfade entre dois players; o ambiente mistura três camadas
+(dia, noite, área sombria por distância ao cemitério). Todo `BaseButton` criado ganha som de clique/hover via
+`SceneTree.node_added`. Os sons vêm de `tools/oga_fetch.py` + `tools/build_audio.py` (manifesto id → arquivos).
+
 ## Cenário de terceiros (CC0)
 
 `ThirdParty` (`scripts/world/third_party.gd`) carrega os modelos de `assets/third_party/` (escala por altura,

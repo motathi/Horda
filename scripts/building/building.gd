@@ -223,7 +223,7 @@ func _process_tower(delta: float) -> void:
 			if info.is_crit:
 				info.amount *= 1.8
 			EffectsHub.spawn_arrow(from, target, info, def.projectile_speed)
-			AudioManager.play_3d(&"swing", from, -10.0)
+			AudioManager.play_3d(&"arrow", from, -12.0, 1.35, 90)
 
 ## Balista: virote em linha reta que fere todos os inimigos no caminho.
 func _fire_bolt(from: Vector3, target: Enemy) -> void:
@@ -234,7 +234,7 @@ func _fire_bolt(from: Vector3, target: Enemy) -> void:
 	var reach := tower_range() + 2.0
 	var to := Vector3(from.x, 1.0, from.z) + dir * reach
 	EffectsHub.spawn_bolt(from, to, def.projectile_speed)
-	AudioManager.play_3d(&"chop", from, -4.0)
+	AudioManager.play_3d(&"bolt", from, -2.0)
 	var origin := Vector2(global_position.x, global_position.z)
 	var d2 := Vector2(dir.x, dir.z)
 	var hits: Array[Enemy] = []
@@ -262,11 +262,11 @@ func _fire_cannon(from: Vector3, target: Enemy) -> void:
 	var dmg := tower_damage()
 	var r := def.splash_radius * (1.0 + 0.1 * (level - 1))
 	var stun_t := def.stun_time
-	AudioManager.play_3d(&"break", from, -2.0)
+	AudioManager.play_3d(&"cannon", from, 0.0, 0.7)
 	EffectsHub.spawn_debris(from, false)
 	EffectsHub.spawn_lob(from, to, dur, 4.0, func() -> void:
 		EffectsHub.spawn_explosion(to, r, Color(1.0, 0.55, 0.15))
-		AudioManager.play_3d(&"break", to, 2.0)
+		AudioManager.play_3d(&"explosion", to, 0.0)
 		for e: Enemy in Enemy.all.duplicate():
 			if is_instance_valid(e) and not e.is_dead():
 				var dd: Vector3 = e.global_position - to
@@ -301,7 +301,7 @@ func _fire_chain(from: Vector3, target: Enemy) -> void:
 				nxt = e
 		cur = nxt
 	EffectsHub.spawn_lightning(pts)
-	AudioManager.play_3d(&"swing", from, -2.0)
+	AudioManager.play_3d(&"zap", from, -3.0)
 
 func _find_target(radius: float) -> Enemy:
 	var best: Enemy = null
@@ -359,7 +359,7 @@ func upgrade() -> String:
 		c.queue_free()
 	_visual.add_child(Building.make_visual(def, level))
 	EffectsHub.spawn_heal(global_position)
-	AudioManager.play(&"deposit")
+	AudioManager.play_3d(&"upgrade", global_position)
 	EventBus.building_changed.emit(self)
 	return "%s melhorada para o nível %d!" % [def.display_name, level]
 

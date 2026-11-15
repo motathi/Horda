@@ -385,6 +385,11 @@ func _build_pause() -> Control:
 	var help := UIStyle.button("Controles (F1)")
 	help.pressed.connect(func() -> void: _help.visible = not _help.visible)
 	col.add_child(help)
+	col.add_child(HSeparator.new())
+	col.add_child(UIStyle.label("Som", 18, UIStyle.GOLD))
+	for pair: Array in [["Música", "Music"], ["Efeitos", "SFX"], ["Ambiente", "Ambient"], ["Interface", "UI"]]:
+		col.add_child(_volume_row(pair[0], pair[1]))
+	col.add_child(HSeparator.new())
 	var menu := UIStyle.button("Menu principal")
 	menu.pressed.connect(func() -> void: GameManager.return_to_menu())
 	col.add_child(menu)
@@ -394,6 +399,34 @@ func _build_pause() -> Control:
 		col.add_child(quit)
 	panel.visible = false
 	return panel
+
+## Linha "nome — barra de volume — %" (salva ao soltar a barra).
+func _volume_row(label: String, bus: String) -> Control:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	var l := UIStyle.label(label, 15)
+	l.custom_minimum_size = Vector2(90, 0)
+	row.add_child(l)
+	var sl := HSlider.new()
+	sl.min_value = 0.0
+	sl.max_value = 1.0
+	sl.step = 0.05
+	sl.value = float(AudioManager.volumes.get(bus, 1.0))
+	sl.custom_minimum_size = Vector2(170, 32)
+	sl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	sl.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(sl)
+	var pct := UIStyle.label("%d%%" % roundi(sl.value * 100), 14, UIStyle.TEXT_DIM)
+	pct.custom_minimum_size = Vector2(44, 0)
+	row.add_child(pct)
+	sl.value_changed.connect(func(v: float) -> void:
+		AudioManager.set_volume(bus, v)
+		pct.text = "%d%%" % roundi(v * 100))
+	sl.drag_ended.connect(func(_changed: bool) -> void:
+		AudioManager.save_settings()
+		if bus != "Music" and bus != "Ambient":
+			AudioManager.play_ui(&"ui_click"))
+	return row
 
 func _build_help() -> Control:
 	var panel := UIStyle.panel()
@@ -454,6 +487,9 @@ func _show_game_over(won: bool = false) -> void:
 	var col := _game_over.get_node("Col") as VBoxContainer
 	for c in col.get_children():
 		c.queue_free()
+	if won:
+		AudioManager.play(&"gong", 0.0, 0.9)
+		AudioManager.play(&"levelup")
 	var t := UIStyle.label("VITÓRIA!" if won else "A BASE CAIU", 36, UIStyle.GOLD if won else UIStyle.RED)
 	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	col.add_child(t)

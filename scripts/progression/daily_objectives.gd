@@ -72,7 +72,7 @@ func _reward(o: Dictionary) -> void:
 	for id in r:
 		ResourceManager.storage.add(StringName(id), int(r[id]))
 	EventBus.notify("Objetivo concluído: %s! Recompensa no armazém: %s" % [o.text, ResourceManager.cost_to_string(r)], UIStyle.GOLD)
-	AudioManager.play(&"deposit")
+	AudioManager.play(&"objective")
 
 func to_save() -> Array:
 	var out := []

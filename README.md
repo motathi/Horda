@@ -72,6 +72,14 @@ automaticamente ao entrar. Ao entardecer soa o aviso; à noite a horda vem pelas
 quebra a paliçada e tenta destruir o **Núcleo**. Sobreviva até o amanhecer: o sol queima os zumbis restantes.
 Se o herói cair, renasce na base (e a mochila fica no chão onde morreu). Se o Núcleo cair, fim de jogo.
 
+## Som
+
+Efeitos, músicas e ambientes **CC0** do OpenGameArt (créditos em
+[assets/sounds/CREDITS.md](assets/sounds/CREDITS.md)), com 3 a 17 variações por efeito sorteadas com leve
+variação de tom. Música dinâmica com crossfade: menu, preparação (2 faixas alternadas), horda (2 faixas),
+chefe e derrota; ambiente de pássaros de dia, grilos à noite e um ambiente sombrio perto do cemitério.
+Volume de Música, Efeitos, Ambiente e Interface no menu de pausa (salvo em `user://settings.cfg`).
+
 ## Assets de terceiros (CC0)
 
 Além da arte gerada por IA, o mapa usa pacotes **CC0** baixados do itch.io (créditos em
@@ -101,7 +109,8 @@ xvfb-run godot --rendering-driver opengl3 --rendering-method gl_compatibility re
 
 ```bash
 ARK_API_KEY=... python3 tools/gen_image.py tools/art_prompts.json   # só gera o que estiver faltando
-python3 tools/gen_sounds.py                                          # efeitos sonoros sintetizados
+python3 tools/oga_fetch.py /tmp/oga <slugs...>                      # sons/músicas CC0 do OpenGameArt (confere a licença)
+python3 tools/build_audio.py /tmp/oga                                # converte para assets/sounds, music, ambient
 ```
 
 ![Horda atacando a base](docs/screenshots/06_night_horde.jpg)

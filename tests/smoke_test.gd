@@ -33,6 +33,7 @@ func _ready() -> void:
 			return
 	print("Mundo pronto em %d ms" % (Time.get_ticks_msec() - t0))
 	await _test_world()
+	await _test_audio()
 	await _test_combat()
 	await _test_abilities()
 	await _test_attributes()
@@ -88,6 +89,31 @@ func _test_world() -> void:
 	# Objetivo "estar na base ao anoitecer" é verificado no início da noite.
 	var ret: Dictionary = world.objectives.objectives[2]
 	check(ret.kind == "return" and not ret.done, "objetivo de retorno pendente")
+
+func _test_audio() -> void:
+	print("[áudio]")
+	var missing: Array[String] = []
+	for id in ["swing", "hit", "zombie_hit", "zombie_death", "groan", "chop", "mine", "step_grass", "step_stone", "ab_whirl", "ab_dash", "ab_warcry", "ab_nova", "explosion", "cannon", "bolt", "arrow", "zap", "spit", "acid", "leap", "build", "upgrade", "levelup", "gong", "ui_click", "skeleton", "fuse"]:
+		if not AudioManager.has_sound(StringName(id)):
+			missing.append(id)
+	check(missing.is_empty(), "todos os efeitos têm arquivos (faltando: %s)" % ", ".join(missing))
+	check(AudioManager._streams(&"groan").size() >= 8, "gemidos com várias variações (%d)" % AudioManager._streams(&"groan").size())
+	var buses_ok := true
+	for b in AudioManager.BUSES:
+		buses_ok = buses_ok and AudioServer.get_bus_index(b) >= 0
+	check(buses_ok, "canais de volume Música/Efeitos/Ambiente/Interface")
+	await get_tree().process_frame
+	check(AudioManager._music_id.begins_with("prep_"), "música de preparação tocando (%s)" % AudioManager._music_id)
+	EventBus.horde_started.emit(10, 5)
+	await get_tree().process_frame
+	check(AudioManager._music_id == "boss", "horda de chefe troca para a música do chefe (%s)" % AudioManager._music_id)
+	EventBus.horde_ended.emit(10)
+	AudioManager._boss_wave = false
+	await get_tree().process_frame
+	check(AudioManager._music_id.begins_with("prep_"), "fim da horda volta à preparação")
+	AudioManager.set_volume("Music", 0.5)
+	check(absf(AudioServer.get_bus_volume_db(AudioServer.get_bus_index("Music")) - linear_to_db(0.5)) < 0.01, "volume da música ajustável")
+	AudioManager.set_volume("Music", 0.7)
 
 func _test_combat() -> void:
 	print("[combate]")

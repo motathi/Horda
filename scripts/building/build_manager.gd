@@ -181,7 +181,7 @@ func place(d: BuildingDef, pos: Vector3, rot: float, pay: bool = true, lvl: int 
 	b.rotation.y = rot
 	if pay:
 		EffectsHub.spawn_debris(b.global_position + Vector3.UP, false)
-		AudioManager.play_3d(&"chop", b.global_position)
+		AudioManager.play_3d(&"build", b.global_position)
 		EventBus.notify("%s construída." % d.display_name, UIStyle.GREEN)
 		EventBus.building_placed.emit(b)
 	return b

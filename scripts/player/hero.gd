@@ -72,6 +72,7 @@ var _interact_time: float = 0.0
 var _respawn_left: float = 0.0
 var _rng := RandomNumberGenerator.new()
 var _home: Vector3 = Vector3.ZERO
+var _step_t: float = 0.0
 
 @onready var nav_agent: NavigationAgent3D = $NavigationAgent3D
 
@@ -216,7 +217,7 @@ func add_xp(amount: int) -> void:
 		health.heal(health.max_health)
 		leveled_up.emit(level)
 		EventBus.banner.emit("NÍVEL %d!" % level, "+%d pontos de atributo — toque no retrato (P)" % attr_cfg.points_per_level, UIStyle.GOLD)
-		AudioManager.play(&"dawn")
+		AudioManager.play(&"levelup", -2.0)
 	stats_changed.emit()
 
 func _on_enemy_killed(_e: Node3D, def: EnemyDef, killer: Node) -> void:
@@ -302,7 +303,9 @@ func _physics_process(delta: float) -> void:
 			_apply_hit()
 
 	_process_interaction(delta)
-	model.animate(delta, Vector2(velocity.x, velocity.z).length() / current_move_speed())
+	var planar := Vector2(velocity.x, velocity.z).length()
+	model.animate(delta, planar / current_move_speed())
+	_footsteps(delta, planar)
 
 func _input_direction() -> Vector3:
 	var v := Input.get_vector("move_left", "move_right", "move_up", "move_down", 0.12)
@@ -390,6 +393,17 @@ func _face(point: Vector3, delta: float, speed: float) -> void:
 func facing() -> Vector3:
 	return Vector3(-sin(model.rotation.y), 0.0, -cos(model.rotation.y))
 
+## Passos: pedra dentro da base, grama fora; cadência acompanha a velocidade.
+func _footsteps(delta: float, planar_speed: float) -> void:
+	if planar_speed < 0.8:
+		_step_t = 0.0
+		return
+	_step_t -= delta * planar_speed / 6.8
+	if _step_t <= 0.0:
+		_step_t = 0.42
+		var stone := global_position.length() < 14.0
+		AudioManager.play_3d(&"step_stone" if stone else &"step_grass", global_position, -14.0, 1.0, 120)
+
 # --- Combate -------------------------------------------------------------
 
 func _start_attack() -> void:
@@ -412,6 +426,7 @@ func _apply_hit() -> void:
 			var info := DamageInfo.make(damage() * (crit_multiplier if crit else 1.0), self, crit)
 			en.take_damage(info)
 			hit_any = true
+			AudioManager.play_3d(&"hit", en.global_position, -2.0 if crit else -5.0, 0.85 if crit else 1.0)
 	for h: Node in get_tree().get_nodes_in_group("harvestable"):
 		var hv := h as Harvestable
 		if hv and _in_arc(hv.global_position, fwd, half_arc, attack_range + 0.8):
@@ -544,7 +559,7 @@ func _enemies_in_radius(center: Vector3, r: float) -> Array[Enemy]:
 
 func _cast_whirlwind(a: AbilityDef) -> void:
 	model.play_spin(0.4)
-	AudioManager.play_3d(&"swing", global_position, 0.0)
+	AudioManager.play_3d(&"ab_whirl", global_position, 0.0)
 	EffectsHub.spawn_ring(global_position + Vector3.UP * 0.9, a.radius, Color(1.0, 0.6, 0.2), 0.35)
 	for e in _enemies_in_radius(global_position, a.radius):
 		var crit := _rng.randf() < crit()
@@ -563,7 +578,7 @@ func _cast_dash(a: AbilityDef) -> void:
 	health.invulnerable = true
 	_face(global_position + dir, 1.0, 100.0)
 	model.play_attack(0.3)
-	AudioManager.play_3d(&"swing", global_position, 2.0)
+	AudioManager.play_3d(&"ab_dash", global_position, 0.0)
 
 func _process_dash(delta: float) -> void:
 	_dash_left -= delta
@@ -590,7 +605,7 @@ func _cast_warcry(a: AbilityDef) -> void:
 	_armor_buff_left = a.duration
 	EffectsHub.spawn_ring(global_position + Vector3.UP * 0.2, 3.5, Color(1.0, 0.85, 0.3), 0.6)
 	EffectsHub.spawn_heal(global_position)
-	AudioManager.play(&"horn", -8.0)
+	AudioManager.play_3d(&"ab_warcry", global_position, 0.0, 1.15)
 	stats_changed.emit()
 
 func _cast_nova(a: AbilityDef) -> void:
@@ -611,7 +626,7 @@ func _cast_nova(a: AbilityDef) -> void:
 		if not is_instance_valid(self):
 			return
 		EffectsHub.spawn_explosion(center, a.radius)
-		AudioManager.play_3d(&"break", center, 4.0)
+		AudioManager.play_3d(&"explosion", center, 2.0, 1.2)
 		for e in _enemies_in_radius(center, a.radius):
 			e.take_damage(DamageInfo.make(damage() * a.power * ability_power(), self, true))
 			e.stun(a.duration))

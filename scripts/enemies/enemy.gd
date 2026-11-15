@@ -238,6 +238,10 @@ func _physics_process(delta: float) -> void:
 
 func _think() -> void:
 	_update_separation()
+	if (state == State.CHASE or state == State.SIEGE) and _rng.randf() < 0.025:
+		var h := GameManager.hero as Node3D
+		if h and h.global_position.distance_to(global_position) < 22.0:
+			AudioManager.play_3d(&"skeleton" if _is_skeleton() else &"groan", global_position, -8.0, 1.0 / maxf(0.7, def.model_scale), 600)
 	var hero := GameManager.hero as Hero
 	var hero_ok := hero != null and not hero.is_dead()
 	var hero_d := _dist_to(hero) if hero_ok else INF
@@ -309,12 +313,12 @@ func _resolve_attack() -> void:
 		fwd.y = 0.0
 		var from := global_position + Vector3.UP * 1.6 * def.model_scale + fwd.normalized() * 0.5
 		AcidProjectile.launch(get_parent(), from, to, self, damage_value * def.special_mult, def)
-		AudioManager.play_3d(&"swing", global_position, -4.0)
+		AudioManager.play_3d(&"spit", global_position, -2.0)
 		return
 	var info := DamageInfo.make(damage_value, self)
 	info.structure_multiplier = def.structure_damage_mult
 	_target.call(&"take_damage", info)
-	AudioManager.play_3d(&"zombie_hit", global_position, -8.0)
+	AudioManager.play_3d(&"zombie_hit", global_position, -6.0)
 
 # --- Muros e bloqueios ----------------------------------------------------
 
@@ -441,7 +445,7 @@ func _on_died(info: DamageInfo) -> void:
 	remove_from_group("enemies")
 	($HealthBar as HealthBar3D).visible = false
 	model.play_death()
-	AudioManager.play_3d(&"zombie_death", global_position, -4.0)
+	AudioManager.play_3d(&"skeleton" if _is_skeleton() else &"zombie_death", global_position, -3.0, 1.0 / maxf(0.7, def.model_scale))
 	var burned := _burning >= 0.0
 	if not burned and def.loot:
 		var drops := def.loot.roll(_rng, 8.0 if is_boss else (2.5 if is_elite else 1.0))
@@ -481,7 +485,7 @@ func _start_fuse() -> void:
 	var tw := create_tween()
 	tw.tween_property(glow, "light_energy", 5.0, def.special_time)
 	tw.parallel().tween_property(model, "scale", model.scale * 1.25, def.special_time)
-	AudioManager.play_3d(&"zombie_hit", global_position, 2.0)
+	AudioManager.play_3d(&"fuse", global_position, 2.0)
 
 ## full = explodiu por conta própria (dano cheio e morre); senão foi abatido
 ## (dano menor ao herói, mas fere os zumbis ao redor — crédito para quem o matou).
@@ -493,7 +497,7 @@ func _explode(full: bool, credit: Node) -> void:
 	var center := global_position
 	center.y = 0.0
 	EffectsHub.spawn_explosion(center, r, def.special_color)
-	AudioManager.play_3d(&"break", center, 6.0)
+	AudioManager.play_3d(&"explosion", center, 4.0)
 	var dmg := damage_value * def.special_mult * (1.0 if full else 0.6)
 	for n: Node in get_tree().get_nodes_in_group("allies"):
 		var a := n as Node3D
@@ -554,7 +558,7 @@ func _process_leap(delta: float) -> void:
 		if _leap_wind < 0.0:
 			_leap_t = 0.0
 			collision_mask = Layers.WORLD
-			AudioManager.play_3d(&"swing", global_position, -2.0)
+			AudioManager.play_3d(&"leap", global_position, -1.0)
 		return
 	_leap_t += delta / LEAP_TIME
 	var t := minf(_leap_t, 1.0)
@@ -575,3 +579,6 @@ func _process_leap(delta: float) -> void:
 			a.call(&"take_damage", DamageInfo.make(damage_value * def.special_mult, self))
 	_attack_cd = minf(_attack_cd, 0.4)
 	_stuck_time = 0.0
+
+func _is_skeleton() -> bool:
+	return def != null and String(def.id).begins_with("skeleton")

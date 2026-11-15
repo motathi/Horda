@@ -72,7 +72,7 @@ func start_night(night: int) -> void:
 		subtitle += " — um ELITE lidera a horda!"
 	EventBus.banner.emit("HORDA %d / %d" % [night, TimeManager.TOTAL_WAVES], subtitle, Color(0.9, 0.15, 0.1))
 	EventBus.horde_started.emit(night, _grand_total)
-	AudioManager.play(&"horn")
+	AudioManager.play(&"gong", -2.0, 0.8)
 	_announce_new_enemies(night)
 
 ## Apresenta os tipos de inimigo que estreiam nesta horda.
@@ -101,7 +101,7 @@ func end_night() -> void:
 	var wave := _current
 	EventBus.horde_ended.emit(wave)
 	EventBus.night_survived.emit(wave)
-	AudioManager.play(&"dawn")
+	AudioManager.play(&"bell")
 	if wave >= TimeManager.TOTAL_WAVES:
 		GameManager.victory()
 		return
