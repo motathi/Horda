@@ -94,9 +94,13 @@ func build_hero(skin_id: String = "") -> void:
 func build_zombie(def: EnemyDef) -> void:
 	kind = Kind.ZOMBIE
 	hunch = def.hunch
-	if rigged_path(String(def.id)) != "":
-		_build_rigged(String(def.id), 2.0 * def.model_scale)
-		_run_threshold = 0.5 if def.behavior in [EnemyDef.Behavior.CHARGER, EnemyDef.Behavior.LEAPER] else 0.85
+	var mid := String(def.model_id) if def.model_id != &"" else String(def.id)
+	if rigged_path(mid) != "":
+		_build_rigged(mid, 2.0 * def.model_scale)
+		_run_threshold = 0.5 if def.behavior in [EnemyDef.Behavior.CHARGER, EnemyDef.Behavior.LEAPER, EnemyDef.Behavior.STALKER] else 0.85
+		if def.model_tint != Color.WHITE:
+			_tint_meshes(def.model_tint)
+		add_glow_eyes(def.eye_color, 2.0 * def.model_scale)
 		return
 	if ModelLibrary.has(String(def.id)):
 		# Tons diferentes por indivíduo para a horda não parecer clonada.
@@ -407,6 +411,143 @@ func play_spin(duration: float) -> void:
 	_rig.rotation.y = 0.0
 	tw.tween_property(_rig, "rotation:y", TAU, duration).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	tw.tween_callback(func() -> void: _rig.rotation.y = 0.0)
+
+# --- Terror: tingimento, olhos brilhantes e transparência --------------------------
+
+static var _tint_cache: Dictionary = {}
+static var _eye_mats: Dictionary = {}  # cor -> material compartilhado
+static var _eye_mesh: QuadMesh
+static var eye_intensity: float = 0.0
+
+## Multiplica a cor das malhas (materiais tingidos compartilhados entre indivíduos).
+func _tint_meshes(tint: Color) -> void:
+	for mi in _meshes:
+		if mi.mesh == null:
+			continue
+		for i in mi.mesh.get_surface_count():
+			var m := mi.get_active_material(i) as BaseMaterial3D
+			if m == null:
+				continue
+			var key := "%d_%s" % [m.get_instance_id(), tint.to_html()]
+			if not _tint_cache.has(key):
+				var d := m.duplicate() as BaseMaterial3D
+				d.albedo_color = m.albedo_color * tint
+				_tint_cache[key] = d
+			mi.set_surface_override_material(i, _tint_cache[key])
+
+## Dois pontos de luz presos ao osso da cabeça; acendem à noite (eye_intensity).
+func add_glow_eyes(color: Color, height: float) -> void:
+	if _rig == null or not is_inside_tree():
+		return
+	var sks := _rig.find_children("*", "Skeleton3D", true, false)
+	if sks.is_empty():
+		return
+	var sk := sks[0] as Skeleton3D
+	var head := -1
+	for i in sk.get_bone_count():
+		var bn := sk.get_bone_name(i).to_lower()
+		if bn == "head" or bn.ends_with(":head") or bn.ends_with("_head"):
+			head = i
+			break
+	if head < 0:
+		for i in sk.get_bone_count():
+			if sk.get_bone_name(i).to_lower().contains("head"):
+				head = i
+				break
+	if head < 0:
+		return
+	var att := BoneAttachment3D.new()
+	att.bone_name = sk.get_bone_name(head)
+	sk.add_child(att)
+	# Ponto dos olhos no espaço do modelo: um pouco acima e à frente da base da cabeça.
+	var bone_g := sk.global_transform * sk.get_bone_global_rest(head)
+	var eye_g := bone_g.origin + global_transform.basis * (Vector3(0, 0.16, -0.17) * height / 2.0) / global_transform.basis.get_scale()
+	var eye := MeshInstance3D.new()
+	eye.name = "Eyes"
+	eye.mesh = _eyes_quad()
+	eye.material_override = eye_material(color)
+	eye.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	eye.scale = Vector3.ONE * clampf(height / 2.0, 0.8, 2.2)
+	att.add_child(eye)
+	eye.position = bone_g.affine_inverse() * eye_g
+
+static func _eyes_quad() -> QuadMesh:
+	if _eye_mesh == null:
+		_eye_mesh = QuadMesh.new()
+		_eye_mesh.size = Vector2(0.62, 0.26)
+	return _eye_mesh
+
+static func eye_material(color: Color) -> ShaderMaterial:
+	var key := color.to_html()
+	if not _eye_mats.has(key):
+		var m := ShaderMaterial.new()
+		m.shader = _eye_shader()
+		m.set_shader_parameter("tex", _eyes_texture())
+		m.set_shader_parameter("color", color)
+		m.set_shader_parameter("intensity", eye_intensity)
+		_eye_mats[key] = m
+	return _eye_mats[key]
+
+static var _eye_sh: Shader
+## Billboard aditivo puxado 0,35 m em direção à câmera: a câmera alta vê os olhos
+## mesmo com a cabeça inclinada (sem atravessar paredes, que estão bem mais longe).
+static func _eye_shader() -> Shader:
+	if _eye_sh == null:
+		_eye_sh = Shader.new()
+		_eye_sh.code = """
+shader_type spatial;
+render_mode unshaded, blend_add, depth_draw_never, cull_disabled, shadows_disabled;
+uniform sampler2D tex : source_color, filter_linear;
+uniform vec4 color : source_color = vec4(1.0, 0.25, 0.1, 1.0);
+uniform float intensity = 1.0;
+void vertex() {
+	MODELVIEW_MATRIX = VIEW_MATRIX * mat4(INV_VIEW_MATRIX[0], INV_VIEW_MATRIX[1], INV_VIEW_MATRIX[2], MODEL_MATRIX[3]);
+	vec4 vp = MODELVIEW_MATRIX * vec4(VERTEX, 1.0);
+	vp.z += 0.35;
+	POSITION = PROJECTION_MATRIX * vp;
+}
+void fragment() {
+	vec4 t = texture(tex, UV);
+	ALBEDO = color.rgb * (1.4 + 2.0 * t.r);
+	ALPHA = t.a * intensity;
+}
+"""
+	return _eye_sh
+
+## Brilho dos olhos de todos os inimigos (0 de dia .. 1 à noite).
+static func set_eye_intensity(k: float) -> void:
+	if absf(k - eye_intensity) < 0.01:
+		return
+	eye_intensity = k
+	for key: String in _eye_mats:
+		(_eye_mats[key] as ShaderMaterial).set_shader_parameter("intensity", k)
+
+static var _eye_tex: ImageTexture
+static func _eyes_texture() -> ImageTexture:
+	if _eye_tex == null:
+		var w := 64
+		var h := 24
+		var img := Image.create(w, h, false, Image.FORMAT_RGBA8)
+		for y in h:
+			for x in w:
+				# Dois pontos fortes com um halo suave em volta.
+				var a := 0.0
+				var halo := 0.0
+				for cx: float in [21.0, 43.0]:
+					var d := Vector2((x - cx) / 4.5, (y - 12.0) / 3.2).length()
+					a = maxf(a, clampf(1.0 - d, 0.0, 1.0))
+					halo = maxf(halo, clampf(1.0 - d / 3.2, 0.0, 1.0))
+				var core := clampf(a * 1.8, 0.0, 1.0)
+				img.set_pixel(x, y, Color(core, core, core, maxf(core, halo * halo * 0.55)))
+		_eye_tex = ImageTexture.create_from_image(img)
+	return _eye_tex
+
+## 0 = opaco, 1 = invisível (Espreitador fora da luz).
+func set_transparency(t: float) -> void:
+	# Os olhos não estão em _meshes: continuam visíveis no escuro.
+	for mi in _meshes:
+		mi.transparency = t
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF if t > 0.5 else GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 
 func flash() -> void:
 	_flash_t = 0.09

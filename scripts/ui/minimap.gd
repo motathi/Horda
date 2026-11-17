@@ -59,8 +59,13 @@ func _draw() -> void:
 			draw_circle(_to_map(l.global_position), 1.6, Color(1.0, 0.85, 0.3))
 	draw_circle(_to_map(Vector3.ZERO), 7.0, Color(0.3, 0.6, 1.0, 0.9))
 	draw_arc(_to_map(Vector3.ZERO), 7.0, 0, TAU, 20, Color.WHITE, 1.0)
+	# Espreitadores escondidos não aparecem; na névoa densa só os inimigos perto do herói.
+	var reveal_r := DayNightVisuals.map_reveal_radius()
+	var me := GameManager.hero
 	for e in Enemy.all:
-		if is_instance_valid(e) and not e.is_dead():
+		if is_instance_valid(e) and e.is_targetable():
+			if reveal_r < INF and me and e.global_position.distance_to(me.global_position) > reveal_r and not _stragglers.has(e):
+				continue
 			draw_circle(_to_map(e.global_position), 2.2 if not e.is_horde else 2.6, Color(1, 0.2, 0.15) if e.is_horde else Color(0.85, 0.35, 0.3))
 	var pulse := 0.5 + 0.5 * sin(Time.get_ticks_msec() * 0.008)
 	for e in _stragglers:

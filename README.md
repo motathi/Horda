@@ -83,6 +83,18 @@ arrasando muros; abatido, explode ferindo os zumbis ao redor), na 7 o *Cuspidor*
 inclusive por cima dos muros, deixando poças corrosivas, e recua se você se aproximar) e na 9 o *Saltador*
 (salta até 10 m sobre a presa e pula os muros durante o cerco). Cada estreia é anunciada na tela.
 
+**Terror na escuridão:** à noite os zumbis têm **olhos que brilham** (vermelhos; brancos no Espreitador,
+amarelos no Gritador). Na horda 6 estreia o *Espreitador*: fora da luz fica quase invisível, torres e soldados
+não o enxergam e o mapa não o mostra; caça o herói e o primeiro golpe ao sair do escuro é dobrado. A lanterna
+do herói (9 m), tochas, a fortaleza e os **Braseiros** o revelam. Na horda 8, o *Gritador*: mantém distância e
+grita, atraindo todos os zumbis num raio de 22 m, enfurecidos (30% mais rápidos) — mate-o primeiro. O
+**Braseiro** (horda 3, sem ataque) ilumina 12 m, revela Espreitadores e deixa os zumbis na luz 30% mais
+lentos. Em algumas noites cai **névoa densa**: as torres enxergam 30% menos e o minimapa só mostra os zumbis a
+até 28 m do herói. Cada **lua de sangue** traz um chefe diferente, em ciclo: *Abominação*, *Rainha dos Gritos*
+(grita e ergue zumbis), *Sombra Faminta* (Espreitador gigante) e *Carniceiro Saltador*.
+
+![Névoa densa e olhos no escuro](docs/screenshots/08_nevoa_olhos.jpg)
+
 **Tutorial e configurações:** a primeira partida solo traz um tutorial guiado de 7 passos (mover, coletar,
 derrotar um zumbi, voltar à base, construir, usar habilidade, chamar a horda) com o relógio parado e bônus no
 final — pode ser pulado e refeito em *Configurações*. Configurações (menu principal e pausa): qualidade gráfica

@@ -238,5 +238,23 @@
   "out": "assets/enemies/portrait_skeleton_mage.jpg",
   "size": "2048x2048",
   "prompt": "Square character portrait for a strategy game HUD, head and shoulders, three-quarter view, dramatic rim lighting, dark background, no text, an undead skeleton necromancer mage with a pointed purple hat and a bone staff glowing with purple magic, glowing eye sockets, in the art style of Dota 2 and Warcraft III, hand-painted, painterly stylized fantasy, rich saturated colors, high detail"
+ },
+ {
+  "name": "portrait_zombie_stalker",
+  "out": "assets/enemies/portrait_zombie_stalker.jpg",
+  "size": "2048x2048",
+  "prompt": "Square character portrait for a strategy game HUD, head and shoulders, three-quarter view, dramatic rim lighting, dark background, no text, a gaunt shadowy stalker zombie emerging from darkness, ash-grey skin, hollow cheeks, half of its face lost in black shadow, two piercing ice-white glowing eyes, wisps of dark mist around it, menacing silent predator, in the art style of Dota 2 and Warcraft III, hand-painted, painterly stylized fantasy, rich saturated colors, high detail"
+ },
+ {
+  "name": "portrait_zombie_screamer",
+  "out": "assets/enemies/portrait_zombie_screamer.jpg",
+  "size": "2048x2048",
+  "prompt": "Square character portrait for a strategy game HUD, head and shoulders, three-quarter view, dramatic rim lighting, dark background, no text, a pale emaciated screamer zombie with its jaw unhinged in a terrifying shriek, stretched mouth, torn cheeks, veins bulging on the neck, sickly yellow glowing eyes, visible sound shockwave rings, wild stringy hair, in the art style of Dota 2 and Warcraft III, hand-painted, painterly stylized fantasy, rich saturated colors, high detail"
+ },
+ {
+  "name": "ui_b_brazier",
+  "out": "assets/ui/hud/src/b_brazier.jpg",
+  "size": "1024x1024",
+  "prompt": "Game UI icon of a tall stone and iron brazier with a big roaring orange fire in its bowl, glowing embers, warm light, glossy stylized hand-painted mobile strategy game UI icon, chunky readable shape, vibrant saturated colors, soft specular highlights, thick dark outline, centered, isolated on a completely black #000000 background, the background must be pitch black, no frame, no border, no text"
  }
 ]

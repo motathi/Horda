@@ -325,6 +325,9 @@ static func make_crop_row(length: float, rng: RandomNumberGenerator) -> Node3D:
 static func make_torch() -> Node3D:
 	var t := Node3D.new()
 	t.add_to_group("night_lights")
+	# A chama revela Espreitadores por perto.
+	t.add_to_group("reveal_lights")
+	t.set_meta(&"reveal_radius", 8.0)
 	var post := CylinderMesh.new()
 	post.top_radius = 0.07
 	post.bottom_radius = 0.09

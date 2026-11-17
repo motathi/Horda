@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="HordeConfig" load_steps=22 format=3]
+[gd_resource type="Resource" script_class="HordeConfig" load_steps=26 format=3]
 
 [ext_resource type="Script" path="res://scripts/hordes/horde_config.gd" id="1"]
 [ext_resource type="Script" path="res://scripts/hordes/horde_spawn_entry.gd" id="2"]
@@ -12,6 +12,8 @@
 [ext_resource type="Resource" path="res://data/enemies/skeleton_rogue.tres" id="10"]
 [ext_resource type="Resource" path="res://data/enemies/skeleton_warrior.tres" id="11"]
 [ext_resource type="Resource" path="res://data/enemies/skeleton_mage.tres" id="12"]
+[ext_resource type="Resource" path="res://data/enemies/zombie_stalker.tres" id="13"]
+[ext_resource type="Resource" path="res://data/enemies/zombie_screamer.tres" id="14"]
 
 [sub_resource type="Resource" id="Entry_zombie"]
 script = ExtResource("2")
@@ -103,9 +105,27 @@ weight_growth = 0.04
 max_per_night = 0
 guaranteed = 2
 
+[sub_resource type="Resource" id="Entry_stalker"]
+script = ExtResource("2")
+enemy = ExtResource("13")
+unlock_night = 6
+weight = 0.5
+weight_growth = 0.04
+max_per_night = 0
+guaranteed = 1
+
+[sub_resource type="Resource" id="Entry_screamer"]
+script = ExtResource("2")
+enemy = ExtResource("14")
+unlock_night = 8
+weight = 0.35
+weight_growth = 0.03
+max_per_night = 6
+guaranteed = 1
+
 [resource]
 script = ExtResource("1")
-entries = Array[ExtResource("2")]([SubResource("Entry_zombie"), SubResource("Entry_fast"), SubResource("Entry_brute"), SubResource("Entry_exploder"), SubResource("Entry_spitter"), SubResource("Entry_leaper"), SubResource("Entry_skel_minion"), SubResource("Entry_skel_rogue"), SubResource("Entry_skel_warrior"), SubResource("Entry_skel_mage")])
+entries = Array[ExtResource("2")]([SubResource("Entry_zombie"), SubResource("Entry_fast"), SubResource("Entry_brute"), SubResource("Entry_exploder"), SubResource("Entry_spitter"), SubResource("Entry_leaper"), SubResource("Entry_skel_minion"), SubResource("Entry_skel_rogue"), SubResource("Entry_skel_warrior"), SubResource("Entry_skel_mage"), SubResource("Entry_stalker"), SubResource("Entry_screamer")])
 base_count = 14.0
 count_linear = 2.6
 count_quadratic = 0.012

@@ -191,7 +191,7 @@ func _nearest_enemy(from: Vector3, radius: float) -> Enemy:
 	var best: Enemy = null
 	var bd := radius * radius
 	for e in Enemy.all:
-		if not is_instance_valid(e) or e.is_dead():
+		if not is_instance_valid(e) or e.is_dead() or not e.is_targetable():
 			continue
 		var d := Vector2(e.global_position.x - from.x, e.global_position.z - from.z).length_squared()
 		# Dentro da área da ordem, vai no que estiver mais perto do próprio soldado.

@@ -3,8 +3,9 @@ extends Resource
 ## Dados de uma construção do jogador (muro, torre, armadilha).
 
 enum Category { WALL, TOWER, TRAP, BARRACKS }
-## Flecha teleguiada, virote perfurante (linha), bala de canhão (área), raio em cadeia.
-enum TowerKind { ARROW, PIERCE, SPLASH, CHAIN }
+## Flecha teleguiada, virote perfurante (linha), bala de canhão (área), raio em cadeia,
+## luz (braseiro: ilumina, revela Espreitadores e assusta zumbis, sem atirar).
+enum TowerKind { ARROW, PIERCE, SPLASH, CHAIN, LIGHT }
 
 @export var id: StringName
 @export var display_name: String = ""
@@ -61,6 +62,8 @@ func stats_text(level: int = 1) -> String:
 	var hp := int(max_health * (1.0 + 0.5 * (level - 1)))
 	match category:
 		Category.TOWER:
+			if tower_kind == TowerKind.LIGHT:
+				return "Vida %d • Ilumina %d m\nRevela Espreitadores e deixa zumbis lentos" % [hp, int(tower_range + 1.5 * (level - 1))]
 			var t := "Vida %d • Dano %d\nAlcance %d m • %.1f tiros/s" % [hp, int(tower_damage * (1.0 + 0.4 * (level - 1))), int(tower_range + 1.5 * (level - 1)), attacks_per_second * (1.0 + 0.15 * (level - 1))]
 			match tower_kind:
 				TowerKind.PIERCE: t += "\nAtravessa a fila inteira"

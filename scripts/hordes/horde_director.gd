@@ -147,7 +147,7 @@ func _process(delta: float) -> void:
 	var def: EnemyDef
 	var kind := 0  # 0 normal, 1 elite, 2 chefe
 	if _bosses_left > 0 and (_queue.size() <= _total / 3 or _queue.is_empty()):
-		def = config.strongest(night)
+		def = boss_def(night)
 		kind = 2
 		_bosses_left -= 1
 	elif _elites_left > 0 and (_queue.size() <= _total / 2 or _queue.is_empty()):
@@ -179,10 +179,39 @@ func _spawn(def: EnemyDef, night: int, kind: int) -> void:
 		e.make_elite()
 		EventBus.notify("Um %s de elite surgiu!" % def.display_name, Color(1.0, 0.6, 0.2))
 	elif kind == 2:
-		e.make_boss()
-		Coop.banner_all("CHEFE!", "%s gigante ataca a base" % def.display_name, Color(1.0, 0.25, 0.1))
+		var v := boss_variant(night)
+		e.make_boss(String(v["title"]))
+		Coop.banner_all("CHEFE: " + String(v["title"]).to_upper(), String(v["desc"]), Color(1.0, 0.25, 0.1))
 	e.start_siege()
 	_alive.append(e)
+
+# --- Chefes da lua de sangue ---------------------------------------------------------
+
+## Cada lua de sangue traz um chefe diferente (em ciclo).
+const BOSS_VARIANTS := [
+	{"def": "", "title": "Abominação", "desc": "Uma montanha de carne podre avança contra a base."},
+	{"def": "res://data/enemies/zombie_screamer.tres", "title": "Rainha dos Gritos", "desc": "Seu grito atrai a horda e ergue mortos ao redor. Mate-a rápido!"},
+	{"def": "res://data/enemies/zombie_stalker.tres", "title": "Sombra Faminta", "desc": "Invisível na escuridão. Só a luz a revela — fique perto do fogo."},
+	{"def": "res://data/enemies/zombie_leaper.tres", "title": "Carniceiro Saltador", "desc": "Salta por cima dos muros direto para o núcleo."},
+]
+
+func boss_variant(night: int) -> Dictionary:
+	var idx := maxi(0, night / maxi(1, config.boss_every) - 1) % BOSS_VARIANTS.size()
+	return BOSS_VARIANTS[idx]
+
+func boss_def(night: int) -> EnemyDef:
+	var path: String = boss_variant(night)["def"]
+	if path != "" and ResourceLoader.exists(path):
+		return load(path) as EnemyDef
+	return config.strongest(night)
+
+## Inimigos criados fora da fila (ex.: erguidos pela Rainha dos Gritos) contam para a horda.
+func register_extra(e: Enemy) -> void:
+	if _night_active and not _alive.has(e):
+		_alive.append(e)
+
+func nav_point(p: Vector3) -> Vector3:
+	return _nav_point(p)
 
 func _nav_point(p: Vector3) -> Vector3:
 	var map := (_parent as Node3D).get_world_3d().navigation_map

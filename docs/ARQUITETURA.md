@@ -135,6 +135,26 @@ em área contra aliados, estruturas e — se abatido — outros zumbis, com cré
 (estreia nas hordas 4, 7 e 9, anunciada pelo `HordeDirector`) e na Área Contaminada durante o dia.
 Modelos riggados gerados pelo `tools/tripo_pipeline.py`.
 
+### Terror na jogabilidade
+
+- `STALKER` e `SCREAMER` reaproveitam modelos riggados (`EnemyDef.model_id`) com tingimento (`model_tint`;
+  materiais tingidos ficam em cache e são compartilhados). Retratos e ícone gerados por `tools/gen_image.py`.
+- Olhos: `CharacterModel.add_glow_eyes()` prende um billboard aditivo ao osso da cabeça (`BoneAttachment3D`,
+  posição calculada da pose de descanso). O shader puxa o quad 0,35 m para a câmera para a câmera alta ver os
+  olhos. Um material por cor; `set_eye_intensity()` (chamado pelo `DayNightVisuals`) acende todos de uma vez.
+- Luz: `DayNightVisuals.is_lit(p)` = dia, relâmpago, lanterna de herói (9 m) ou nó no grupo `reveal_lights`
+  com o meta `reveal_radius` (tochas 8, torre da paliçada 10, cristal da fortaleza 13, Braseiro = alcance).
+  O Espreitador consulta a cada 0,25 s (também no cliente do coop, sem rede); escondido, `is_targetable()` é
+  falso e torres, soldados, mira automática e minimapa o ignoram. Dano em área ainda o atinge.
+- Gritador: `_begin_scream()` → `_do_scream()` chama `alert(alvo)` nos zumbis do raio (`_frenzy` 6 s: +30%
+  velocidade, não desistem do alvo pela distância). O efeito chega ao cliente por `Coop.fx("scream")`.
+- Braseiro: `TowerKind.LIGHT` (sem tiro); a cada 0,5 s chama `apply_fear()` (−30% de velocidade, chefes imunes).
+- Névoa densa: terceiro clima de `_roll_night()` (nunca junto com tempestade ou lua de sangue);
+  `DayNightVisuals.range_mult()` entra em `Building.tower_range()` e `map_reveal_radius()` no minimapa.
+- Chefes: `HordeDirector.BOSS_VARIANTS` + `boss_variant()/boss_def()`; `Enemy.make_boss(title)`. Zumbis erguidos
+  pela Rainha dos Gritos entram na horda por `HordeDirector.register_extra()`.
+- Revisão visual: `ATMO_HORROR=1 ATMO_ONLY=x xvfb-run godot res://tests/atmo_probe.tscn -- <pasta>`.
+
 ## Áudio
 
 `AudioManager` (autoload) cria os canais `Music`, `SFX`, `Ambient` e `UI`; `play(id)`/`play_3d(id, pos, vol, pitch,

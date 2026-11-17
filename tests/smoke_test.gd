@@ -43,6 +43,7 @@ func _ready() -> void:
 	await _test_equipment()
 	await _test_tech()
 	await _test_special_enemies()
+	await _test_horror_gameplay()
 	await _test_fixes()
 	await _test_army()
 	await _test_harvest_and_loot()
@@ -615,6 +616,105 @@ func _test_special_enemies() -> void:
 	hero.health.current = hero.health.max_health
 	hero.health.invulnerable = was_invulnerable
 
+func _test_horror_gameplay() -> void:
+	print("[terror na jogabilidade]")
+	var hero := world.hero
+	var dnv := DayNightVisuals.current
+	await _clear_enemies()
+	var saved := [TimeManager.day, TimeManager.phase, TimeManager.phase_time]
+	TimeManager.phase = TimeManager.Phase.NIGHT  # sem sinal: não dispara a horda
+	TimeManager.phase_time = 30.0
+	dnv.storm = false
+	dnv.fog = false
+	dnv.blood_moon = false
+	var was_inv := hero.health.invulnerable
+	hero.health.invulnerable = true
+	var spot := Vector3(-40, 0, 70)
+	hero.global_position = spot
+	# Olhos que brilham à noite.
+	var z := _spawn_def("zombie", spot + Vector3(30, 0, 0))
+	await wait(0.2)
+	check(z.model.find_children("Eyes", "MeshInstance3D", true, false).size() == 1, "zumbi tem olhos brilhantes presos à cabeça")
+	check(CharacterModel.eye_intensity > 0.7, "olhos acesos à noite (%.2f)" % CharacterModel.eye_intensity)
+	# Espreitador: invisível longe da luz, revelado pela lanterna.
+	await _clear_enemies()
+	var st := _spawn_def("zombie_stalker", spot + Vector3(25, 0, 0))
+	st.set_physics_process(true)
+	await wait(0.6)
+	check(st.hidden and not st.is_targetable(), "Espreitador some na escuridão")
+	var tower := world.build_manager.place(Building.load_def(&"archer_tower"), spot + Vector3(18, 0, 6), 0.0, false)
+	check(tower._find_target(30.0) == null, "torre não mira Espreitador escondido")
+	st.global_position = spot + Vector3(4, 0, 0)
+	await wait(0.5)
+	check(not st.hidden and st.is_targetable(), "lanterna do herói revela o Espreitador")
+	check(st._ambush, "Espreitador revelado prepara emboscada")
+	tower.queue_free()
+	# Braseiro revela e assusta.
+	await _clear_enemies()
+	TimeManager.day = 5
+	var bz_def := Building.load_def(&"brazier")
+	check(bz_def.is_unlocked(), "Braseiro liberado na horda %d" % bz_def.unlock_wave)
+	var bz := world.build_manager.place(bz_def, spot + Vector3(30, 0, 0), 0.0, false)
+	await wait(0.1)
+	check(DayNightVisuals.is_lit(spot + Vector3(36, 0, 0)), "Braseiro ilumina ao redor (revela)")
+	var zz := _spawn_def("zombie", spot + Vector3(33, 0, 0))
+	await wait(0.8)
+	check(zz._fear > 0.0, "zumbi perto do fogo fica com medo (mais lento)")
+	bz.queue_free()
+	# Gritador atrai os zumbis próximos.
+	await _clear_enemies()
+	var sc := _spawn_def("zombie_screamer", spot + Vector3(12, 0, 0))
+	var pack: Array[Enemy] = []
+	for i in 3:
+		var m := _spawn_def("zombie", spot + Vector3(26, 0, -4 + i * 4))
+		pack.append(m)
+	var screamed := false
+	for i in 40:
+		await wait(0.1)
+		if sc._scream_wind >= 0.0 or sc._special_cd > 0.0:
+			screamed = true
+		if screamed and pack[0]._frenzy > 0.0:
+			break
+	check(screamed, "Gritador grita ao ver o herói")
+	check(pack.all(func(m: Enemy) -> bool: return m._frenzy > 0.0 and m._target == hero), "grito atrai e enfurece os zumbis próximos")
+	check(_flat(sc.global_position, hero.global_position) > 4.0, "Gritador mantém distância (%.1f m)" % _flat(sc.global_position, hero.global_position))
+	# Névoa densa reduz o alcance das torres e o minimapa.
+	await _clear_enemies()
+	dnv.fog = true
+	var t2 := world.build_manager.place(Building.load_def(&"archer_tower"), spot + Vector3(0, 0, 8), 0.0, false)
+	check(absf(t2.tower_range() - t2.base_tower_range() * DayNightVisuals.FOG_RANGE_MULT) < 0.01, "névoa reduz o alcance das torres (%.1f m)" % t2.tower_range())
+	check(DayNightVisuals.map_reveal_radius() < 100.0, "névoa limita o minimapa")
+	t2.queue_free()
+	dnv.fog = false
+	TimeManager.day = 3
+	dnv._roll_night()
+	TimeManager.day = 4
+	var fog_seen := false
+	for w in range(3, 40):
+		TimeManager.day = w
+		dnv._roll_night()
+		fog_seen = fog_seen or dnv.fog
+		if dnv.fog and (dnv.storm or dnv.blood_moon):
+			fog_seen = false
+			break
+	check(fog_seen, "algumas noites têm névoa densa (e nunca junto com tempestade/lua de sangue)")
+	# Chefes da lua de sangue variam.
+	var hd := world.horde
+	check(hd.boss_variant(10)["title"] == "Abominação" and hd.boss_variant(20)["title"] == "Rainha dos Gritos", "chefes diferentes a cada lua de sangue")
+	check(hd.boss_def(20).id == &"zombie_screamer" and hd.boss_def(30).id == &"zombie_stalker" and hd.boss_def(40).id == &"zombie_leaper", "chefes: Gritadora, Sombra e Saltador")
+	var boss := _spawn_def("zombie_screamer", spot + Vector3(10, 0, 0))
+	await wait(0.05)
+	boss.make_boss("Rainha dos Gritos")
+	check(boss.display_name() == "Chefe: Rainha dos Gritos", "chefe com título próprio")
+	var before := Enemy.all.size()
+	boss._summon_minions(3)
+	await wait(0.05)
+	check(Enemy.all.size() == before + 3, "Rainha dos Gritos ergue zumbis")
+	await _clear_enemies()
+	TimeManager.set_state(saved[1], saved[0], saved[2])
+	dnv._roll_night()
+	hero.health.invulnerable = was_inv
+
 func _test_fixes() -> void:
 	print("[correções: horda e herói preso]")
 	var hd := world.horde
@@ -893,7 +993,7 @@ func _test_defenses() -> void:
 	var bm := world.build_manager
 	var tesla := Building.load_def(&"tesla")
 	var day0 := TimeManager.day
-	check(Building.all_defs().size() == 9, "9 construções no menu")
+	check(Building.all_defs().size() == 10, "10 construções no menu")
 	if day0 < tesla.unlock_wave:
 		check(bm.check(tesla, Vector3(6, 0, 6), 0.0).contains("horda"), "Torre Elétrica bloqueada antes da horda %d" % tesla.unlock_wave)
 	TimeManager.day = 10

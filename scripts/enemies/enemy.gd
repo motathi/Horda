@@ -56,6 +56,19 @@ var _leap_t: float = -1.0
 var _leap_from: Vector3
 var _leap_to: Vector3
 
+# Terror: Espreitador (invisível fora da luz), Gritador (atrai a horda), medo da luz.
+const SCREAM_WINDUP := 1.1
+const FRENZY_TIME := 6.0
+## Espreitador fora da luz: quase invisível e não pode ser mirado por torres/soldados.
+var hidden: bool = false
+var _reveal_k: float = 1.0
+var _stealth_t: float = 0.0
+var _ambush: bool = false
+var _scream_wind: float = -1.0
+var _frenzy: float = 0.0
+var _fear: float = 0.0
+var boss_title: String = ""
+
 @onready var nav_agent: NavigationAgent3D = $NavigationAgent3D
 
 func _ready() -> void:
@@ -123,8 +136,9 @@ func is_stunned() -> bool:
 	return _stun_left > 0.0
 
 ## Chefe das hordas 10, 20, ...: gigante, muito resistente e com aura vermelha.
-func make_boss() -> void:
+func make_boss(title: String = "") -> void:
 	is_boss = true
+	boss_title = title
 	is_elite = true
 	health.setup(health.max_health * 12.0, health.armor + 6.0)
 	damage_value *= 2.2
@@ -144,7 +158,13 @@ func start_siege() -> void:
 	state = State.SIEGE
 
 func display_name() -> String:
+	if is_boss and boss_title != "":
+		return "Chefe: " + boss_title
 	return ("Chefe: " if is_boss else ("Elite: " if is_elite else "")) + def.display_name
+
+## Pode ser mirado por torres, soldados e mira automática? (Espreitador escondido não.)
+func is_targetable() -> bool:
+	return not hidden and state != State.DEAD
 
 func is_dead() -> bool:
 	return state == State.DEAD
@@ -177,8 +197,15 @@ func take_damage(info: DamageInfo) -> void:
 func _physics_process(delta: float) -> void:
 	if state == State.DEAD:
 		return
+	if def and def.behavior == EnemyDef.Behavior.STALKER:
+		_process_stealth(delta)
 	if puppet:
 		_puppet_process(delta)
+		return
+	_frenzy = maxf(0.0, _frenzy - delta)
+	_fear = maxf(0.0, _fear - delta)
+	if _scream_wind >= 0.0:
+		_process_scream(delta)
 		return
 	if _burning >= 0.0:
 		_process_burn(delta)
@@ -204,6 +231,12 @@ func _physics_process(delta: float) -> void:
 
 	var move_dir := Vector3.ZERO
 	var speed := speed_value
+	if _frenzy > 0.0:
+		speed *= 1.3
+	if _fear > 0.0:
+		speed *= 0.7
+	if hidden:
+		speed *= 1.15
 	match state:
 		State.WANDER, State.RETURN:
 			move_dir = _nav_direction(_wander_point if state == State.WANDER else _home)
@@ -214,7 +247,19 @@ func _physics_process(delta: float) -> void:
 				if def.behavior == EnemyDef.Behavior.LEAPER and _special_cd <= 0.0 and td > LEAP_MIN and td <= def.special_range:
 					_begin_leap(_target.global_position)
 					return
-				if td <= def.attack_range + _target_radius():
+				var keep_away := def.behavior == EnemyDef.Behavior.SCREAMER and not (_target is Structure) and td > def.attack_range + _target_radius() + 0.3
+				if keep_away:
+					# Gritador mantém distância: recua se o alvo chega perto, segura a posição e grita.
+					if td < def.special_range:
+						var away := global_position - _target.global_position
+						away.y = 0.0
+						move_dir = away.normalized()
+						speed *= 0.85
+					elif td > def.special_range + 2.5:
+						move_dir = _nav_direction(_target.global_position)
+					else:
+						_face(_target.global_position, delta)
+				elif td <= def.attack_range + _target_radius():
 					# Chegou ao alcance: para já neste quadro (sem esperar o "pensar").
 					state = State.ATTACK
 					_try_attack()
@@ -291,13 +336,17 @@ func _think() -> void:
 		_target = sol
 		state = State.CHASE
 	elif state == State.CHASE:
-		if not _target_valid() or (_target is Hero and hero_d > def.aggro_range * 1.8):
+		if not _target_valid() or (_target is Hero and hero_d > def.aggro_range * 1.8 and _frenzy <= 0.0):
 			_target = null
 			state = State.SIEGE if is_horde else State.RETURN
-		elif not is_horde and global_position.distance_to(_home) > LEASH_DISTANCE:
+		elif not is_horde and global_position.distance_to(_home) > LEASH_DISTANCE and _frenzy <= 0.0:
 			_target = null
 			state = State.RETURN
 
+	# Gritador: avistou alguém vivo e o grito está pronto.
+	if def.behavior == EnemyDef.Behavior.SCREAMER and _special_cd <= 0.0 and _target_valid() and not (_target is Structure) and _dist_to(_target) <= def.aggro_range:
+		_begin_scream()
+		return
 	match state:
 		State.IDLE:
 			if _rng.randf() < 0.3:
@@ -350,7 +399,9 @@ func _resolve_attack() -> void:
 		Coop.fx("acid", from, to, def.special_radius, def.special_color)
 		AudioManager.play_3d(&"spit", global_position, -2.0)
 		return
-	var info := DamageInfo.make(damage_value, self)
+	# Espreitador: o primeiro golpe depois de sair da escuridão é uma emboscada.
+	var info := DamageInfo.make(damage_value * (1.8 if _ambush else 1.0), self)
+	_ambush = false
 	info.structure_multiplier = def.structure_damage_mult
 	_target.call(&"take_damage", info)
 	AudioManager.play_3d(&"zombie_hit", global_position, -6.0)
@@ -620,6 +671,99 @@ func _process_leap(delta: float) -> void:
 			a.call(&"take_damage", DamageInfo.make(damage_value * def.special_mult, self))
 	_attack_cd = minf(_attack_cd, 0.4)
 	_stuck_time = 0.0
+
+# --- Terror ---------------------------------------------------------------------
+
+## Espreitador: some na escuridão e reaparece (com um sussurro) quando entra na luz.
+## Roda também no cliente do coop (cada um calcula a luz localmente).
+func _process_stealth(delta: float) -> void:
+	_stealth_t -= delta
+	if _stealth_t <= 0.0:
+		_stealth_t = 0.25
+		var was := hidden
+		hidden = not DayNightVisuals.is_lit(global_position)
+		if was and not hidden:
+			_ambush = true
+			var h := nearest_hero()
+			if h and h.global_position.distance_to(global_position) < 14.0:
+				AudioManager.play_3d(&"ghost", global_position, 2.0, 1.25, 900)
+	var want := 0.0 if hidden else 1.0
+	if absf(_reveal_k - want) > 0.001:
+		_reveal_k = move_toward(_reveal_k, want, delta * 3.0)
+		var t := 0.94 * (1.0 - _reveal_k)
+		model.set_transparency(t)
+		($HealthBar as HealthBar3D).transparency = t
+
+## Gritador: para, enche o peito e grita.
+func _begin_scream() -> void:
+	_scream_wind = SCREAM_WINDUP
+	_special_cd = def.special_time
+	velocity = Vector3.ZERO
+	model.play_attack(SCREAM_WINDUP + 0.4)
+	net_attack_count += 1
+
+func _process_scream(delta: float) -> void:
+	_scream_wind -= delta
+	if _target_valid():
+		_face(_target.global_position, delta)
+	velocity = Vector3.ZERO
+	model.animate(delta, 0.0)
+	if _scream_wind < 0.0:
+		_do_scream()
+
+## Todos os zumbis no raio do grito correm até o alvo, enfurecidos (mais rápidos).
+func _do_scream() -> void:
+	var r := def.special_radius
+	var tgt: Node3D = _target if _target_valid() else nearest_hero()
+	AudioManager.play_3d(&"scream", global_position, 6.0, 0.75 if is_boss else 1.15)
+	EffectsHub.spawn_ring(global_position + Vector3.UP * 0.2, r * 0.6, Color(def.special_color, 0.45), 0.7)
+	Coop.fx("scream", global_position, Vector3.ZERO, r, def.special_color)
+	var n := 0
+	for e in all:
+		if e != self and is_instance_valid(e) and not e.is_dead() and _flat_dist(e.global_position, global_position) <= r:
+			e.alert(tgt)
+			n += 1
+	if is_boss:
+		_summon_minions(3 + TimeManager.wave() / 20)
+	var h := GameManager.hero
+	if h and h.global_position.distance_to(global_position) < r + 10.0:
+		EventBus.notify("%s gritou! %d zumbis vêm atrás de você." % [display_name(), n], Color(1.0, 0.75, 0.35))
+
+## Atraído por um grito: persegue o alvo mesmo de longe, mais rápido por alguns segundos.
+func alert(t: Node3D) -> void:
+	if puppet or state == State.DEAD or t == null or not is_instance_valid(t):
+		return
+	_target = t
+	_frenzy = FRENZY_TIME
+	if state != State.ATTACK:
+		state = State.CHASE
+
+## Braseiros: zumbis comuns na luz do fogo ficam mais lentos (chefes não).
+func apply_fear(seconds: float) -> void:
+	if is_boss or puppet:
+		return
+	_fear = maxf(_fear, seconds)
+
+## Rainha dos Gritos: o grito também ergue zumbis ao redor.
+func _summon_minions(count: int) -> void:
+	var horde: HordeDirector = GameManager.world.get(&"horde") if GameManager.world else null
+	var zdef := load("res://data/enemies/zombie.tres") as EnemyDef
+	var scene := load("res://scenes/enemies/zombie.tscn") as PackedScene
+	var w := TimeManager.wave()
+	for i in count:
+		var a := TAU * i / count + _rng.randf() * 0.5
+		var pos := global_position + Vector3(cos(a), 0, sin(a)) * 3.0
+		if horde:
+			pos = horde.nav_point(pos)
+		var e := scene.instantiate() as Enemy
+		get_parent().add_child(e)
+		e.global_position = pos
+		e.configure(zdef, horde.config.hp_multiplier(w) if horde else 1.0, horde.config.damage_multiplier(w) if horde else 1.0)
+		e.start_siege()
+		e.alert(_target if _target_valid() else nearest_hero())
+		EffectsHub.spawn_debris(pos + Vector3.UP * 0.3, false)
+		if horde:
+			horde.register_extra(e)
 
 func _is_skeleton() -> bool:
 	return def != null and String(def.id).begins_with("skeleton")

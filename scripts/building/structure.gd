@@ -175,6 +175,8 @@ func _build_core_model() -> void:
 	crystal.omni_range = 14.0
 	crystal.position = Vector3(0, ModelLibrary.size_of("keep").y * keep.scale.y * 0.9, 0)
 	_visual.add_child(crystal)
+	crystal.add_to_group("reveal_lights")
+	crystal.set_meta(&"reveal_radius", 13.0)
 	var warm := OmniLight3D.new()
 	warm.light_color = Color(1.0, 0.62, 0.25)
 	warm.light_energy = 2.0
@@ -282,6 +284,8 @@ func _build_core() -> void:
 	light.shadow_enabled = Settings.quality >= 2 and not Platform.low_end
 	light.position = Vector3(0, 1.6, 0)
 	_visual.add_child(light)
+	light.add_to_group("reveal_lights")
+	light.set_meta(&"reveal_radius", 10.0)
 	var fire := EffectsHub.make_fire_particles(1.4)
 	fire.position = Vector3(0, 0.8, 0)
 	_visual.add_child(fire)

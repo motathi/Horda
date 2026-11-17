@@ -271,6 +271,9 @@ func _fx(kind: String, a: Vector3, b: Vector3, f: float, c: Color) -> void:
 	match kind:
 		"explosion": EffectsHub.spawn_explosion(a, f, c)
 		"ring": EffectsHub.spawn_ring(a, f, c, 0.4)
+		"scream":
+			EffectsHub.spawn_ring(a + Vector3.UP * 0.2, f * 0.6, Color(c, 0.45), 0.7)
+			AudioManager.play_3d(&"scream", a, 6.0, 1.1)
 		"bolt": EffectsHub.spawn_bolt(a, b, f)
 		"lightning": EffectsHub.spawn_lightning(PackedVector3Array([a, b]))
 		"lob": EffectsHub.spawn_lob(a, b, f, 4.0, func() -> void: EffectsHub.spawn_explosion(b, 3.0, Color(1.0, 0.55, 0.15)))

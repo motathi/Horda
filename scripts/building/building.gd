@@ -16,7 +16,7 @@ static func load_def(id: StringName) -> BuildingDef:
 
 static func all_defs() -> Array[BuildingDef]:
 	var out: Array[BuildingDef] = []
-	for id in [&"barricade", &"stone_wall", &"iron_wall", &"spikes", &"archer_tower", &"ballista", &"cannon", &"tesla", &"barracks"]:
+	for id in [&"barricade", &"stone_wall", &"iron_wall", &"spikes", &"brazier", &"archer_tower", &"ballista", &"cannon", &"tesla", &"barracks"]:
 		out.append(load_def(id))
 	return out
 
@@ -64,6 +64,9 @@ func _build() -> void:
 	_visual = Node3D.new()
 	add_child(_visual)
 	_visual.add_child(Building.make_visual(def, level))
+	if def.category == BuildingDef.Category.TOWER and def.tower_kind == BuildingDef.TowerKind.LIGHT:
+		add_to_group("reveal_lights")
+		set_meta(&"reveal_radius", base_tower_range())
 	_rubble = Node3D.new()
 	_rubble.visible = false
 	add_child(_rubble)
@@ -127,6 +130,8 @@ static func make_visual(d: BuildingDef, lvl: int = 1) -> Node3D:
 			var flag := _box(root, Vector3(0.05, 0.6, 0.9), Vector3(0.1, d.height + 0.8, 0.45), MaterialLib.textured("cloth", Color(0.2, 0.35, 0.9) if lvl < 3 else Color(1.0, 0.8, 0.3), 1.0))
 			flag.rotation_degrees.y = 90
 			_box(root, Vector3(0.06, 1.6, 0.06), Vector3(0, d.height + 0.4, 0), MaterialLib.textured("bark", Color.WHITE))
+		&"brazier":
+			_make_brazier(root, d)
 		&"barricade":
 			var bark := MaterialLib.textured("bark", Color(0.95, 0.82, 0.68), 1.0)
 			var n := int(d.footprint.x / 0.9)
@@ -172,6 +177,65 @@ static func make_visual(d: BuildingDef, lvl: int = 1) -> Node3D:
 	root.scale = Vector3.ONE * s
 	return root
 
+## Braseiro: pedestal de pedra, cesto de ferro com fogo alto e luz quente forte.
+static func _make_brazier(root: Node3D, d: BuildingDef) -> void:
+	var rock := MaterialLib.textured("rock", Color(0.8, 0.78, 0.75), 0.6)
+	var iron := MaterialLib.textured("metal", Color(0.35, 0.33, 0.32), 1.0, true, 0.5)
+	var base := CylinderMesh.new()
+	base.top_radius = 0.55
+	base.bottom_radius = 0.75
+	base.height = 0.5
+	base.radial_segments = 8
+	var m0 := MeshInstance3D.new()
+	m0.mesh = base
+	m0.material_override = rock
+	m0.position.y = 0.25
+	root.add_child(m0)
+	var col := CylinderMesh.new()
+	col.top_radius = 0.28
+	col.bottom_radius = 0.38
+	col.height = 1.2
+	col.radial_segments = 8
+	var m1 := MeshInstance3D.new()
+	m1.mesh = col
+	m1.material_override = rock
+	m1.position.y = 1.1
+	root.add_child(m1)
+	var bowl := CylinderMesh.new()
+	bowl.top_radius = 0.75
+	bowl.bottom_radius = 0.35
+	bowl.height = 0.45
+	bowl.radial_segments = 10
+	var m2 := MeshInstance3D.new()
+	m2.mesh = bowl
+	m2.material_override = iron
+	m2.position.y = 1.9
+	root.add_child(m2)
+	for i in 4:
+		var a := i * TAU / 4.0 + PI * 0.25
+		var spike := _box(root, Vector3(0.08, 0.5, 0.08), Vector3(cos(a) * 0.72, 2.25, sin(a) * 0.72), iron)
+		spike.rotation = Vector3(sin(a) * 0.35, 0, -cos(a) * 0.35)
+	var embers := CylinderMesh.new()
+	embers.top_radius = 0.62
+	embers.bottom_radius = 0.62
+	embers.height = 0.1
+	embers.radial_segments = 10
+	var m3 := MeshInstance3D.new()
+	m3.mesh = embers
+	m3.material_override = MaterialLib.flat(Color(0.9, 0.22, 0.04), 0.9, 1.2)
+	m3.position.y = 2.08
+	root.add_child(m3)
+	var fire := EffectsHub.make_fire_particles(1.6)
+	fire.position.y = 2.15
+	root.add_child(fire)
+	var light := OmniLight3D.new()
+	light.light_color = Color(1.0, 0.6, 0.28)
+	light.light_energy = 4.0
+	light.omni_range = d.tower_range + 3.0
+	light.omni_attenuation = 0.8
+	light.position.y = 3.2
+	root.add_child(light)
+
 static func _box(parent: Node3D, size: Vector3, pos: Vector3, mat: Material) -> MeshInstance3D:
 	var m := MeshInstance3D.new()
 	var b := BoxMesh.new()
@@ -188,6 +252,10 @@ func tower_damage() -> float:
 	return def.tower_damage * (1.0 + 0.4 * (level - 1)) * _eng_dmg() * (1.0 + Tech.bonus("tower_damage_pct"))
 
 func tower_range() -> float:
+	return base_tower_range() * DayNightVisuals.range_mult()
+
+## Alcance sem a névoa (o braseiro ilumina sempre o mesmo raio).
+func base_tower_range() -> float:
 	return (def.tower_range + 1.5 * (level - 1)) * (1.0 + Tech.bonus("tower_range_pct"))
 
 func trap_damage() -> float:
@@ -205,6 +273,9 @@ func _process(delta: float) -> void:
 func _process_tower(delta: float) -> void:
 	_cooldown -= delta
 	if _cooldown > 0.0:
+		return
+	if def.tower_kind == BuildingDef.TowerKind.LIGHT:
+		_process_light()
 		return
 	var target := _find_target(tower_range())
 	if target == null:
@@ -226,6 +297,14 @@ func _process_tower(delta: float) -> void:
 			EffectsHub.spawn_arrow(from, target, info, def.projectile_speed)
 			Coop.fx("arrow", from, target.global_position + Vector3.UP)
 			AudioManager.play_3d(&"arrow", from, -12.0, 1.35, 90)
+
+## Braseiro: zumbis comuns dentro da luz do fogo ficam mais lentos (medo do fogo).
+func _process_light() -> void:
+	_cooldown = 0.5
+	var r := base_tower_range()
+	for e in Enemy.all:
+		if is_instance_valid(e) and not e.is_dead() and e.global_position.distance_to(global_position) <= r:
+			e.apply_fear(0.7)
 
 ## Balista: virote em linha reta que fere todos os inimigos no caminho.
 func _fire_bolt(from: Vector3, target: Enemy) -> void:
@@ -297,7 +376,7 @@ func _fire_chain(from: Vector3, target: Enemy) -> void:
 		var nxt: Enemy = null
 		var best := 5.5
 		for e in Enemy.all:
-			if not is_instance_valid(e) or e.is_dead() or hit.has(e):
+			if not is_instance_valid(e) or e.is_dead() or hit.has(e) or not e.is_targetable():
 				continue
 			var dd := e.global_position.distance_to(cur.global_position)
 			if dd < best:
@@ -313,7 +392,7 @@ func _find_target(radius: float) -> Enemy:
 	var best: Enemy = null
 	var best_d := radius
 	for e in Enemy.all:
-		if not is_instance_valid(e) or e.is_dead():
+		if not is_instance_valid(e) or e.is_dead() or not e.is_targetable():
 			continue
 		var d := e.global_position.distance_to(global_position)
 		if d < best_d:
@@ -367,6 +446,8 @@ func upgrade() -> String:
 	for c in _visual.get_children():
 		c.queue_free()
 	_visual.add_child(Building.make_visual(def, level))
+	if is_in_group("reveal_lights"):
+		set_meta(&"reveal_radius", base_tower_range())
 	EffectsHub.spawn_heal(global_position)
 	AudioManager.play_3d(&"upgrade", global_position)
 	EventBus.building_changed.emit(self)
@@ -384,6 +465,8 @@ func apply_level(lvl: int) -> void:
 	for c in _visual.get_children():
 		c.queue_free()
 	_visual.add_child(Building.make_visual(def, level))
+	if is_in_group("reveal_lights"):
+		set_meta(&"reveal_radius", base_tower_range())
 	EffectsHub.spawn_heal(global_position)
 	AudioManager.play_3d(&"upgrade", global_position)
 

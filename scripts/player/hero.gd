@@ -803,7 +803,7 @@ func _auto_aim(move_dir: Vector3) -> void:
 	var best_d := reach() + 3.0
 	for e: Node in get_tree().get_nodes_in_group("enemies"):
 		var en := e as Enemy
-		if en and not en.is_dead():
+		if en and en.is_targetable():
 			var d := en.global_position.distance_to(global_position)
 			if d < best_d:
 				best_d = d

@@ -24,7 +24,7 @@ func _ready() -> void:
 	col.add_child(head)
 	col.add_child(UIStyle.label("Construa até %d m da fortaleza. Zumbis atacam o que estiver no caminho." % int(BuildManager.BUILD_RADIUS), 14, UIStyle.TEXT_DIM))
 	_grid = GridContainer.new()
-	_grid.columns = 4
+	_grid.columns = 5
 	_grid.add_theme_constant_override("h_separation", 10)
 	_grid.add_theme_constant_override("v_separation", 10)
 	col.add_child(_grid)

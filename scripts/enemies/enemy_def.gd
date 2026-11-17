@@ -2,7 +2,8 @@ class_name EnemyDef
 extends Resource
 ## Dados de um tipo de inimigo. A cena zombie.tscn é configurada a partir disto.
 
-enum Behavior { MELEE, CHARGER, BRUTE, EXPLODER, SPITTER, LEAPER }
+## STALKER: quase invisível fora da luz, caça o herói. SCREAMER: grita e atrai a horda.
+enum Behavior { MELEE, CHARGER, BRUTE, EXPLODER, SPITTER, LEAPER, STALKER, SCREAMER }
 
 @export var id: StringName
 @export var display_name: String = "Zumbi"
@@ -24,10 +25,11 @@ enum Behavior { MELEE, CHARGER, BRUTE, EXPLODER, SPITTER, LEAPER }
 
 @export_group("Especial")
 ## Explosivo: raio da explosão. Cuspidor: raio da poça de ácido. Saltador: raio do impacto.
+## Gritador: raio do grito (zumbis atraídos).
 @export var special_radius: float = 0.0
-## Cuspidor: distância mínima que mantém do herói. Saltador: alcance máximo do salto.
+## Cuspidor/Gritador: distância mínima que mantém do herói. Saltador: alcance máximo do salto.
 @export var special_range: float = 0.0
-## Explosivo: pavio (s). Saltador: recarga do salto (s). Cuspidor: duração da poça (s).
+## Explosivo: pavio (s). Saltador/Gritador: recarga (s). Cuspidor: duração da poça (s).
 @export var special_time: float = 0.0
 ## Multiplicador de dano da habilidade especial.
 @export var special_mult: float = 1.0
@@ -39,6 +41,11 @@ enum Behavior { MELEE, CHARGER, BRUTE, EXPLODER, SPITTER, LEAPER }
 @export var skin_tint: Color = Color(0.7, 0.85, 0.6)
 @export var cloth_tint: Color = Color(0.35, 0.3, 0.4)
 @export var hunch: float = 0.35
+## Modelo riggado reaproveitado (vazio = o próprio id) e tingimento dele.
+@export var model_id: StringName = &""
+@export var model_tint: Color = Color.WHITE
+## Cor dos olhos que brilham no escuro.
+@export var eye_color: Color = Color(1.0, 0.22, 0.08)
 
 @export_group("Saque")
 @export var loot: LootTable

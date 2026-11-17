@@ -29,6 +29,15 @@ const LANTERN := Color(1.0, 0.7, 0.4)
 var blood_moon: bool = false
 ## Tempestade nesta noite: relâmpagos, trovões e chuva.
 var storm: bool = false
+## Névoa densa nesta noite: torres enxergam menos e o mapa mostra só os zumbis próximos.
+var fog: bool = false
+var _fog_k: float = 0.0
+## Raio em que a lanterna de um herói revela Espreitadores.
+const LANTERN_REVEAL := 9.0
+## Alcance das torres durante a névoa densa.
+const FOG_RANGE_MULT := 0.7
+## Na névoa, o minimapa só mostra inimigos até esta distância do herói.
+const FOG_MAP_RADIUS := 28.0
 var _flash: float = 0.0       # brilho do relâmpago (0..1)
 var _bolt_t: float = 4.0
 var _groan_t: float = 4.0
@@ -62,7 +71,9 @@ func _roll_night() -> void:
 	var w := TimeManager.wave()
 	var horde: HordeDirector = GameManager.world.get(&"horde") if GameManager.world else null
 	blood_moon = horde != null and horde.config.is_boss_wave(w)
-	storm = not blood_moon and (w == 1 or (w * 37 + 11) % 100 < 40)
+	var roll := (w * 37 + 11) % 100
+	storm = not blood_moon and (w == 1 or roll < 35)
+	fog = not blood_moon and not storm and w >= 3 and roll < 62
 
 func _on_phase_changed(phase: int, _day: int) -> void:
 	if phase == TimeManager.Phase.DAWN:
@@ -74,9 +85,43 @@ func _on_phase_changed(phase: int, _day: int) -> void:
 			EventBus.banner.emit("LUA DE SANGUE", "Os mortos estão mais famintos esta noite...", Color(0.95, 0.15, 0.1))
 		elif storm:
 			EventBus.notify("Uma tempestade se aproxima. Fique perto da luz.", Color(0.6, 0.75, 1.0))
+		elif fog:
+			EventBus.banner.emit("NÉVOA DENSA", "As torres enxergam menos e o mapa só mostra o que está perto.", Color(0.7, 0.75, 0.8))
 
 func is_storming() -> bool:
 	return storm and TimeManager.phase == TimeManager.Phase.NIGHT
+
+func is_foggy() -> bool:
+	return fog and TimeManager.phase == TimeManager.Phase.NIGHT
+
+## Multiplicador de alcance das torres (névoa densa).
+static func range_mult() -> float:
+	return FOG_RANGE_MULT if current and current.is_foggy() else 1.0
+
+## Raio do minimapa em que inimigos aparecem (INF fora da névoa).
+static func map_reveal_radius() -> float:
+	return FOG_MAP_RADIUS if current and current.is_foggy() else INF
+
+## O ponto está iluminado? (dia, relâmpago, lanterna de um herói, tochas, braseiros, núcleo).
+## Espreitadores fora da luz ficam quase invisíveis e não podem ser mirados por torres.
+static func is_lit(p: Vector3) -> bool:
+	if TimeManager.daylight() > 0.45:
+		return true
+	if current and current._flash > 0.3:
+		return true
+	var tree := Engine.get_main_loop() as SceneTree
+	for h: Node in tree.get_nodes_in_group(&"hero"):
+		var hero := h as Node3D
+		if not hero.call(&"is_dead") and _flat(hero.global_position, p) < LANTERN_REVEAL:
+			return true
+	for n: Node in tree.get_nodes_in_group(&"reveal_lights"):
+		var l := n as Node3D
+		if l.is_visible_in_tree() and _flat(l.global_position, p) < float(l.get_meta(&"reveal_radius", 8.0)):
+			return true
+	return false
+
+static func _flat(a: Vector3, b: Vector3) -> float:
+	return Vector2(a.x - b.x, a.z - b.z).length()
 
 func _process(delta: float) -> void:
 	var dl := TimeManager.daylight()   # 0 noite .. 1 dia
@@ -128,7 +173,11 @@ func _process(delta: float) -> void:
 	var fog_night := Color(0.05, 0.06, 0.085).lerp(Color(0.22, 0.03, 0.03), _blood_tint)
 	_env.fog_light_color = fog_night.lerp(Color(0.56, 0.58, 0.6), dl).lerp(Color(0.5, 0.55, 0.65), fl)
 	var storm_fog := 0.002 if is_storming() else 0.0
-	_env.fog_density = lerpf(0.0085, 0.0055, dl) + storm_fog
+	# Névoa densa: cresce no entardecer e fica cinza-clara (a luz da lua se espalha nela).
+	var want_fog := 1.0 if fog and (phase == TimeManager.Phase.NIGHT or phase == TimeManager.Phase.DUSK) else 0.0
+	_fog_k = move_toward(_fog_k, want_fog * night, delta * 0.3)
+	_env.fog_light_color = _env.fog_light_color.lerp(Color(0.36, 0.39, 0.44), _fog_k * 0.9)
+	_env.fog_density = lerpf(0.0085, 0.0055, dl) + storm_fog + _fog_k * 0.032
 	_env.adjustment_saturation = lerpf(0.6, 0.84, dl)
 	_env.adjustment_contrast = lerpf(1.04, 1.1, dl)
 	# Tochas e lanternas acendem ao entardecer.
@@ -140,6 +189,7 @@ func _process(delta: float) -> void:
 				if c is OmniLight3D or c is GPUParticles3D:
 					(c as Node3D).visible = want_lights
 	_update_lanterns(night)
+	CharacterModel.set_eye_intensity(clampf(smoothstep(0.3, 0.8, night) + fl, 0.0, 1.0))
 	_update_rain()
 	_update_sounds(delta, phase)
 

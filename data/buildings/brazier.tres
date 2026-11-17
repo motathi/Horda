@@ -1,0 +1,29 @@
+[gd_resource type="Resource" script_class="BuildingDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/building/building_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"brazier"
+display_name = "Braseiro"
+description = "Fogo alto que ilumina a noite: revela Espreitadores, deixa os zumbis com medo (mais lentos) e não some na névoa. Não ataca."
+icon_name = "b_brazier"
+category = 1
+cost = {
+&"wood": 25,
+&"stone": 20,
+&"scrap": 6
+}
+max_health = 350.0
+armor = 3.0
+footprint = Vector2(1.8, 1.8)
+height = 2.4
+max_level = 3
+upgrade_cost_mult = 0.8
+refund = 0.5
+unlock_wave = 3
+tower_range = 12.0
+tower_damage = 0.0
+attacks_per_second = 2.0
+projectile_speed = 0.0
+tower_kind = 4
