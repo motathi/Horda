@@ -48,6 +48,8 @@ func build_hero(skin_id: String = "") -> void:
 	var sk := HeroSkins.get_skin(skin_id if skin_id != "" else GameManager.hero_skin)
 	if sk["id"] != HeroSkins.DEFAULT and rigged_path(sk["model"]) != "":
 		_build_rigged(sk["model"], sk["height"])
+		if sk.has("tint"):
+			_tint_meshes(sk["tint"])
 		return
 	if ResourceLoader.exists(RIGGED_DIR + "hero.glb"):
 		_build_rigged("hero", 2.2)

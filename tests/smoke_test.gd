@@ -104,8 +104,9 @@ func _test_world() -> void:
 	EventBus.horde_ended.emit(1)
 	await get_tree().process_frame
 	check(survivors.all(func(sv: Survivor) -> bool: return sv.visible), "sobreviventes voltam depois da horda")
-	# Escolha de herói (KayKit Adventurers).
-	for skin in ["knight", "mage", "rogue_hooded"]:
+	# Escolha de herói (só heróis no estilo do jogo) e visuais dos soldados.
+	check(HeroSkins.playable().map(func(sk: Dictionary) -> String: return sk["id"]) == ["hunter", "knight"], "escolha de herói: Caçador e Cavaleiro")
+	for skin in ["knight", "ranger", "barbarian", "mage"]:
 		GameManager.hero_skin = skin
 		var cm := CharacterModel.new()
 		add_child(cm)

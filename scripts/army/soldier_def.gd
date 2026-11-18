@@ -7,7 +7,7 @@ enum Attack { MELEE, ARROW, MAGIC }
 @export var id: StringName
 @export var display_name: String = ""
 @export_multiline var description: String = ""
-## Aparência (id de HeroSkins: knight, barbarian, ranger, mage...).
+## Aparência (id de HeroSkins: knight, ranger, barbarian, mage).
 @export var skin: String = "knight"
 @export var attack: Attack = Attack.MELEE
 @export var max_health: float = 160.0

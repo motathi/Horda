@@ -26,7 +26,7 @@ func _ready() -> void:
 	var cam := Camera3D.new()
 	cam.fov = 30.0
 	add_child(cam)
-	for sk: Dictionary in HeroSkins.LIST:
+	for sk: Dictionary in HeroSkins.playable():
 		if sk["id"] == HeroSkins.DEFAULT:
 			continue
 		var inst := (load(CharacterModel.rigged_path(sk["model"])) as PackedScene).instantiate() as Node3D

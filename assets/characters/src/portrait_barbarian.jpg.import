@@ -2,22 +2,22 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dq7drpnvoysdd"
-path="res://.godot/imported/portrait_rogue.png-99068c5443f319ddcb008f2263fa64fd.ctex"
+uid="uid://bnwmdkecyyj"
+path="res://.godot/imported/portrait_barbarian.jpg-b41e2ff58186e2d57b726c1382f3ecff.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/characters/portrait_rogue.png"
-dest_files=["res://.godot/imported/portrait_rogue.png-99068c5443f319ddcb008f2263fa64fd.ctex"]
+source_file="res://assets/characters/src/portrait_barbarian.jpg"
+dest_files=["res://.godot/imported/portrait_barbarian.jpg-b41e2ff58186e2d57b726c1382f3ecff.ctex"]
 
 [params]
 
-compress/mode=1
+compress/mode=0
 compress/high_quality=false
-compress/lossy_quality=0.8
+compress/lossy_quality=0.7
 compress/hdr_compression=1
 compress/normal_map=0
 compress/channel_pack=0

@@ -195,7 +195,7 @@ func _hero_picker() -> Control:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 6)
 	var group := ButtonGroup.new()
-	for sk: Dictionary in HeroSkins.LIST:
+	for sk: Dictionary in HeroSkins.playable():
 		var b := Button.new()
 		b.toggle_mode = true
 		b.button_group = group

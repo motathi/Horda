@@ -73,7 +73,7 @@ func _run_host() -> void:
 	# Posição do herói do cliente replicada.
 	var puppet := Coop.remote_heroes.values()[0] as Hero
 	check(await wait_until(func() -> bool: return puppet.global_position.distance_to(Vector3(8, 0, 8)) < 1.0, 10.0), "fantoche segue o herói do cliente (%s)" % puppet.global_position)
-	check(puppet.skin_override == "barbarian", "fantoche usa a aparência escolhida pelo cliente")
+	check(puppet.skin_override == "hunter", "fantoche usa a aparência escolhida pelo cliente")
 	# Inimigo do anfitrião aparece no cliente; o cliente golpeia.
 	var e := (load("res://scenes/enemies/zombie.tscn") as PackedScene).instantiate() as Enemy
 	e.def = load("res://data/enemies/zombie_brute.tres") as EnemyDef
@@ -111,7 +111,7 @@ func _run_host() -> void:
 # --- Cliente ---
 
 func _run_client() -> void:
-	GameManager.hero_skin = "barbarian"
+	GameManager.hero_skin = "hunter"
 	await wait(1.0)
 	Net.join_room("127.0.0.1", "Convidado")
 	check(await wait_until(func() -> bool: return Net.players.size() == 2, 20.0), "entrou na sala do anfitrião")

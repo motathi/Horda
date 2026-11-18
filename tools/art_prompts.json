@@ -262,5 +262,23 @@
   "out": "assets/characters/src/portrait_knight.jpg",
   "size": "2048x2048",
   "prompt": "Square character portrait for a strategy game HUD, head and shoulders, three-quarter view, dramatic rim lighting, dark background, no text, a menacing paladin knight in ornate golden plate armor with black engravings, a closed golden great helm with two curved horns and a narrow visor slit, huge spiked golden pauldrons, dark charcoal grey surcoat with gold embroidery, in the art style of Dota 2 and Warcraft III, hand-painted, painterly stylized fantasy, rich saturated colors, high detail"
+ },
+ {
+  "name": "portrait_soldier_ranger",
+  "out": "assets/characters/src/portrait_ranger.jpg",
+  "size": "2048x2048",
+  "prompt": "Square character portrait for a strategy game HUD, head and shoulders, three-quarter view, dramatic rim lighting, dark background, no text, a rugged hooded human archer soldier with a dark forest green hood and cloak, short beard, leather and steel armor with green cloth accents, a longbow over the shoulder, in the art style of Dota 2 and Warcraft III, hand-painted, painterly stylized fantasy, rich saturated colors, high detail"
+ },
+ {
+  "name": "portrait_soldier_barbarian",
+  "out": "assets/characters/src/portrait_barbarian.jpg",
+  "size": "2048x2048",
+  "prompt": "Square character portrait for a strategy game HUD, head and shoulders, three-quarter view, dramatic rim lighting, dark background, no text, a hulking warrior soldier in dark crimson and bronze plate armor with spiked pauldrons and a closed horned helm, battle-worn, in the art style of Dota 2 and Warcraft III, hand-painted, painterly stylized fantasy, rich saturated colors, high detail"
+ },
+ {
+  "name": "portrait_soldier_mage",
+  "out": "assets/characters/src/portrait_mage.jpg",
+  "size": "2048x2048",
+  "prompt": "Square character portrait for a strategy game HUD, head and shoulders, three-quarter view, dramatic rim lighting, dark background, no text, a hooded human battle mage soldier with a deep purple hood and cloak, glowing violet arcane runes on leather and steel armor, a faint magic glow in one hand, in the art style of Dota 2 and Warcraft III, hand-painted, painterly stylized fantasy, rich saturated colors, high detail"
  }
 ]

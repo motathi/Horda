@@ -15,12 +15,6 @@ const JOBS := {
 	"skeleton_rogue": ["Skeleton_Rogue.glb", "Skeleton_Blade.gltf", "Skeleton_Blade.gltf", "Melee_Dualwield_Attack_Slice"],
 	"skeleton_mage": ["Skeleton_Mage.glb", "Skeleton_Staff.gltf", "", "Ranged_Magic_Shoot"],
 	# Heróis jogáveis (KayKit Adventurers) — escolhidos no menu "Novo jogo".
-	"hero_knight": ["@Knight.glb", "@sword_1handed.gltf", "@shield_badge_color.gltf", "Melee_1H_Attack_Chop"],
-	"hero_barbarian": ["@Barbarian.glb", "@axe_2handed.gltf", "", "Melee_2H_Attack_Chop"],
-	"hero_mage": ["@Mage.glb", "@staff.gltf", "@spellbook_open.gltf", "Melee_2H_Attack_Spin"],
-	"hero_ranger": ["@Ranger.glb", "@dagger.gltf", "@dagger.gltf", "Melee_Dualwield_Attack_Stab"],
-	"hero_rogue": ["@Rogue.glb", "@dagger.gltf", "@dagger.gltf", "Melee_Dualwield_Attack_Slice"],
-	"hero_rogue_hooded": ["@Rogue_Hooded.glb", "@sword_1handed.gltf", "@smokebomb.gltf", "Melee_1H_Attack_Slice_Horizontal"],
 }
 const MAP := {"idle": "Idle_A", "walk": "Walking_A", "run": "Running_A", "hurt": "Death_A"}
 

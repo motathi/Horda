@@ -2,22 +2,22 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b1nymtjje0sg"
-path="res://.godot/imported/portrait_rogue_hooded.png-ad013cfcbbc0d0614ef9928817b2118c.ctex"
+uid="uid://b557qrarfv167"
+path="res://.godot/imported/portrait_mage.jpg-7d3f1ff7c2af9ca2272ead976da70958.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/characters/portrait_rogue_hooded.png"
-dest_files=["res://.godot/imported/portrait_rogue_hooded.png-ad013cfcbbc0d0614ef9928817b2118c.ctex"]
+source_file="res://assets/characters/src/portrait_mage.jpg"
+dest_files=["res://.godot/imported/portrait_mage.jpg-7d3f1ff7c2af9ca2272ead976da70958.ctex"]
 
 [params]
 
-compress/mode=1
+compress/mode=0
 compress/high_quality=false
-compress/lossy_quality=0.8
+compress/lossy_quality=0.7
 compress/hdr_compression=1
 compress/normal_map=0
 compress/channel_pack=0
