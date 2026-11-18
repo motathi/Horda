@@ -159,10 +159,13 @@ Além da arte gerada por IA, o mapa usa pacotes **CC0** baixados do itch.io (cr�
 do *Fantasy Props* e *Medieval Village MegaKit* (Quaternius) e os **esqueletos** animados do *KayKit
 Skeletons* + *Character Animations* (Kay Lousberg), que entram na horda: *Esqueleto* (horda 2),
 *Ladino* (5), *Guerreiro* (8) e *Mago* (12, ataca de longe). Também: **escolha de herói** no "Novo jogo"
-(Caçador original + Cavaleiro, Bárbaro, Maga, Patrulheiro, Ladina e Encapuzado do *KayKit Adventurers*),
+(Caçador e **Cavaleiro de armadura dourada** no estilo original + Bárbaro, Maga, Patrulheiro, Ladina e Encapuzado do *KayKit Adventurers*),
 **sobreviventes** animados na base (ferreiro, vigias, conversa, andarilho — *Modular Character Outfits* +
 *Universal Base Characters* + *Universal Animation Library*, Quaternius), que se escondem na fortaleza
-durante a horda, e **ruínas** do *KayKit Dungeon Pack* na cidade, pedreira e floresta. Para baixar de novo:
+durante a horda, e **ruínas** do *KayKit Dungeon Pack* na cidade, pedreira e floresta. O Cavaleiro veio de um modelo pronto enviado pelo
+jogador (480 mil triângulos, sem esqueleto): `tools/render_views.tscn` tira 4 vistas e o
+`tools/tripo_pipeline.py nome:frente.jpg,esquerda.jpg,costas.jpg,direita.jpg` o refaz leve (15 mil
+triângulos) com esqueleto e as animações padrão. Para baixar de novo:
 
 ```bash
 python3 tools/itch_fetch.py /tmp/itch quaternius/stylized-nature-megakit kaylousberg/kaykit-skeletons ...

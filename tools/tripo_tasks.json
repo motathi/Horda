@@ -48,5 +48,10 @@
  },
  "barracks": {
   "model": "5c9d2cfb-b5f3-4f00-a364-129f0cd47988"
+ },
+ "hero_paladin": {
+  "model": "64ff3fb4-3a3b-4cfd-9d2f-87d600a5c528",
+  "rig": "59ed07ea-c443-4c80-a3c7-976b1710a3cd",
+  "anim": "78d10627-a324-443d-ab8c-90f9b32b81f8"
  }
 }

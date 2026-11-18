@@ -14,3 +14,9 @@ Baixados com `tools/itch_fetch.py` e copiados com `tools/import_third_party.py`.
 - **quaternius_outfits** — Quaternius, https://quaternius.itch.io/modular-character-outfits-fantasy — 4 modelos (20 arquivos), CC0 1.0
 - **quaternius_base** — Quaternius, https://quaternius.itch.io/universal-base-characters — 8 modelos (27 arquivos), CC0 1.0
 - **quaternius_anims** — Quaternius, https://quaternius.itch.io/universal-animation-library — 1 modelos (1 arquivos), CC0 1.0
+
+## Modelos enviados pelo jogador
+
+- **hero_paladin** (Cavaleiro, `assets/models/rigged/hero_paladin.glb`) — refeito pelo Tripo a partir de 4 vistas
+  do modelo "fantasy-warrior" enviado pelo dono do projeto, que o escolheu para o Cavaleiro. Retrato gerado por
+  `tools/gen_image.py` (`portrait_knight_paladin`).

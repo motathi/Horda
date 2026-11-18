@@ -1,12 +1,14 @@
 class_name HeroSkins
 ## Aparências jogáveis do herói (escolhidas no menu "Novo jogo"). Só visual: os atributos
-## vêm dos pontos de atributo. "hunter" é o modelo original; os demais são do pacote CC0
+## vêm dos pontos de atributo. "hunter" é o modelo original (Tripo). O Cavaleiro é o modelo
+## enviado pelo jogador (armadura dourada), refeito leve e com esqueleto pelo Tripo a partir de
+## 4 vistas (tools/render_views.tscn + tools/tripo_pipeline.py). Os demais são do pacote CC0
 ## KayKit Adventurers (montados por tools/bake_kaykit.gd).
 
 const DEFAULT := "hunter"
 const LIST: Array[Dictionary] = [
 	{"id": "hunter", "name": "Caçador", "model": "hero", "height": 2.2},
-	{"id": "knight", "name": "Cavaleiro", "model": "hero_knight", "height": 2.0},
+	{"id": "knight", "name": "Cavaleiro", "model": "hero_paladin", "height": 2.25},
 	{"id": "barbarian", "name": "Bárbaro", "model": "hero_barbarian", "height": 2.0},
 	{"id": "mage", "name": "Maga", "model": "hero_mage", "height": 2.0},
 	{"id": "ranger", "name": "Patrulheiro", "model": "hero_ranger", "height": 2.0},

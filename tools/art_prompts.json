@@ -256,5 +256,11 @@
   "out": "assets/ui/hud/src/b_brazier.jpg",
   "size": "1024x1024",
   "prompt": "Game UI icon of a tall stone and iron brazier with a big roaring orange fire in its bowl, glowing embers, warm light, glossy stylized hand-painted mobile strategy game UI icon, chunky readable shape, vibrant saturated colors, soft specular highlights, thick dark outline, centered, isolated on a completely black #000000 background, the background must be pitch black, no frame, no border, no text"
+ },
+ {
+  "name": "portrait_knight_paladin",
+  "out": "assets/characters/src/portrait_knight.jpg",
+  "size": "2048x2048",
+  "prompt": "Square character portrait for a strategy game HUD, head and shoulders, three-quarter view, dramatic rim lighting, dark background, no text, a menacing paladin knight in ornate golden plate armor with black engravings, a closed golden great helm with two curved horns and a narrow visor slit, huge spiked golden pauldrons, dark charcoal grey surcoat with gold embroidery, in the art style of Dota 2 and Warcraft III, hand-painted, painterly stylized fantasy, rich saturated colors, high detail"
  }
 ]

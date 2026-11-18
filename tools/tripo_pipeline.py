@@ -6,6 +6,9 @@ que injeta a credencial, qualquer valor serve).
 Uso: python3 tools/tripo_pipeline.py nome:imagem.jpg [...]
      python3 tools/tripo_pipeline.py --static nome:imagem.jpg [...]  (só a malha, sem rig,
      salva em assets/models/raw/<nome>.glb para o tools/build_models.sh)
+     python3 tools/tripo_pipeline.py nome:frente.jpg,esquerda.jpg,costas.jpg,direita.jpg
+     (4 vistas -> multiview_to_model; útil para refazer leve e com rig um modelo pronto,
+     a partir das vistas de tools/render_views.tscn)
 Saída: assets/models/rigged/<nome>.glb (+ log de tarefas em tools/tripo_tasks.json)"""
 import json, os, sys, time, urllib.request, uuid
 
@@ -90,9 +93,15 @@ def run(name, image):
     print(f"[{name}]", flush=True)
     model_tid = prev.get("model")
     if not model_tid:
-        tok = upload(image)
-        model_tid = task({"type": "image_to_model", "file": {"type": "jpg", "file_token": tok},
-                          "texture": True, "pbr": False, "face_limit": 12000, "auto_size": True})
+        views = image.split(",")
+        if len(views) == 4:
+            files = [{"type": "jpg", "file_token": upload(v)} for v in views]
+            model_tid = task({"type": "multiview_to_model", "files": files,
+                              "texture": True, "pbr": False, "face_limit": 15000, "auto_size": True})
+        else:
+            tok = upload(image)
+            model_tid = task({"type": "image_to_model", "file": {"type": "jpg", "file_token": tok},
+                              "texture": True, "pbr": False, "face_limit": 12000, "auto_size": True})
         log(name, "model", model_tid)
     wait(model_tid, "modelo")
     rig_tid = prev.get("rig")

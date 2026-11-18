@@ -10,6 +10,8 @@ func _ready() -> void:
 	DirAccess.make_dir_recursive_absolute(out_dir)
 	get_window().size = Vector2i(1280, 720)
 	Settings.tutorial_done = true
+	if OS.get_environment("HORDA_SKIN") != "":
+		GameManager.hero_skin = OS.get_environment("HORDA_SKIN")
 	GameManager.difficulty = "normal"
 	ResourceManager.reset()
 	TimeManager.setup("normal")
@@ -23,6 +25,9 @@ func _ready() -> void:
 	var spots := {"base": Vector3(2, 0, 6), "corrupt": Vector3(80, 0, -80), "forest": Vector3(-70, 0, -60)}
 	var times := {"day": [TimeManager.Phase.DAY, 25.0], "dusk": [TimeManager.Phase.DUSK, 20.0], "night": [TimeManager.Phase.NIGHT, 10.0]}
 	var only := OS.get_environment("ATMO_ONLY")
+	if OS.get_environment("ATMO_CLOSE") != "":
+		world.camera_rig.set(&"distance", 8.0)
+		world.camera_rig.set(&"_zoom_target", 8.0)
 	for sname: String in spots:
 		hero.global_position = spots[sname]
 		world.camera_rig.global_position = hero.global_position
