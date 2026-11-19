@@ -153,7 +153,8 @@ func _build_foliage(world: Node3D) -> void:
 	var f := Foliage.new()
 	f.name = "Foliage"
 	world.add_child(f)
-	f.build(MAP_HALF - 2.0, Settings.grass_density(), _is_grass, rng.seed + 7)
+	# A floresta (mesma área do "Floresta" em _build_decor) ganha mais folhas caídas e samambaias.
+	f.build(MAP_HALF - 2.0, Settings.grass_density(), _is_grass, rng.seed + 7, Rect2(-110, -116, 170, 76), _is_cover_ground)
 
 func _is_grass(p: Vector3) -> bool:
 	var n := int(MAP_HALF * 2)
@@ -166,6 +167,19 @@ func _is_grass(p: Vector3) -> bool:
 	var c := _px(Vector2(p.x, p.z))
 	var col := _splat.get_pixel(clampi(c.x, 0, SPLAT_RES - 1), clampi(c.y, 0, SPLAT_RES - 1))
 	return col.r < 0.35 and col.g < 0.35 and col.b < 0.35
+
+## Vegetação rasteira: como o capim, mas também na terra (chão da floresta), fora de estradas.
+func _is_cover_ground(p: Vector3) -> bool:
+	var n := int(MAP_HALF * 2)
+	var x := int(p.x + MAP_HALF)
+	var z := int(p.z + MAP_HALF)
+	if x < 0 or z < 0 or x >= n or z >= n or _blocked[z * n + x] == 1:
+		return false
+	if p.length() < BASE_RADIUS + 2.5 or _near_road(p, 1.2):
+		return false
+	var c := _px(Vector2(p.x, p.z))
+	var col := _splat.get_pixel(clampi(c.x, 0, SPLAT_RES - 1), clampi(c.y, 0, SPLAT_RES - 1))
+	return col.g < 0.35 and col.b < 0.35
 
 func _px(p: Vector2) -> Vector2i:
 	return Vector2i(int((p.x / (MAP_HALF * 2) + 0.5) * SPLAT_RES), int((p.y / (MAP_HALF * 2) + 0.5) * SPLAT_RES))
@@ -775,18 +789,17 @@ func _build_decor(world: Node3D) -> void:
 	var N := ThirdParty.NATURE
 	var H := ThirdParty.HALLOWEEN
 	var pebbles := [[N, "Pebble_Round_1", 0.15, 0.35], [N, "Pebble_Round_2", 0.15, 0.35], [N, "Pebble_Round_3", 0.15, 0.3]]
+	# Arbustos secos feitos no Blender (tools/blender_ground.py); o resto da vegetação rasteira (folhas caídas,
+	# samambaia, bardana, cardo, capim alto, galhos) fica no Foliage, em moitas perto da câmera.
+	var B := ThirdParty.BLENDER
 	var plan := {
 		"Floresta": [Vector2(-25, -78), Vector2(85, 38), [
-			[N, "Bush_Common", 70, 0.9, 1.4], [N, "Fern_1", 110, 0.6, 1.0],
-			[N, "Mushroom_Common", 40, 0.25, 0.5], [N, "Mushroom_Laetiporus", 15, 0.3, 0.5], [N, "Plant_1_Big", 40, 0.8, 1.3],
-			[N, "Clover_1", 60, 0.15, 0.3], [N, "Flower_3_Group", 6, 0.4, 0.7],
-			[N, "Grass_Wispy_Tall", 80, 0.5, 0.9], [N, "Rock_Medium_1", 12, 0.6, 1.3], [N, "Rock_Medium_2", 10, 0.6, 1.3]]],
-		"Campos": [Vector2.ZERO, Vector2(112, 112), [
-			[N, "Bush_Common", 50, 0.9, 1.3], [N, "Flower_4_Group", 8, 0.4, 0.7], [N, "Grass_Wispy_Tall", 70, 0.5, 0.9],
-			[N, "Fern_1", 40, 0.6, 1.0], [N, "Grass_Common_Tall", 80, 0.5, 0.9], [N, "Rock_Medium_3", 20, 0.6, 1.2]]],
-		"Fazenda": [Vector2(-35, 78), Vector2(40, 34), [
-			[N, "Flower_4_Group", 6, 0.4, 0.7], [N, "Grass_Wispy_Tall", 40, 0.5, 0.9], [N, "Bush_Common", 16, 0.9, 1.3]]],
-		"Cidade": [Vector2(80, 12), Vector2(30, 42), [[N, "Bush_Common", 10, 0.8, 1.2], [N, "Grass_Wispy_Tall", 30, 0.5, 0.8]]],
+			[B, "gc_dry_bush", 60, 0.8, 1.2],
+			[N, "Mushroom_Common", 40, 0.25, 0.5], [N, "Mushroom_Laetiporus", 15, 0.3, 0.5],
+			[N, "Rock_Medium_1", 12, 0.6, 1.3], [N, "Rock_Medium_2", 10, 0.6, 1.3]]],
+		"Campos": [Vector2.ZERO, Vector2(112, 112), [[B, "gc_dry_bush", 45, 0.8, 1.2], [N, "Rock_Medium_3", 20, 0.6, 1.2]]],
+		"Fazenda": [Vector2(-35, 78), Vector2(40, 34), [[B, "gc_dry_bush", 16, 0.8, 1.2]]],
+		"Cidade": [Vector2(80, 12), Vector2(30, 42), [[B, "gc_dry_bush", 10, 0.7, 1.1]]],
 		"Contaminada": [Vector2(88, -88), Vector2(26, 26), [
 			[H, "ribcage", 10, 0.5, 0.7], [H, "skull", 18, 0.25, 0.32], [H, "bone_A", 25, 0.1, 0.16],
 			[N, "Mushroom_Laetiporus", 15, 0.3, 0.5], [H, "tree_dead_medium", 6, 3.0, 4.0], [H, "tree_dead_large", 4, 4.0, 5.5]]],

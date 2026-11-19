@@ -8,12 +8,24 @@ const FLOWER_SHADER := preload("res://assets/effects/shaders/flower.gdshader")
 const GRASS_MESH_SHADER := preload("res://assets/effects/shaders/grass_mesh.gdshader")
 ## Touceiras de capim modeladas no Blender (tools/blender_ground.py); se faltar, usa o tufo de shader.
 const TUFTS_GLB := "res://assets/models/blender/grass_tufts.glb"
+## Vegetação rasteira do Blender (gc_*.glb): [modelo, peso no campo, peso na floresta, escala mín., escala máx.].
+const COVER := [
+	["gc_leaf_litter", 2.5, 9.0, 0.9, 1.4], ["gc_weed_rosette", 3.0, 2.0, 1.0, 1.7],
+	["gc_dead_fern", 0.7, 4.5, 0.8, 1.2], ["gc_burdock", 1.4, 1.5, 0.8, 1.2],
+	["gc_thistle", 1.6, 0.3, 0.8, 1.15], ["gc_tall_grass", 2.2, 1.0, 0.8, 1.15],
+	["gc_fallen_branch", 0.6, 2.2, 0.8, 1.3],
+]
 const CHUNK := 24.0
 const VIS_RANGE := 70.0
 const GRASS_VIS := 48.0
 
 ## is_grass(Vector3) -> bool decide onde plantar (sem estradas/pedra/props).
-func build(map_half: float, density: float, is_grass: Callable, seed_value: int) -> void:
+## forest: área da floresta (mais folhas caídas, samambaias e galhos; menos cardos).
+## can_cover(Vector3) -> bool: onde a vegetação rasteira pode nascer (também na terra da floresta).
+func build(map_half: float, density: float, is_grass: Callable, seed_value: int, forest := Rect2(),
+		can_cover: Callable = Callable()) -> void:
+	if not can_cover.is_valid():
+		can_cover = is_grass
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_value
 	var grass_mat := ShaderMaterial.new()
@@ -26,6 +38,7 @@ func build(map_half: float, density: float, is_grass: Callable, seed_value: int)
 	var tuft := _single_mesh(quad)
 	var tufts := _blender_tufts()
 	var flower_mesh := _flower_mesh()
+	var cover := _cover_meshes()
 	# Poucas flores, murchas e desbotadas.
 	var flower_colors := [Color(0.62, 0.55, 0.36), Color(0.55, 0.38, 0.36), Color(0.6, 0.58, 0.52)]
 	var x := -map_half
@@ -36,11 +49,15 @@ func build(map_half: float, density: float, is_grass: Callable, seed_value: int)
 			var by_variant: Array = [[], [], []]
 			var flowers: Array[Transform3D] = []
 			var fcolors: Array[Color] = []
+			# Vegetação rasteira primeiro: o capim rareia em volta das moitas para elas aparecerem.
+			var clearings: Array[Vector3] = []
+			if not cover.is_empty():
+				clearings = _scatter_cover(cover, rng, Rect2(x, z, CHUNK, CHUNK), density, can_cover, forest)
 			# As touceiras do Blender são mais cheias que o tufo antigo: um pouco mais delas.
 			var count := int(CHUNK * CHUNK * density * (1.5 if not tufts.is_empty() else 1.0))
 			for i in count:
 				var p := Vector3(x + rng.randf() * CHUNK, 0, z + rng.randf() * CHUNK)
-				if not is_grass.call(p):
+				if not is_grass.call(p) or (not clearings.is_empty() and _in_clearing(p, clearings) and rng.randf() < 0.8):
 					continue
 				if not tufts.is_empty():
 					var bs := Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3.ONE * rng.randf_range(1.2, 1.9))
@@ -68,7 +85,7 @@ func build(map_half: float, density: float, is_grass: Callable, seed_value: int)
 			z += CHUNK
 		x += CHUNK
 
-func _add_multimesh(mesh: Mesh, xforms: Array[Transform3D], colors: Array, vis: float = VIS_RANGE) -> void:
+func _add_multimesh(mesh: Mesh, xforms: Array[Transform3D], colors: Array, vis: float = VIS_RANGE, nm := "") -> void:
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
 	mm.use_colors = not colors.is_empty()
@@ -80,11 +97,70 @@ func _add_multimesh(mesh: Mesh, xforms: Array[Transform3D], colors: Array, vis: 
 			mm.set_instance_color(i, colors[i])
 	var mmi := MultiMeshInstance3D.new()
 	mmi.multimesh = mm
+	if nm != "":
+		mmi.set_meta(&"kind", nm)  # (nome repetido entre pedaços viraria "@MultiMeshInstance3D@n")
 	mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	mmi.visibility_range_end = vis * (0.8 if Platform.low_end else 1.0)
 	mmi.visibility_range_end_margin = 10.0
 	mmi.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
 	add_child(mmi)
+
+## Vegetação rasteira em moitas: cada moita sorteia um tipo (pesos do campo ou da floresta) e
+## planta 2–5 cópias juntas, com um vizinho de outro tipo às vezes — fica com cara de mato natural.
+func _scatter_cover(cover: Array, rng: RandomNumberGenerator, area: Rect2, density: float, is_grass: Callable,
+		forest: Rect2) -> Array[Vector3]:
+	var centers: Array[Vector3] = []
+	var lists: Array = []
+	for i in cover.size():
+		lists.append([])
+	var in_forest := forest.has_area() and forest.intersects(area)
+	var clumps := int(area.get_area() * density * (0.07 if in_forest else 0.032))
+	for c in clumps:
+		var center := Vector3(area.position.x + rng.randf() * area.size.x, 0, area.position.y + rng.randf() * area.size.y)
+		var kind := _pick_cover(cover, rng, in_forest and forest.has_point(Vector2(center.x, center.z)))
+		centers.append(center)
+		for k in rng.randi_range(2, 5):
+			var p := center + Vector3(rng.randf_range(-1.8, 1.8), 0, rng.randf_range(-1.8, 1.8))
+			if not is_grass.call(p):
+				continue
+			var ki := kind if rng.randf() < 0.75 else _pick_cover(cover, rng, in_forest)
+			var spec: Array = cover[ki][1]
+			var bs := Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3.ONE * rng.randf_range(spec[3], spec[4]))
+			(lists[ki] as Array).append(Transform3D(bs, p) * (cover[ki][2] as Transform3D))
+	for i in cover.size():
+		var arr: Array[Transform3D] = []
+		arr.assign(lists[i])
+		if not arr.is_empty():
+			_add_multimesh(cover[i][0], arr, [], GRASS_VIS, cover[i][1][0])
+	return centers
+
+func _in_clearing(p: Vector3, centers: Array[Vector3]) -> bool:
+	for c in centers:
+		if absf(p.x - c.x) < 2.0 and absf(p.z - c.z) < 2.0:
+			return true
+	return false
+
+func _pick_cover(cover: Array, rng: RandomNumberGenerator, forest: bool) -> int:
+	var total := 0.0
+	for c: Array in cover:
+		total += float(c[1][2 if forest else 1])
+	var r := rng.randf() * total
+	for i in cover.size():
+		r -= float(cover[i][1][2 if forest else 1])
+		if r <= 0.0:
+			return i
+	return cover.size() - 1
+
+## [malha, especificação de COVER, transformação local] de cada modelo que existir.
+func _cover_meshes() -> Array:
+	var out: Array = []
+	for spec: Array in COVER:
+		if not ThirdParty.has(ThirdParty.BLENDER, spec[0]):
+			continue
+		var d := ThirdParty.mesh_data(ThirdParty.BLENDER, spec[0])
+		if d[0] != null:
+			out.append([d[0], spec, d[1]])
+	return out
 
 ## Malhas das touceiras (tuft_a/b/c) com o material de vento; vazio se o GLB não existir.
 func _blender_tufts() -> Array[Mesh]:

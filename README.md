@@ -133,6 +133,16 @@ as desenha a até 48 m da câmera.
 
 ![Capim antes e depois](docs/screenshots/capim_antes_depois.jpg)
 
+**Vegetação rasteira feita no Blender** (também em `tools/blender_ground.py`, arquivos `gc_*.glb`, só cor por
+vértice): arbusto morto de galhos finos, samambaia morta cor de ferrugem, cardo seco com flor roxa desbotada ou
+já em pluma, erva rasteira, bardana de folha larga com borda queimada, capim alto com espigas, folhas secas
+caídas e galho caído. Substituem os arbustos, samambaias, trevos e flores verdes do pacote antigo (agora fora
+do export). Os arbustos ficam espalhados pelo `DecorScatter`; o resto nasce no `Foliage` em moitas de 2–5
+plantas perto da câmera (mais folhas caídas, samambaias e galhos na floresta, também sobre a terra; mais
+cardos e capim alto no campo), e o capim rareia em volta de cada moita para ela aparecer.
+
+![Vegetação rasteira antes e depois](docs/screenshots/vegetacao_rasteira_antes_depois.jpg)
+
 **Inimigos especiais:** a partir da horda 4 surge o *Zumbi Explosivo* (incha e explode ao alcançar o alvo,
 arrasando muros; abatido, explode ferindo os zumbis ao redor), na 7 o *Cuspidor* (cospe ácido de 10 m,
 inclusive por cima dos muros, deixando poças corrosivas, e recua se você se aproximar) e na 9 o *Saltador*

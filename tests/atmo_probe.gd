@@ -45,6 +45,10 @@ func _ready() -> void:
 			var lan := get_tree().get_nodes_in_group(&"hero_lantern")
 			print("%s_%s luzes=%d lanterna=%s" % [sname, tname, cnt, [(lan[0] as OmniLight3D).visible, (lan[0] as OmniLight3D).light_energy] if lan.size() > 0 else "nenhuma"])
 			get_viewport().get_texture().get_image().save_png(out_dir.path_join("%s_%s.png" % [sname, tname]))
+	if OS.get_environment("ATMO_DECOR") != "":
+		await _decor_shots(world, hero, OS.get_environment("ATMO_DECOR"))
+		get_tree().quit()
+		return
 	if OS.get_environment("ATMO_FIND") != "":
 		await _find_shots(world, hero, OS.get_environment("ATMO_FIND"))
 		get_tree().quit()
@@ -211,6 +215,52 @@ func _find_shots(world: World, hero: Hero, prefix: String) -> void:
 	TimeManager.set_state(TimeManager.Phase.NIGHT, 3, 10.0)
 	await _wait_frames(60)
 	await _save("%s_noite" % prefix)
+
+## Vegetação rasteira (DecorScatter): enquadra a cópia ATMO_INDEX do modelo pedido, de dia e à noite.
+## Escolhe a cópia com mais vizinhos (de qualquer tipo) por perto, para mostrar o chão bem coberto.
+func _decor_shots(world: World, hero: Hero, model: String) -> void:
+	var pts: Array[Vector3] = []
+	var all_pts: Array[Vector3] = []
+	for mmi in world.find_children("*", "MultiMeshInstance3D", true, false):
+		var mm := (mmi as MultiMeshInstance3D).multimesh
+		if mmi.get_parent() is DecorScatter or mmi.get_parent() is Foliage:
+			var nm := String(mmi.get_meta(&"kind", mmi.name))
+			if nm.contains("MultiMeshInstance3D"):
+				continue  # capim e flores
+			for i in mm.instance_count:
+				var p := (mmi as Node3D).global_transform * mm.get_instance_transform(i).origin
+				all_pts.append(p)
+				if nm.begins_with(model):
+					pts.append(p)
+	if pts.is_empty():
+		print("nenhum ", model)
+		return
+	var scored: Array = []
+	for p in pts:
+		var n := 0
+		for q in all_pts:
+			if p.distance_squared_to(q) < 36.0:
+				n += 1
+		scored.append([n, p])
+	scored.sort_custom(func(a: Array, b: Array) -> bool: return a[0] > b[0])
+	var idx := int(OS.get_environment("ATMO_INDEX")) if OS.get_environment("ATMO_INDEX") != "" else 0
+	var t: Vector3 = scored[idx % scored.size()][1]
+	print("%d %s; enquadrando %s (%d vizinhos)" % [pts.size(), model, t, scored[idx % scored.size()][0]])
+	world.hud.visible = false
+	var zoom := float(OS.get_environment("ATMO_ZOOM")) if OS.get_environment("ATMO_ZOOM") != "" else 9.0
+	world.camera_rig.set(&"distance", zoom)
+	world.camera_rig.set(&"_zoom_target", zoom)
+	world.camera_rig.global_position = t
+	await _wait_frames(5)
+	var cb := get_viewport().get_camera_3d().global_transform.basis
+	hero.global_position = t + Vector3(cb.z.x, 0, cb.z.z).normalized() * 2.5
+	TimeManager.running = false
+	TimeManager.set_state(TimeManager.Phase.DAY, 3, 20.0)
+	await _wait_frames(40)
+	await _save("%s_dia" % model)
+	TimeManager.set_state(TimeManager.Phase.NIGHT, 3, 10.0)
+	await _wait_frames(60)
+	await _save("%s_noite" % model)
 
 ## Objetos de cenário do Blender (3 exemplos lado a lado), de dia e ao entardecer.
 func _prop_shots(world: World, hero: Hero, kind: String) -> void:
