@@ -99,6 +99,14 @@ gera os GLB e uma prévia dos 3 níveis.
 
 ![Defesas modeladas no Blender](docs/screenshots/defesas_blender.jpg)
 
+**Cenário feito no Blender** (`tools/blender_scenery.py`): carros destruídos (2 cores; capô aberto, porta
+pendurada, roda caída, vidros trincados) no lugar dos carros de caixas da cidade; carroça queimada (rodas
+raiadas, lona rasgada, carga revirada) no lugar das carroças; estacas com cabeças à beira das estradas e na
+Área Contaminada; piras de corpos (duas ardem à noite, com fogo e luz que revela Espreitadores); tambores de
+óleo enferrujados (dois com fogueira acesa à noite) e pilhas de entulho com vergalhões na cidade.
+
+![Cenário modelado no Blender](docs/screenshots/cenario_blender.jpg)
+
 **Inimigos especiais:** a partir da horda 4 surge o *Zumbi Explosivo* (incha e explode ao alcançar o alvo,
 arrasando muros; abatido, explode ferindo os zumbis ao redor), na 7 o *Cuspidor* (cospe ácido de 10 m,
 inclusive por cima dos muros, deixando poças corrosivas, e recua se você se aproximar) e na 9 o *Saltador*

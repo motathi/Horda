@@ -45,6 +45,14 @@ func _ready() -> void:
 			var lan := get_tree().get_nodes_in_group(&"hero_lantern")
 			print("%s_%s luzes=%d lanterna=%s" % [sname, tname, cnt, [(lan[0] as OmniLight3D).visible, (lan[0] as OmniLight3D).light_energy] if lan.size() > 0 else "nenhuma"])
 			get_viewport().get_texture().get_image().save_png(out_dir.path_join("%s_%s.png" % [sname, tname]))
+	if OS.get_environment("ATMO_FIND") != "":
+		await _find_shots(world, hero, OS.get_environment("ATMO_FIND"))
+		get_tree().quit()
+		return
+	if OS.get_environment("ATMO_PROP") != "":
+		await _prop_shots(world, hero, OS.get_environment("ATMO_PROP"))
+		get_tree().quit()
+		return
 	if OS.get_environment("ATMO_DEFENSE") != "":
 		await _defense_shots(world, hero, OS.get_environment("ATMO_DEFENSE"))
 		get_tree().quit()
@@ -174,6 +182,69 @@ func _hunter_shots(world: World, hero: Hero) -> void:
 	await _save("hunter_rain")
 	await _wait_frames(14)
 	await _save("hunter_eagle")
+
+## Enquadra um objeto já colocado no mapa (o primeiro nó cujo nome começa com `prefix`
+## e que tenha um vizinho do mesmo tipo por perto, se houver), de dia e à noite.
+func _find_shots(world: World, hero: Hero, prefix: String) -> void:
+	var found: Array[Node3D] = []
+	for n in world.find_children(prefix + "*", "Node3D", true, false):
+		found.append(n as Node3D)
+	if found.is_empty():
+		print("nenhum ", prefix)
+		return
+	var idx := int(OS.get_environment("ATMO_INDEX")) if OS.get_environment("ATMO_INDEX") != "" else 0
+	var t := found[idx % found.size()]
+	print("%d %s; enquadrando %s" % [found.size(), prefix, t.global_position])
+	world.hud.visible = false
+	world.camera_rig.set(&"distance", 12.0)
+	world.camera_rig.set(&"_zoom_target", 12.0)
+	world.camera_rig.global_position = t.global_position
+	await _wait_frames(5)
+	var cb := get_viewport().get_camera_3d().global_transform.basis
+	hero.global_position = t.global_position + Vector3(cb.z.x, 0, cb.z.z).normalized() * 3.5
+	TimeManager.running = false
+	TimeManager.set_state(TimeManager.Phase.DAY, 3, 20.0)
+	await _wait_frames(40)
+	await _save("%s_dia" % prefix)
+	TimeManager.set_state(TimeManager.Phase.NIGHT, 3, 10.0)
+	await _wait_frames(60)
+	await _save("%s_noite" % prefix)
+
+## Objetos de cenário do Blender (3 exemplos lado a lado), de dia e ao entardecer.
+func _prop_shots(world: World, hero: Hero, kind: String) -> void:
+	var p := Vector3(-26, 0, 22)
+	for h in get_tree().get_nodes_in_group("harvestable"):
+		if (h as Node3D).global_position.distance_to(p) < 14.0:
+			h.queue_free()
+	world.camera_rig.global_position = p
+	world.camera_rig.set(&"distance", 13.0)
+	world.camera_rig.set(&"_zoom_target", 13.0)
+	world.hud.visible = false
+	await _wait_frames(5)
+	var cb := get_viewport().get_camera_3d().global_transform.basis
+	var right := Vector3(cb.x.x, 0, cb.x.z).normalized()
+	var toward := Vector3(cb.z.x, 0, cb.z.z).normalized()
+	hero.global_position = p + toward * 3.8
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 5
+	for i in 3:
+		var n: Node3D = WorldProps.make(kind, rng, i)
+		world.add_child(n)
+		if n is Lootable and kind == "car" and i == 1:
+			n.queue_free()
+			n = Lootable.new()
+			var v := (load("res://assets/models/blender/car_wreck_a.glb") as PackedScene).instantiate() as Node3D
+			n.add_child(v)
+			world.add_child(n)
+		n.global_position = p + right * ((i - 1) * 4.6)
+		n.rotation.y = [0.4, -0.9, 2.2][i]
+	TimeManager.running = false
+	TimeManager.set_state(TimeManager.Phase.DAY, 3, 20.0)
+	await _wait_frames(40)
+	await _save("%s_dia" % kind)
+	TimeManager.set_state(TimeManager.Phase.DUSK, 3, 30.0)
+	await _wait_frames(40)
+	await _save("%s_entardecer" % kind)
 
 ## Uma defesa nos 3 níveis lado a lado (revisão dos modelos do Blender).
 func _defense_shots(world: World, hero: Hero, id: String) -> void:

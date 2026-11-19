@@ -1,0 +1,37 @@
+[remap]
+
+importer="texture"
+type="CompressedTexture2D"
+uid="uid://wi70b11ty6r1"
+path="res://.godot/imported/pike_heads_pike_heads_col.jpg-d2696d9e24aa35be108352e4086ca933.ctex"
+metadata={
+"vram_texture": false
+}
+generator_parameters={
+"md5": "34550af38374d7490ee7e36d7e2bb283"
+}
+
+[deps]
+
+source_file="res://assets/models/blender/pike_heads_pike_heads_col.jpg"
+dest_files=["res://.godot/imported/pike_heads_pike_heads_col.jpg-d2696d9e24aa35be108352e4086ca933.ctex"]
+
+[params]
+
+compress/mode=1
+compress/high_quality=false
+compress/lossy_quality=0.8
+compress/hdr_compression=1
+compress/normal_map=0
+compress/channel_pack=0
+mipmaps/generate=true
+mipmaps/limit=-1
+roughness/mode=0
+roughness/src_normal=""
+process/fix_alpha_border=true
+process/premult_alpha=false
+process/normal_map_invert_y=false
+process/hdr_as_srgb=false
+process/hdr_clamp_exposure=false
+process/size_limit=0
+detect_3d/compress_to=1

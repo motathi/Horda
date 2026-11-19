@@ -9,6 +9,8 @@ const HALLOWEEN := "kaykit_halloween"
 const PROPS := "quaternius_props"
 const VILLAGE := "quaternius_village"
 const DUNGEON := "kaykit_dungeon"
+## Modelos feitos no Blender neste projeto (tools/blender_scenery.py), em escala real.
+const BLENDER := "blender"
 
 const TREES: Array[String] = ["CommonTree_1", "CommonTree_2", "CommonTree_3", "CommonTree_4", "CommonTree_5"]
 const PINES: Array[String] = ["Pine_1", "Pine_2", "Pine_3", "Pine_4", "Pine_5"]
@@ -18,6 +20,8 @@ static var _scenes: Dictionary = {}
 static var _meshes: Dictionary = {}
 
 static func path(pack: String, model: String) -> String:
+	if pack == BLENDER:
+		return "res://assets/models/blender/" + model + ".glb"
 	var p := DIR + pack + "/" + model + ".gltf"
 	return p if ResourceLoader.exists(p) else DIR + pack + "/" + model + ".glb"
 

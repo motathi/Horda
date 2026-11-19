@@ -166,7 +166,9 @@ static func make_lootable(kind: String, rng: RandomNumberGenerator) -> Lootable:
 			l.loot = load(LOOT_DIR + "farm_crate.tres")
 			l.duration = 2.0
 			l.restock_days = 3
-			if ModelLibrary.has("cart"):
+			if ThirdParty.has(ThirdParty.BLENDER, "burned_cart"):
+				v.add_child(ThirdParty.instance(ThirdParty.BLENDER, "burned_cart"))
+			elif ModelLibrary.has("cart"):
 				var c := ModelLibrary.instance_footprint("cart", 3.4)
 				v.add_child(c)
 			else:
@@ -179,6 +181,15 @@ static func make_lootable(kind: String, rng: RandomNumberGenerator) -> Lootable:
 			l.loot = load(LOOT_DIR + "car_wreck.tres")
 			l.duration = 2.5
 			l.restock_days = 4
+			# Carcaça modelada no Blender (tools/blender_scenery.py), em duas cores.
+			var wreck := "res://assets/models/blender/car_wreck_%s.glb" % ["a", "b"][rng.randi() % 2]
+			if ResourceLoader.exists(wreck):
+				v.add_child((load(wreck) as PackedScene).instantiate())
+				var shw := BoxShape3D.new()
+				shw.size = Vector3(2.0, 1.6, 4.0)
+				_collision(l, shw, Vector3(0, 0.8, 0))
+				l.setup_visual(v)
+				return l
 			var rust := MaterialLib.textured("metal", Color(rng.randf_range(0.6, 1.0), rng.randf_range(0.5, 0.8), rng.randf_range(0.5, 0.8)), 0.8, true, 0.6)
 			_mi(v, _box_mesh(Vector3(1.9, 0.8, 4.0)), Vector3(0, 0.75, 0), rust)
 			_mi(v, _box_mesh(Vector3(1.7, 0.7, 2.0)), Vector3(0, 1.5, 0.3), rust)

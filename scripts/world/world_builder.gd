@@ -510,7 +510,9 @@ func _build_base(world: Node3D) -> void:
 	# Armazém visual (pilhas de caixas)
 	for p in [Vector3(-6.5, 0, 3.5), Vector3(6.5, 0, -2.5)]:
 		var wagon: Node3D
-		if ModelLibrary.has("cart"):
+		if ThirdParty.has(ThirdParty.BLENDER, "burned_cart"):
+			wagon = ThirdParty.instance(ThirdParty.BLENDER, "burned_cart")
+		elif ModelLibrary.has("cart"):
 			wagon = ModelLibrary.instance_footprint("cart", 3.2)
 		else:
 			wagon = MeshInstance3D.new()
@@ -552,6 +554,13 @@ func _place_solid(pack: String, model: String, p: Vector3, height: float, rot_y:
 	(parent if parent else nav_region).add_child(b)
 	_reserve(p, radius)
 
+## Carroça queimada do Blender (ou a carroça do pacote, se o modelo não existir).
+func _place_wagon(p: Vector3, rot_y: float) -> void:
+	if ThirdParty.has(ThirdParty.BLENDER, "burned_cart"):
+		_place_solid(ThirdParty.BLENDER, "burned_cart", p, ThirdParty.aabb(ThirdParty.BLENDER, "burned_cart").size.y, rot_y, 2.6)
+	else:
+		_place_solid(ThirdParty.VILLAGE, "Prop_Wagon", p, 2.0, rot_y, 2.4)
+
 func _try_place_s(center: Vector2, half: Vector2, radius: float, road_margin: float = 2.0) -> Variant:
 	for i in 14:
 		var p := Vector3(center.x + _srng.randf_range(-half.x, half.x), 0, center.y + _srng.randf_range(-half.y, half.y))
@@ -565,6 +574,7 @@ func _build_scenery() -> void:
 	_build_base_props()
 	_build_ruins()
 	_build_survivors()
+	_build_horror_props()
 	# Cidade: barracas, carroças, barris e cercas de ferro.
 	var city := Vector2(80, 12)
 	for i in 5:
@@ -574,12 +584,32 @@ func _build_scenery() -> void:
 	for i in 3:
 		var p2: Variant = _try_place_s(city, Vector2(30, 42), 2.4, 1.0)
 		if p2 != null:
-			_place_solid(ThirdParty.VILLAGE, "Prop_Wagon", p2, 2.0, _srng.randf() * TAU, 2.4)
-	for i in 12:
-		var p3: Variant = _try_place_s(city, Vector2(30, 42), 0.8, 1.0)
-		if p3 != null:
-			var m: String = ["Barrel", "Barrel_Apples", "Crate_Wooden", "Crate_Metal"][_srng.randi() % 4]
-			_place_solid(ThirdParty.PROPS, m, p3, _srng.randf_range(0.9, 1.2), _srng.randf() * TAU, 0.8)
+			_place_wagon(p2, _srng.randf() * TAU)
+	var B := ThirdParty.BLENDER
+	if ThirdParty.has(B, "oil_drums"):
+		# Tambores de óleo enferrujados (dois com fogueira acesa à noite) e pilhas de entulho.
+		var drums_h := ThirdParty.aabb(B, "oil_drums").size.y
+		var rubble_h := ThirdParty.aabb(B, "rubble_pile").size.y
+		for i in 6:
+			var dp: Variant = _try_place_s(city, Vector2(30, 42), 1.6, 1.0)
+			if dp != null:
+				var body := ThirdParty.solid(B, "oil_drums", drums_h, 0.7)
+				body.position = dp
+				body.rotation.y = _srng.randf() * TAU
+				nav_region.add_child(body)
+				_reserve(dp, 1.6)
+				if i < 2:
+					_burning_barrel(body)
+		for i in 7:
+			var rp: Variant = _try_place_s(city, Vector2(30, 42), 1.5, 1.0)
+			if rp != null:
+				_place_solid(B, "rubble_pile", rp, rubble_h, _srng.randf() * TAU, 1.5)
+	else:
+		for i in 12:
+			var p3: Variant = _try_place_s(city, Vector2(30, 42), 0.8, 1.0)
+			if p3 != null:
+				var m: String = ["Barrel", "Barrel_Apples", "Crate_Wooden", "Crate_Metal"][_srng.randi() % 4]
+				_place_solid(ThirdParty.PROPS, m, p3, _srng.randf_range(0.9, 1.2), _srng.randf() * TAU, 0.8)
 	for i in 6:
 		var p4: Variant = _try_place_s(city, Vector2(30, 42), 1.6, 1.5)
 		if p4 != null:
@@ -597,7 +627,87 @@ func _build_scenery() -> void:
 			_place_solid(ThirdParty.VILLAGE, "Prop_WoodenFence_Single", wp, 1.3, _srng.randf() * PI, 1.4)
 	var wg: Variant = _try_place_s(farm, Vector2(30, 26), 2.4)
 	if wg != null:
-		_place_solid(ThirdParty.VILLAGE, "Prop_Wagon", wg, 2.0, _srng.randf() * TAU, 2.4)
+		_place_wagon(wg, _srng.randf() * TAU)
+
+## Terror no cenário (modelos do Blender): estacas com cabeças à beira das estradas e na
+## Área Contaminada, e piras de corpos — duas delas ardem à noite (fogo e luz).
+func _build_horror_props() -> void:
+	var B := ThirdParty.BLENDER
+	if not ThirdParty.has(B, "pike_heads"):
+		return
+	var pike_h := ThirdParty.aabb(B, "pike_heads").size.y
+	var pyre_h := ThirdParty.aabb(B, "corpse_pyre").size.y
+	# Estacas de aviso ao longo das estradas, saindo da base.
+	var placed := 0
+	for road in _roads:
+		for k in range(10, road.size(), 9):
+			if placed >= 14:
+				break
+			var r: Vector2 = road[k]
+			var side := 1.0 if (k / 9) % 2 == 0 else -1.0
+			var dir := (road[mini(k + 1, road.size() - 1)] - road[maxi(k - 1, 0)]).normalized()
+			var off := Vector2(-dir.y, dir.x) * 4.6 * side
+			var p := Vector3(r.x + off.x, 0, r.y + off.y)
+			if p.length() < BASE_RADIUS + 14.0 or not _free_at(p, 1.0):
+				continue
+			_place_solid(B, "pike_heads", p, pike_h, _srng.randf() * TAU, 1.0)
+			placed += 1
+	for i in 5:
+		var cp: Variant = _try_place_s(Vector2(88, -88), Vector2(24, 24), 1.0)
+		if cp != null:
+			_place_solid(B, "pike_heads", cp, pike_h, _srng.randf() * TAU, 1.0)
+	# Piras: Área Contaminada, cidade e fazenda; as duas primeiras queimam à noite.
+	var spots := [[Vector2(88, -88), Vector2(22, 22)], [Vector2(80, 12), Vector2(28, 38)], [Vector2(88, -88), Vector2(22, 22)],
+		[Vector2(-35, 78), Vector2(32, 26)], [Vector2(0, 0), Vector2(90, 90)]]
+	for i in spots.size():
+		var pp: Variant = _try_place_s(spots[i][0], spots[i][1], 2.0)
+		if pp == null or (pp as Vector3).length() < BASE_RADIUS + 12.0:
+			continue
+		var body := ThirdParty.solid(B, "corpse_pyre", pyre_h)
+		body.position = pp
+		body.rotation.y = _srng.randf() * TAU
+		nav_region.add_child(body)
+		_reserve(pp, 2.0)
+		if i < 2:
+			_burning_pyre(body)
+
+## Fogueira no tambor do centro (origem do modelo oil_drums), só à noite.
+func _burning_barrel(body: Node3D) -> void:
+	var fx := Node3D.new()
+	fx.add_to_group("night_lights")
+	body.add_child(fx)
+	var fire := EffectsHub.make_fire_particles(0.9)
+	fire.position.y = 0.95
+	fire.visible = false
+	fx.add_child(fire)
+	var light := OmniLight3D.new()
+	light.light_color = Color(1.0, 0.55, 0.22)
+	light.light_energy = 2.0
+	light.omni_range = 7.0
+	light.position.y = 1.3
+	light.visible = false
+	light.add_to_group("reveal_lights")
+	light.set_meta(&"reveal_radius", 6.0)
+	fx.add_child(light)
+
+## Fogo e luz na pira (só à noite: grupo night_lights; revela Espreitadores).
+func _burning_pyre(body: Node3D) -> void:
+	var fx := Node3D.new()
+	fx.add_to_group("night_lights")
+	body.add_child(fx)
+	var fire := EffectsHub.make_fire_particles(1.8)
+	fire.position.y = 0.9
+	fire.visible = false
+	fx.add_child(fire)
+	var light := OmniLight3D.new()
+	light.light_color = Color(1.0, 0.5, 0.2)
+	light.light_energy = 2.4
+	light.omni_range = 8.0
+	light.position.y = 1.4
+	light.visible = false
+	light.add_to_group("reveal_lights")
+	light.set_meta(&"reveal_radius", 7.0)
+	fx.add_child(light)
 
 ## Cemitério na Área Contaminada: cripta, portal, cercas, lápides, caixões, ossos e lanternas.
 func _build_cemetery() -> void:
