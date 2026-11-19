@@ -89,6 +89,16 @@ foram **modelados no Blender** por `tools/blender_hunter_props.py` (malhas low-p
 assets/models/blender` ou com o módulo `bpy` do PyPI. A pose de tiro é procedural (braços sobrepostos à
 animação em `CharacterModel._apply_aim`).
 
+**Defesas feitas no Blender:** barricada, muro de pedra, muro de ferro e armadilha de espinhos foram
+modeladas à mão em `tools/blender_defenses.py` no estilo de sobrevivente improvisando — tábuas velhas,
+estacas, zinco enferrujado, sacos de areia, pedra desmoronada com musgo, chapas soldadas com rebites,
+pregos ensanguentados, arame farpado e crânios. Cada melhoria acrescenta peças ao modelo (objetos Lv2/Lv3
+do GLB). Texturas procedurais assadas no Cycles num atlas por defesa, com oclusão embutida (5 a 9 mil
+triângulos no nível 3). `python3 tools/blender_defenses.py assets/models/blender [nome] --render pasta`
+gera os GLB e uma prévia dos 3 níveis.
+
+![Defesas modeladas no Blender](docs/screenshots/defesas_blender.jpg)
+
 **Inimigos especiais:** a partir da horda 4 surge o *Zumbi Explosivo* (incha e explode ao alcançar o alvo,
 arrasando muros; abatido, explode ferindo os zumbis ao redor), na 7 o *Cuspidor* (cospe ácido de 10 m,
 inclusive por cima dos muros, deixando poças corrosivas, e recua se você se aproximar) e na 9 o *Saltador*

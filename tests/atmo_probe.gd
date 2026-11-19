@@ -45,6 +45,10 @@ func _ready() -> void:
 			var lan := get_tree().get_nodes_in_group(&"hero_lantern")
 			print("%s_%s luzes=%d lanterna=%s" % [sname, tname, cnt, [(lan[0] as OmniLight3D).visible, (lan[0] as OmniLight3D).light_energy] if lan.size() > 0 else "nenhuma"])
 			get_viewport().get_texture().get_image().save_png(out_dir.path_join("%s_%s.png" % [sname, tname]))
+	if OS.get_environment("ATMO_DEFENSE") != "":
+		await _defense_shots(world, hero, OS.get_environment("ATMO_DEFENSE"))
+		get_tree().quit()
+		return
 	if OS.get_environment("ATMO_HUNTER") != "":
 		await _hunter_shots(world, hero)
 		get_tree().quit()
@@ -170,6 +174,35 @@ func _hunter_shots(world: World, hero: Hero) -> void:
 	await _save("hunter_rain")
 	await _wait_frames(14)
 	await _save("hunter_eagle")
+
+## Uma defesa nos 3 níveis lado a lado (revisão dos modelos do Blender).
+func _defense_shots(world: World, hero: Hero, id: String) -> void:
+	var p := Vector3(-26, 0, 22)
+	for h in get_tree().get_nodes_in_group("harvestable"):
+		if (h as Node3D).global_position.distance_to(p) < 12.0:
+			h.queue_free()
+	world.camera_rig.global_position = p
+	world.camera_rig.set(&"distance", 12.0)
+	world.camera_rig.set(&"_zoom_target", 12.0)
+	await _wait_frames(5)
+	# Alinha com a tela: comprimento na direita da câmera, frente virada para ela.
+	var cb := get_viewport().get_camera_3d().global_transform.basis
+	var right := Vector3(cb.x.x, 0, cb.x.z).normalized()
+	var toward := Vector3(cb.z.x, 0, cb.z.z).normalized()
+	hero.global_position = p - toward * 1.2
+	world.hud.visible = false
+	var yaw := atan2(-right.z, right.x)
+	var d := Building.load_def(StringName(id))
+	var gap := d.footprint.x + 1.6
+	for lv in [1, 2, 3]:
+		world.build_manager.place(d, p + right * ((lv - 2) * gap), yaw, false, lv)
+	TimeManager.running = false
+	TimeManager.set_state(TimeManager.Phase.DAY, 3, 20.0)
+	await _wait_frames(40)
+	await _save("%s_dia" % id)
+	TimeManager.set_state(TimeManager.Phase.DUSK, 3, 30.0)
+	await _wait_frames(40)
+	await _save("%s_entardecer" % id)
 
 func _wait_frames(n: int) -> void:
 	for i in n:

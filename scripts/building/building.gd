@@ -4,6 +4,7 @@ extends Structure
 ## destruição, reparo) e acrescenta níveis, torre automática e armadilha.
 
 const DEFS_DIR := "res://data/buildings/"
+const BLENDER_DIR := "res://assets/models/blender/"
 
 var def: BuildingDef
 var level: int = 1
@@ -85,6 +86,8 @@ static func make_visual(d: BuildingDef, lvl: int = 1) -> Node3D:
 	var root := Node3D.new()
 	var s := 1.0 + 0.06 * (lvl - 1)
 	match d.id:
+		&"stone_wall" when ResourceLoader.exists(BLENDER_DIR + "stone_wall.glb"):
+			_blender_levels(root, "stone_wall", lvl)
 		&"stone_wall":
 			if ModelLibrary.has("wall"):
 				root.add_child(ModelLibrary.instance_width("wall", d.footprint.x * 1.05))
@@ -113,6 +116,8 @@ static func make_visual(d: BuildingDef, lvl: int = 1) -> Node3D:
 				_box(root, Vector3(d.footprint.x + 0.4, 0.5, d.footprint.y + 0.4), Vector3(0, 2.9, 0), MaterialLib.flat(Color(0.2, 0.35, 0.8)))
 			var flag := _box(root, Vector3(0.05, 0.9, 1.2), Vector3(d.footprint.x * 0.5 - 0.2, 4.2, 0), MaterialLib.textured("cloth", Color(0.2, 0.35, 0.9), 1.0))
 			flag.rotation_degrees.y = 90
+		&"iron_wall" when ResourceLoader.exists(BLENDER_DIR + "iron_wall.glb"):
+			_blender_levels(root, "iron_wall", lvl)
 		&"iron_wall":
 			if ModelLibrary.has("iron_wall"):
 				# A malha gerada é comprida no eixo Z: gira 90° e ajusta a altura à do muro.
@@ -132,6 +137,8 @@ static func make_visual(d: BuildingDef, lvl: int = 1) -> Node3D:
 			_box(root, Vector3(0.06, 1.6, 0.06), Vector3(0, d.height + 0.4, 0), MaterialLib.textured("bark", Color.WHITE))
 		&"brazier":
 			_make_brazier(root, d)
+		&"barricade" when ResourceLoader.exists(BLENDER_DIR + "barricade.glb"):
+			_blender_levels(root, "barricade", lvl)
 		&"barricade":
 			var bark := MaterialLib.textured("bark", Color(0.95, 0.82, 0.68), 1.0)
 			var n := int(d.footprint.x / 0.9)
@@ -159,6 +166,8 @@ static func make_visual(d: BuildingDef, lvl: int = 1) -> Node3D:
 			bm.position = Vector3(0, 0.7, 0)
 			bm.rotation_degrees.z = 90
 			root.add_child(bm)
+		&"spikes" when ResourceLoader.exists(BLENDER_DIR + "spikes.glb"):
+			_blender_levels(root, "spikes", lvl)
 		&"spikes":
 			_box(root, Vector3(d.footprint.x, 0.12, d.footprint.y), Vector3(0, 0.06, 0), MaterialLib.textured("planks", Color(0.8, 0.7, 0.6), 1.0))
 			var iron := MaterialLib.textured("metal", Color(0.75, 0.75, 0.8), 1.0, true, 0.35)
@@ -176,6 +185,15 @@ static func make_visual(d: BuildingDef, lvl: int = 1) -> Node3D:
 					root.add_child(m2)
 	root.scale = Vector3.ONE * s
 	return root
+
+## Defesa modelada no Blender (tools/blender_defenses.py): os objetos Lv2/Lv3 aparecem
+## a partir do nível 2/3 (chapas e sacos de areia, depois arame farpado etc.).
+static func _blender_levels(root: Node3D, model: String, lvl: int) -> void:
+	var inst := (load(BLENDER_DIR + model + ".glb") as PackedScene).instantiate() as Node3D
+	root.add_child(inst)
+	for n in inst.find_children("Lv*", "", true, false):
+		var want := int(String(n.name).substr(2, 1))
+		(n as Node3D).visible = want <= lvl
 
 ## Braseiro: pedestal de pedra, cesto de ferro com fogo alto e luz quente forte.
 static func _make_brazier(root: Node3D, d: BuildingDef) -> void:
