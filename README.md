@@ -125,6 +125,14 @@ ficam fora do export (só servem de reserva no editor).
 
 ![Fortaleza e muralha modeladas no Blender](docs/screenshots/fortaleza_blender.jpg)
 
+**Capim feito no Blender** (`tools/blender_ground.py` → `grass_tufts.glb`): três touceiras de capim seco
+(média e cheia; alta e rala com espigas; baixa, morta e com folhas quebradas tombadas), com folhas curvas de
+3 triângulos e cor por vértice (pé oliva escuro, ponta cor de palha). O `Foliage` as espalha em MultiMesh por
+pedaço do mapa com o shader `grass_mesh.gdshader` (vento pela altura da folha, tom variando por touceira) e só
+as desenha a até 48 m da câmera.
+
+![Capim antes e depois](docs/screenshots/capim_antes_depois.jpg)
+
 **Inimigos especiais:** a partir da horda 4 surge o *Zumbi Explosivo* (incha e explode ao alcançar o alvo,
 arrasando muros; abatido, explode ferindo os zumbis ao redor), na 7 o *Cuspidor* (cospe ácido de 10 m,
 inclusive por cima dos muros, deixando poças corrosivas, e recua se você se aproximar) e na 9 o *Saltador*

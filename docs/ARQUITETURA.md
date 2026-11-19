@@ -172,6 +172,9 @@ Modelos riggados gerados pelo `tools/tripo_pipeline.py`.
   durante o desenho a deixa branca no renderizador web).
 - Modelos do Blender: `tools/blender_hunter_props.py` (cores em sRGB convertidas para linear; animações
   agrupadas por trilhas NLA de mesmo nome → uma animação glTF por trilha).
+- Capim: `tools/blender_ground.py` exporta a cor por vértice com `export_vertex_color="NAME"` (camada "Col",
+  valores sRGB crus: o importador já converte). No shader a normal é forçada para cima (as folhas têm as duas
+  faces e a de trás ficava preta); `Foliage` faz um MultiMesh por variante de touceira com alcance de 48 m.
 
 ## Áudio
 
