@@ -12,7 +12,7 @@ uniform float tile = 0.1;
 uniform float map_size = 240.0;
 // Grama pós-apocalíptica: capim seco e doente (0 = verde original, 1 = totalmente seco).
 uniform float dry = 0.85;
-uniform vec3 dry_tint : source_color = vec3(0.62, 0.55, 0.33);
+uniform vec3 dry_tint : source_color = vec3(0.5, 0.45, 0.29);
 uniform vec3 dead_color : source_color = vec3(0.36, 0.29, 0.18);
 uniform vec3 ash_color : source_color = vec3(0.16, 0.15, 0.14);
 
