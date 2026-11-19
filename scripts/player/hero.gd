@@ -49,6 +49,15 @@ var _dash_def: AbilityDef
 
 var weapon_level: int = 0
 
+# Caçador: ataque à distância com arco (o machado do modelo fica para coletar recursos).
+const BOW_RANGE := 14.0
+const BOW_DAMAGE_MULT := 0.9
+const ARROW_SPEED := 42.0
+var ranged: bool = false
+var _shot_target: Enemy = null
+var _shot_point: Vector3
+var _melee_swing: bool = false
+
 # Atributos distribuídos pelo jogador (3 pontos por nível; bônus em data/config/attributes.tres).
 const ATTRIBUTES_PATH := "res://data/config/attributes.tres"
 var attr_cfg: AttributeConfig
@@ -110,6 +119,9 @@ func _ready() -> void:
 	health.damaged.connect(_on_damaged)
 	model = $Model as CharacterModel
 	model.build_hero(skin_override)
+	ranged = bool(HeroSkins.get_skin(skin_id()).get("ranged", false))
+	if ranged:
+		model.attach_bow()
 	($HealthBar as HealthBar3D).bind(health)
 	_home = global_position
 	if is_puppet:
@@ -119,7 +131,7 @@ func _ready() -> void:
 		net_peer = Net.my_id()
 	touch_mode = Platform.touch
 	EventBus.enemy_killed.connect(_on_enemy_killed)
-	for id in ABILITY_IDS:
+	for id in HeroSkins.abilities(skin_id()):
 		abilities.append(load("res://data/skills/%s.tres" % id) as AbilityDef)
 	# Lanterna: círculo de luz quente ao redor do herói na escuridão
 	# (energia e tremulação controladas por DayNightVisuals, grupo hero_lantern).
@@ -147,9 +159,37 @@ func set_home(p: Vector3) -> void:
 func damage() -> float:
 	return (base_damage + gear(&"damage") + weapon_level * SHARPEN_BONUS + (level - 1) * LEVEL_DAMAGE) * (1.0 + attr(&"strength") * attr_cfg.str_damage_pct + Tech.bonus("hero_damage_pct"))
 
-## Alcance do golpe (lança aumenta).
+## Troca a classe/aparência em jogo (modelo, ataque e habilidades) — usado nos testes.
+func apply_class(id: String) -> void:
+	if is_puppet:
+		skin_override = id
+	else:
+		GameManager.hero_skin = id
+	var old := model
+	var nm := CharacterModel.new()
+	nm.name = "Model"
+	add_child(nm)
+	move_child(nm, old.get_index())
+	old.queue_free()
+	old.name = "OldModel"
+	model = nm
+	model.build_hero(skin_override)
+	ranged = bool(HeroSkins.get_skin(skin_id()).get("ranged", false))
+	if ranged:
+		model.attach_bow()
+	abilities.clear()
+	for aid in HeroSkins.abilities(skin_id()):
+		abilities.append(load("res://data/skills/%s.tres" % aid) as AbilityDef)
+	_cd = [0.0, 0.0, 0.0, 0.0]
+	stats_changed.emit()
+
+## Classe/aparência deste herói (o de outro jogador no coop usa skin_override).
+func skin_id() -> String:
+	return skin_override if skin_override != "" else GameManager.hero_skin
+
+## Alcance do ataque: arco do Caçador ou golpe corpo a corpo (lança aumenta).
 func reach() -> float:
-	return attack_range + gear(&"reach")
+	return (BOW_RANGE if ranged else attack_range) + gear(&"reach")
 
 ## Chamado pelo Tech ao concluir uma pesquisa.
 func refresh_tech() -> void:
@@ -539,6 +579,23 @@ func _footsteps(delta: float, planar_speed: float) -> void:
 # --- Combate -------------------------------------------------------------
 
 func _start_attack() -> void:
+	if ranged:
+		_shot_target = _bow_target()
+		# Sem inimigo na mira e com árvore/pedra ao alcance: usa o machado para coletar.
+		_melee_swing = _shot_target == null and _harvest_in_reach()
+		if not _melee_swing:
+			net_attack_count += 1
+			var d := 1.0 / attack_speed()
+			_attack_timer = d
+			_pending_hit = d * 0.4
+			var dir := _aim_point - global_position
+			dir.y = 0.0
+			if dir.length_squared() < 0.01:
+				dir = facing()
+			_shot_point = _shot_target.global_position if _shot_target else global_position + dir.normalized() * BOW_RANGE
+			model.aim_bow(_shot_point + Vector3.UP * 1.2, d * 0.95)
+			AudioManager.play_3d(&"swing", global_position, -14.0, 1.4)
+			return
 	net_attack_count += 1
 	var dur := 1.0 / attack_speed()
 	_attack_timer = dur
@@ -547,6 +604,9 @@ func _start_attack() -> void:
 	AudioManager.play_3d(&"swing", global_position, -6.0)
 
 func _apply_hit() -> void:
+	if ranged and not _melee_swing:
+		_fire_arrow()
+		return
 	var fwd := facing()
 	var half_arc := deg_to_rad(attack_arc_degrees * 0.5)
 	var hit_any := false
@@ -570,6 +630,60 @@ func _apply_hit() -> void:
 			hit_any = true
 	if hit_any:
 		EffectsHub.spawn_slash(global_position + Vector3.UP * 1.0 + fwd * 1.3, model.rotation.y)
+
+## Inimigo para a flecha: dentro do alcance e mais perto da direção da mira.
+func _bow_target() -> Enemy:
+	var dir := _aim_point - global_position
+	dir.y = 0.0
+	dir = dir.normalized() if dir.length_squared() > 0.01 else facing()
+	var best: Enemy = null
+	var best_score := INF
+	for e in Enemy.all:
+		if not is_instance_valid(e) or not e.is_targetable():
+			continue
+		var to := e.global_position - global_position
+		to.y = 0.0
+		var dist := to.length()
+		if dist > reach() + e.get_radius():
+			continue
+		var ang := rad_to_deg(dir.angle_to(to / maxf(dist, 0.01))) if dist > 0.8 else 0.0
+		if ang > 40.0:
+			continue
+		var score := ang * 0.35 + dist
+		if score < best_score:
+			best_score = score
+			best = e
+	return best
+
+func _harvest_in_reach() -> bool:
+	var dir := _aim_point - global_position
+	dir.y = 0.0
+	dir = dir.normalized() if dir.length_squared() > 0.01 else facing()
+	for h: Node in get_tree().get_nodes_in_group("harvestable"):
+		var hv := h as Node3D
+		if hv and _in_arc(hv.global_position, dir, deg_to_rad(70.0), attack_range + 0.8):
+			return true
+	return false
+
+## Solta a flecha (teleguiada até o alvo; sem alvo, voa reto na direção da mira).
+func _fire_arrow() -> void:
+	var from := global_position + Vector3.UP * 1.55 + facing() * 0.6
+	var t := _shot_target
+	if t == null or not is_instance_valid(t) or not t.is_targetable():
+		t = _bow_target()
+	if t:
+		var crit := _rng.randf() < crit()
+		var info := DamageInfo.make(damage() * BOW_DAMAGE_MULT * (crit_multiplier if crit else 1.0), self, crit)
+		EffectsHub.spawn_arrow(from, t, info, ARROW_SPEED)
+		Coop.fx_all("arrow", from, t.global_position + Vector3.UP)
+		var ls := gear(&"lifesteal_pct")
+		if ls > 0.0:
+			health.heal(info.amount * ls)
+	else:
+		var to := _shot_point + Vector3.UP * 0.8
+		EffectsHub.spawn_bolt(from, to, ARROW_SPEED)
+		Coop.fx_all("arrow", from, to)
+	AudioManager.play_3d(&"arrow", from, -5.0, 1.15, 60)
 
 func _in_arc(p: Vector3, fwd: Vector3, half_arc: float, reach: float) -> bool:
 	var to := p - global_position
@@ -685,9 +799,110 @@ func cast_ability(i: int) -> String:
 		AbilityDef.Kind.DASH: _cast_dash(a)
 		AbilityDef.Kind.WARCRY: _cast_warcry(a)
 		AbilityDef.Kind.NOVA: _cast_nova(a)
+		AbilityDef.Kind.MULTISHOT: _cast_multishot(a)
+		AbilityDef.Kind.TRAP: _cast_trap(a)
+		AbilityDef.Kind.ARROW_RAIN: _cast_arrow_rain(a)
+		AbilityDef.Kind.EAGLE: _cast_eagle(a)
 	ability_cast.emit(i)
 	net_attack_count += 1
 	return ""
+
+# --- Habilidades do Caçador ---------------------------------------------------
+
+func _aim_dir() -> Vector3:
+	var dir := _aim_point - global_position
+	dir.y = 0.0
+	return dir.normalized() if dir.length_squared() > 0.01 else facing()
+
+## Tiro Múltiplo: leque de flechas, cada uma num inimigo diferente (as que sobram voam retas).
+func _cast_multishot(a: AbilityDef) -> void:
+	var dir := _aim_dir()
+	if touch_mode or _bow_target() != null:
+		var t0 := _bow_target()
+		if t0:
+			dir = (t0.global_position - global_position)
+			dir.y = 0.0
+			dir = dir.normalized()
+	var n := maxi(1, int(a.duration))
+	var half := deg_to_rad(a.radius * 0.5)
+	var cands: Array[Enemy] = []
+	for e in Enemy.all:
+		if not is_instance_valid(e) or not e.is_targetable():
+			continue
+		var to := e.global_position - global_position
+		to.y = 0.0
+		if to.length() <= a.distance and (to.length() < 1.0 or dir.angle_to(to.normalized()) <= half):
+			cands.append(e)
+	cands.sort_custom(func(x: Enemy, y: Enemy) -> bool: return x.global_position.distance_squared_to(global_position) < y.global_position.distance_squared_to(global_position))
+	var from := global_position + Vector3.UP * 1.55 + dir * 0.6
+	var dmg := damage() * a.power * ability_power()
+	for i in n:
+		if i < cands.size():
+			var crit := _rng.randf() < crit()
+			EffectsHub.spawn_arrow(from, cands[i], DamageInfo.make(dmg * (crit_multiplier if crit else 1.0), self, crit), ARROW_SPEED)
+			Coop.fx_all("arrow", from, cands[i].global_position + Vector3.UP)
+		else:
+			var ang := lerpf(-half, half, float(i) / maxf(1.0, n - 1.0))
+			var to := global_position + dir.rotated(Vector3.UP, ang) * a.distance + Vector3.UP * 0.8
+			EffectsHub.spawn_bolt(from, to, ARROW_SPEED)
+			Coop.fx_all("arrow", from, to)
+	_face(global_position + dir, 1.0, 100.0)
+	model.aim_bow(global_position + dir * 8.0 + Vector3.UP * 1.2, 0.5)
+	AudioManager.play_3d(&"arrow", global_position, 0.0, 0.9)
+
+## Armadilha de Urso à frente do herói.
+func _cast_trap(a: AbilityDef) -> void:
+	var pos := global_position + _aim_dir() * a.distance
+	pos.y = 0.0
+	var trap := BearTrap.new()
+	trap.owner_hero = self
+	trap.damage = damage() * a.power * ability_power()
+	trap.root_time = a.duration
+	trap.radius = a.radius
+	EffectsHub.instance().add_child(trap)
+	trap.global_position = pos
+	Coop.fx_all("trap", pos)
+	AudioManager.play_3d(&"build", pos, -4.0, 1.3)
+
+## Chuva de Flechas no maior grupo de inimigos ao alcance (senão, na direção da mira).
+func _cast_arrow_rain(a: AbilityDef) -> void:
+	var center := global_position + _aim_dir() * minf(a.distance, 8.0)
+	var best := 0
+	for e in Enemy.all:
+		if not is_instance_valid(e) or not e.is_targetable() or e.global_position.distance_to(global_position) > a.distance:
+			continue
+		var n := _enemies_in_radius(e.global_position, a.radius).size()
+		if n > best:
+			best = n
+			center = e.global_position
+	center.y = 0.0
+	var rain := ArrowRain.new()
+	rain.owner_hero = self
+	rain.radius = a.radius
+	rain.duration = a.duration
+	rain.tick_damage = damage() * a.power * ability_power()
+	EffectsHub.instance().add_child(rain)
+	rain.global_position = center
+	Coop.fx_all("arrow_rain", center, Vector3(a.radius, a.duration, 0))
+	model.aim_bow(center + Vector3.UP * 12.0, 0.6)
+
+## Chamado da Águia: uma águia por herói (lançar de novo renova o tempo).
+func _cast_eagle(a: AbilityDef) -> void:
+	for n in get_tree().get_nodes_in_group(&"eagles"):
+		var old := n as Eagle
+		if old and old.owner_hero == self and old.lifetime > 0.0:
+			old.lifetime = a.duration
+			old.damage = damage() * a.power * ability_power()
+			return
+	var eg := Eagle.new()
+	eg.owner_hero = self
+	eg.damage = damage() * a.power * ability_power()
+	eg.hunt_radius = a.radius
+	eg.reveal_radius = a.distance
+	eg.lifetime = a.duration
+	EffectsHub.instance().add_child(eg)
+	Coop.fx_all("eagle", global_position, Vector3(a.duration, a.radius, a.distance))
+	EventBus.notify("Uma águia atende ao seu chamado!", Color(1.0, 0.85, 0.5))
 
 func _enemies_in_radius(center: Vector3, r: float) -> Array[Enemy]:
 	var out: Array[Enemy] = []
@@ -965,8 +1180,11 @@ func apply_net_state(pos: Vector3, yaw: float, speed: float, hp: float, max_hp: 
 	if atk != _net_atk:
 		_net_atk = atk
 		if not dead:
-			model.play_attack(0.4)
-			AudioManager.play_3d(&"swing", global_position, -10.0)
+			if ranged and model.has_bow():
+				model.aim_bow(global_position + facing() * 10.0 + Vector3.UP * 1.2, 0.6)
+			else:
+				model.play_attack(0.4)
+				AudioManager.play_3d(&"swing", global_position, -10.0)
 
 func _puppet_process(delta: float) -> void:
 	if not _net_has_state:

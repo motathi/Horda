@@ -147,7 +147,17 @@ func _set_action(action: String, strength: float) -> void:
 	else:
 		Input.action_release(action)
 
+## Ícones das habilidades da classe do herói, carregados fora do _draw (carregar uma
+## textura pela primeira vez durante o desenho a deixa branca no renderizador web).
+var _ab_icons: Array[Texture2D] = []
+var _ab_icons_for: Array = []
+
 func _process(_delta: float) -> void:
+	if hero and _ab_icons_for != hero.abilities:
+		_ab_icons_for = hero.abilities.duplicate()
+		_ab_icons.clear()
+		for a: AbilityDef in hero.abilities:
+			_ab_icons.append(a.icon())
 	queue_redraw()
 
 func _draw() -> void:
@@ -188,7 +198,9 @@ func _draw_ability(b: Dictionary, c: Vector2, r: float, pressed: bool, f: Font) 
 	var locked := not hero.is_unlocked(i)
 	var cd := hero.cooldown_left(i)
 	var no_energy := hero.energy < a.energy_cost
-	UIStyle.draw_hex_button(self, c, r, b.icon, pressed, 0.6 if (not locked and cd <= 0.0 and not no_energy and i == 3) else 0.0, locked or no_energy)
+	# Ícone da habilidade da classe do herói (Caçador e Cavaleiro têm habilidades diferentes).
+	var tex: Texture2D = _ab_icons[i] if i < _ab_icons.size() and _ab_icons[i] else b.icon
+	UIStyle.draw_hex_button(self, c, r, tex, pressed, 0.6 if (not locked and cd <= 0.0 and not no_energy and i == 3) else 0.0, locked or no_energy)
 	if locked:
 		draw_colored_polygon(UIStyle.hex_points(c, r - 8.0), Color(0, 0, 0, 0.55))
 		if _lock_icon:

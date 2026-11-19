@@ -155,6 +155,24 @@ Modelos riggados gerados pelo `tools/tripo_pipeline.py`.
   pela Rainha dos Gritos entram na horda por `HordeDirector.register_extra()`.
 - Revisão visual: `ATMO_HORROR=1 ATMO_ONLY=x xvfb-run godot res://tests/atmo_probe.tscn -- <pasta>`.
 
+## Classes do herói
+
+- `HeroSkins.LIST` define por classe `ranged` e `abilities` (ids em `data/skills`); `Hero.skin_id()` resolve a
+  classe (a do outro jogador no coop vem de `skin_override`). `Hero.apply_class()` troca em jogo (testes).
+- Caçador: `_start_attack()` escolhe o alvo com `_bow_target()` (alcance + cone de 40° em volta da mira) e
+  solta a flecha em `_fire_arrow()` (Projectile teleguiado do `EffectsHub`); sem alvo e com recurso perto,
+  `_melee_swing` usa o golpe de machado de sempre. A pose: `CharacterModel.aim_bow()` + `_after_anim()`
+  (sinal `mixer_applied`), que gira L/R_Upperarm/Forearm com `Quaternion(arco_atual, direção)` por cima da
+  animação e posiciona o arco (`assets/models/blender/bow.glb`, `top_level`) na mão esquerda.
+- Habilidades novas em `AbilityDef.Kind`: `MULTISHOT`, `TRAP` (`BearTrap`), `ARROW_RAIN` (`ArrowRain`) e
+  `EAGLE` (`Eagle`, máquina de estados ORBIT → DIVE → CLIMB; grupo `reveal_lights`). Cada uma tem cópia
+  só visual no coop via `Coop.fx_all()` (RPC de qualquer jogador para os outros); o dano de quem não é
+  anfitrião vai ao anfitrião pelo caminho normal de `Enemy.take_damage` → `Coop.hit_enemy`.
+- HUD: os ícones das habilidades vêm da classe e são carregados fora do `_draw` (carregar textura nova
+  durante o desenho a deixa branca no renderizador web).
+- Modelos do Blender: `tools/blender_hunter_props.py` (cores em sRGB convertidas para linear; animações
+  agrupadas por trilhas NLA de mesmo nome → uma animação glTF por trilha).
+
 ## Áudio
 
 `AudioManager` (autoload) cria os canais `Music`, `SFX`, `Ambient` e `UI`; `play(id)`/`play_3d(id, pos, vol, pitch,

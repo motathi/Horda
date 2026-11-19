@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="AbilityDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/progression/ability_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"arrow_rain"
+display_name = "Chuva de Flechas"
+description = "Uma saraivada cai sobre o maior grupo de inimigos por perto: dano contínuo e lentidão por 3,5 s."
+icon_name = "ab_arrow_rain"
+kind = 6
+unlock_level = 3
+energy_cost = 35.0
+cooldown = 14.0
+power = 0.55
+radius = 4.5
+distance = 16.0
+duration = 3.5

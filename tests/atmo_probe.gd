@@ -45,6 +45,10 @@ func _ready() -> void:
 			var lan := get_tree().get_nodes_in_group(&"hero_lantern")
 			print("%s_%s luzes=%d lanterna=%s" % [sname, tname, cnt, [(lan[0] as OmniLight3D).visible, (lan[0] as OmniLight3D).light_energy] if lan.size() > 0 else "nenhuma"])
 			get_viewport().get_texture().get_image().save_png(out_dir.path_join("%s_%s.png" % [sname, tname]))
+	if OS.get_environment("ATMO_HUNTER") != "":
+		await _hunter_shots(world, hero)
+		get_tree().quit()
+		return
 	if OS.get_environment("ATMO_HORROR") != "":
 		await _horror_shots(world, hero)
 		get_tree().quit()
@@ -124,6 +128,48 @@ func _horror_shots(world: World, hero: Hero) -> void:
 	TimeManager.set_state(TimeManager.Phase.DAY, 6, 20.0)
 	await _wait_frames(60)
 	await _save("horror_day")
+
+## Caçador: pose de tiro com arco, armadilha, chuva de flechas e águia.
+func _hunter_shots(world: World, hero: Hero) -> void:
+	var p := Vector3(-30, 0, 30)
+	hero.global_position = p
+	world.camera_rig.global_position = p
+	world.camera_rig.set(&"distance", 11.0)
+	world.camera_rig.set(&"_zoom_target", 11.0)
+	TimeManager.set_state(TimeManager.Phase.DAY, 3, 20.0)
+	TimeManager.running = false
+	hero.level = 6
+	hero.health.invulnerable = true
+	var mk := func(at: Vector3) -> Enemy:
+		var e := (load("res://scenes/enemies/zombie.tscn") as PackedScene).instantiate() as Enemy
+		e.def = load("res://data/enemies/zombie_brute.tres") as EnemyDef
+		world.enemies_root.add_child(e)
+		e.global_position = at
+		e.speed_value = 0.4
+		return e
+	for h in get_tree().get_nodes_in_group("harvestable"):
+		if (h as Node3D).global_position.distance_to(p) < 8.0:
+			h.queue_free()
+	for i in 4:
+		mk.call(p + Vector3(7.5, 0, -3 + i * 2))
+	await _wait_frames(30)
+	hero._aim_point = p + Vector3(8, 0, 0)
+	hero._face(p + Vector3(8, 0, 0), 1.0, 100.0)
+	hero._attack_timer = 0.0
+	hero._start_attack()
+	await _wait_frames(3)
+	await _save("hunter_draw")
+	await _wait_frames(30)
+	hero.energy = 100.0
+	hero.cast_ability(2)
+	hero._aim_point = p + Vector3(-1, 0, 4)
+	hero.cast_ability(1)
+	hero.energy = 100.0
+	hero.cast_ability(3)
+	await _wait_frames(5)
+	await _save("hunter_rain")
+	await _wait_frames(14)
+	await _save("hunter_eagle")
 
 func _wait_frames(n: int) -> void:
 	for i in n:

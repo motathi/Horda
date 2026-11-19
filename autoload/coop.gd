@@ -266,6 +266,15 @@ func fx(kind: String, a: Vector3, b: Vector3 = Vector3.ZERO, f: float = 0.0, c: 
 	if is_host():
 		_fx.rpc(kind, a, b, f, c)
 
+## Efeito visual de qualquer jogador para os outros (flechas, armadilhas, águia do Caçador).
+func fx_all(kind: String, a: Vector3, b: Vector3 = Vector3.ZERO, f: float = 0.0, c: Color = Color.WHITE) -> void:
+	if active():
+		_fx_any.rpc(kind, a, b, f, c)
+
+@rpc("any_peer", "call_remote", "unreliable")
+func _fx_any(kind: String, a: Vector3, b: Vector3, f: float, c: Color) -> void:
+	_fx(kind, a, b, f, c)
+
 @rpc("authority", "call_remote", "unreliable")
 func _fx(kind: String, a: Vector3, b: Vector3, f: float, c: Color) -> void:
 	match kind:
@@ -285,10 +294,42 @@ func _fx(kind: String, a: Vector3, b: Vector3, f: float, c: Color) -> void:
 			world.add_child(p)
 			p.setup(a, b)
 		"arrow": EffectsHub.spawn_bolt(a, b, 40.0)
+		"trap":
+			var trap := BearTrap.new()
+			trap.visual_only = true
+			trap.owner_hero = _hero_near(a)
+			EffectsHub.instance().add_child(trap)
+			trap.global_position = a
+		"arrow_rain":
+			var rain := ArrowRain.new()
+			rain.visual_only = true
+			rain.radius = b.x
+			rain.duration = b.y
+			EffectsHub.instance().add_child(rain)
+			rain.global_position = a
+		"eagle":
+			var eg := Eagle.new()
+			eg.visual_only = true
+			eg.owner_hero = _hero_near(a)
+			eg.lifetime = b.x
+			eg.hunt_radius = b.y
+			eg.reveal_radius = b.z
+			EffectsHub.instance().add_child(eg)
 	if kind in ["explosion", "lob"]:
 		AudioManager.play_3d(&"explosion", b if kind == "lob" else a, 0.0)
 	elif kind == "lightning":
 		AudioManager.play_3d(&"zap", a, -4.0)
+
+## Herói (de qualquer jogador) mais perto de um ponto — dono dos efeitos recebidos.
+func _hero_near(p: Vector3) -> Node3D:
+	var best: Node3D = null
+	var bd := INF
+	for h: Node in get_tree().get_nodes_in_group(&"hero"):
+		var d := (h as Node3D).global_position.distance_squared_to(p)
+		if d < bd:
+			bd = d
+			best = h as Node3D
+	return best
 
 # --- Saques no chão ------------------------------------------------------------------------
 

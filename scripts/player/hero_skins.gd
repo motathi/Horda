@@ -7,7 +7,9 @@ class_name HeroSkins
 
 const DEFAULT := "hunter"
 const LIST: Array[Dictionary] = [
-	{"id": "hunter", "name": "Caçador", "model": "hero", "height": 2.2},
+	# Caçador: ataca com arco (o machado do modelo fica para coletar), armadilhas e águia.
+	{"id": "hunter", "name": "Caçador", "model": "hero", "height": 2.2, "ranged": true,
+		"abilities": [&"multishot", &"bear_trap", &"arrow_rain", &"eagle"]},
 	{"id": "knight", "name": "Cavaleiro", "model": "hero_paladin", "height": 2.25},
 	# Soldados (não aparecem na escolha de herói).
 	{"id": "ranger", "name": "Arqueiro", "model": "hero", "height": 2.1, "tint": Color(0.7, 1.0, 0.65), "hidden": true},
@@ -22,6 +24,10 @@ static func playable() -> Array[Dictionary]:
 		if not s.get("hidden", false):
 			out.append(s)
 	return out
+
+## Habilidades da classe (padrão: as do Cavaleiro, corpo a corpo).
+static func abilities(id: String) -> Array:
+	return get_skin(id).get("abilities", [&"whirlwind", &"dash", &"warcry", &"nova"])
 
 static func get_skin(id: String) -> Dictionary:
 	for s in LIST:

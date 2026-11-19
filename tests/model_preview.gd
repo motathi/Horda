@@ -39,6 +39,14 @@ func _ready() -> void:
 		aabb = aabb.merge((mi as MeshInstance3D).get_aabb())
 	var center := aabb.get_center()
 	var radius := aabb.size.length() * 0.5
+	# 3º argumento opcional: animação a mostrar (pausada no quadro do meio).
+	if args.size() > 2:
+		var aps := model.find_children("*", "AnimationPlayer", true, false)
+		if aps.size() > 0:
+			var ap := aps[0] as AnimationPlayer
+			ap.play(args[2])
+			ap.seek(ap.current_animation_length * 0.3, true)
+			ap.pause()
 	for i in 2:
 		model.rotation.y = deg_to_rad(-30 + i * 160)
 		cam.position = center + Vector3(0, radius * 1.2, radius * 2.2)

@@ -349,6 +349,7 @@ func _capsule(parent: Node3D, r: float, h: float, pos: Vector3, mat: Material) -
 
 ## speed_ratio: 0 parado .. 1 velocidade máxima.
 func animate(delta: float, speed_ratio: float) -> void:
+	_aim_left = maxf(0.0, _aim_left - delta)
 	if _dead or _rig == null:
 		return
 	if _rigged:
@@ -413,6 +414,97 @@ func play_spin(duration: float) -> void:
 	_rig.rotation.y = 0.0
 	tw.tween_property(_rig, "rotation:y", TAU, duration).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	tw.tween_callback(func() -> void: _rig.rotation.y = 0.0)
+
+# --- Arco do Caçador (feito no Blender) e pose de mira procedural ------------------
+
+const BOW_SCENE := "res://assets/models/blender/bow.glb"
+const BOW_SCALE := 1.3
+var _bow: Node3D
+var _skel: Skeleton3D
+var _bones: Dictionary = {}
+var _aim_left: float = 0.0
+var _aim_total: float = 0.0
+var _aim_target: Vector3
+
+## Arco na mão esquerda (o machado do modelo fica na direita, para coletar).
+func attach_bow() -> void:
+	if not _rigged or _bow != null or not ResourceLoader.exists(BOW_SCENE):
+		return
+	var sks := _rig.find_children("*", "Skeleton3D", true, false)
+	if sks.is_empty():
+		return
+	_skel = sks[0] as Skeleton3D
+	for n in ["L_Upperarm", "L_Forearm", "L_Hand", "R_Upperarm", "R_Forearm", "R_Hand"]:
+		_bones[n] = _skel.find_bone(n)
+	if int(_bones["L_Hand"]) < 0:
+		return
+	_bow = (load(BOW_SCENE) as PackedScene).instantiate() as Node3D
+	_bow.name = "Bow"
+	_bow.top_level = true
+	add_child(_bow)
+	if _anim:
+		_anim.mixer_applied.connect(_after_anim)
+
+func has_bow() -> bool:
+	return _bow != null
+
+## Puxa a corda e mira no ponto (mundo) por `duration` segundos.
+func aim_bow(target: Vector3, duration: float) -> void:
+	_aim_target = target
+	_aim_total = maxf(0.05, duration)
+	_aim_left = _aim_total
+	if _anim and _anim.process_mode == Node.PROCESS_MODE_DISABLED:
+		_anim.process_mode = Node.PROCESS_MODE_INHERIT
+
+## Depois da animação de cada quadro: sobrepõe os braços na pose de arqueiro e posiciona o arco.
+func _after_anim() -> void:
+	if _bow == null or _skel == null:
+		return
+	var w := 0.0
+	if _aim_left > 0.0 and not _dead:
+		var t := 1.0 - _aim_left / _aim_total
+		w = smoothstep(0.0, 0.18, t) * (1.0 - smoothstep(0.72, 1.0, t))
+	if w > 0.01:
+		_apply_aim(w)
+	var hand := _skel.global_transform * _skel.get_bone_global_pose(int(_bones["L_Hand"])).origin
+	var basis := Basis(Vector3.UP, rotation.y)
+	# Mirando: o arco inclina um pouco; parado: pendurado ao lado, sem enterrar no chão.
+	basis = basis * Basis(Vector3(0, 0, 1), deg_to_rad(-12.0) * w)
+	var pos := hand
+	pos.y = maxf(pos.y, global_position.y + lerpf(0.85, 0.0, w))
+	_bow.global_transform = Transform3D(basis.scaled(Vector3.ONE * BOW_SCALE), pos)
+
+func _apply_aim(w: float) -> void:
+	var inv := _skel.global_transform.affine_inverse()
+	var shoulder := _skel.get_bone_global_pose(int(_bones["L_Upperarm"])).origin
+	var fwd := (inv * _aim_target) - shoulder
+	var up_s := (inv.basis * Vector3.UP).normalized()
+	# Mira quase horizontal (o alvo está no chão; o braço não aponta para os pés).
+	fwd = fwd - up_s * fwd.dot(up_s) * 0.8
+	if fwd.length_squared() < 1e-6:
+		return
+	fwd = fwd.normalized()
+	var right := fwd.cross(up_s).normalized()
+	_aim_bone("L_Upperarm", "L_Forearm", fwd, w)
+	_aim_bone("L_Forearm", "L_Hand", fwd, w)
+	# Braço da corda: cotovelo para trás e para o lado, mão volta até o queixo.
+	_aim_bone("R_Upperarm", "R_Forearm", (-fwd * 0.45 + right * 0.9).normalized(), w)
+	_aim_bone("R_Forearm", "R_Hand", (fwd * 0.6 - right * 0.8 + up_s * 0.15).normalized(), w)
+
+func _aim_bone(bone: String, child: String, dir: Vector3, w: float) -> void:
+	var b := int(_bones.get(bone, -1))
+	var c := int(_bones.get(child, -1))
+	if b < 0 or c < 0:
+		return
+	var g := _skel.get_bone_global_pose(b)
+	var cur := _skel.get_bone_global_pose(c).origin - g.origin
+	if cur.length_squared() < 1e-10:
+		return
+	var q := Quaternion.IDENTITY.slerp(Quaternion(cur.normalized(), dir), w)
+	var new_basis := Basis(q) * g.basis
+	var p := _skel.get_bone_parent(b)
+	var pb := _skel.get_bone_global_pose(p).basis if p >= 0 else Basis()
+	_skel.set_bone_pose_rotation(b, (pb.inverse() * new_basis).get_rotation_quaternion())
 
 # --- Terror: tingimento, olhos brilhantes e transparência --------------------------
 

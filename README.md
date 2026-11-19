@@ -78,6 +78,17 @@ Três ordens para todo o exército — **Defender a base** (postos dentro da pal
 uma malha de navegação própria (contornam paliçada e construções e passam pelos portões); zumbis revidam e
 atacam soldados próximos; mortes do exército dão metade do XP ao herói. No coop o exército é compartilhado.
 
+**Classes:** o **Caçador** ataca com **arco** (14 m, flecha teleguiada; perto de árvores e pedras sem
+inimigo na mira usa o machado para coletar). Habilidades: *Tiro Múltiplo* (Q, 5 flechas em leque, uma por
+inimigo), *Armadilha de Urso* (F, nível 2, até 3 no chão: dano alto e prende por 3 s), *Chuva de Flechas*
+(R, nível 3, no maior grupo ao alcance: dano contínuo e lentidão) e *Chamado da Águia* (T, nível 5, uma águia
+voa com você por 20 s mergulhando nos inimigos — e revela Espreitadores). O **Cavaleiro** luta corpo a corpo
+com *Golpe Giratório*, *Investida*, *Grito de Guerra* e *Explosão Arcana*. A águia, o arco e a armadilha
+foram **modelados no Blender** por `tools/blender_hunter_props.py` (malhas low-poly e as animações da águia
+"fly", "glide" e "dive"); rode com `blender --background --python tools/blender_hunter_props.py --
+assets/models/blender` ou com o módulo `bpy` do PyPI. A pose de tiro é procedural (braços sobrepostos à
+animação em `CharacterModel._apply_aim`).
+
 **Inimigos especiais:** a partir da horda 4 surge o *Zumbi Explosivo* (incha e explode ao alcançar o alvo,
 arrasando muros; abatido, explode ferindo os zumbis ao redor), na 7 o *Cuspidor* (cospe ácido de 10 m,
 inclusive por cima dos muros, deixando poças corrosivas, e recua se você se aproximar) e na 9 o *Saltador*

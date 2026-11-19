@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="AbilityDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/progression/ability_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"multishot"
+display_name = "Tiro Múltiplo"
+description = "Dispara 5 flechas em leque: cada uma busca um inimigo diferente à frente."
+icon_name = "ab_multishot"
+kind = 4
+unlock_level = 1
+energy_cost = 20.0
+cooldown = 5.0
+power = 1.1
+radius = 60.0
+distance = 15.0
+duration = 5.0

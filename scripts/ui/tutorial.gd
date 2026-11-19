@@ -24,7 +24,7 @@ func _ready() -> void:
 		{"t": "Derrote um zumbi", "d": "Saia da base e ataque um zumbi. Fique de olho na sua vida (barra verde)."},
 		{"t": "Volte para a base", "d": "Ao entrar na fortaleza, a mochila é guardada no armazém compartilhado."},
 		{"t": "Construa uma defesa", "d": "Toque no botão do martelo e escolha uma barricada ou muro." if t else "Pressione G e escolha uma barricada ou muro; clique para construir."},
-		{"t": "Use uma habilidade", "d": "Toque no Golpe Giratório (botão com Q) perto de zumbis." if t else "Pressione Q (Golpe Giratório) perto de zumbis."},
+		{"t": "Use uma habilidade", "d": "Toque na primeira habilidade (botão com Q) perto de zumbis." if t else "Pressione Q (primeira habilidade) perto de zumbis."},
 		{"t": "Chame a primeira horda", "d": "Toque em \"Chamar agora\" (canto superior direito) quando estiver pronto. Defenda a fortaleza!"},
 	]
 	add_theme_stylebox_override("panel", UIStyle.hud_panel_style(Color(0.05, 0.08, 0.12, 0.92), 10))

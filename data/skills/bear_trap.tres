@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="AbilityDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/progression/ability_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"bear_trap"
+display_name = "Armadilha de Urso"
+description = "Arma uma armadilha à frente (até 3). O primeiro inimigo que pisar leva muito dano e fica preso por 3 s."
+icon_name = "ab_bear_trap"
+kind = 5
+unlock_level = 2
+energy_cost = 20.0
+cooldown = 8.0
+power = 3.0
+radius = 1.2
+distance = 3.0
+duration = 3.0

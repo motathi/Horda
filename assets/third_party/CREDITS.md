@@ -20,3 +20,5 @@ Baixados com `tools/itch_fetch.py` e copiados com `tools/import_third_party.py`.
 - **hero_paladin** (Cavaleiro, `assets/models/rigged/hero_paladin.glb`) — refeito pelo Tripo a partir de 4 vistas
   do modelo "fantasy-warrior" enviado pelo dono do projeto, que o escolheu para o Cavaleiro. Retrato gerado por
   `tools/gen_image.py` (`portrait_knight_paladin`).
+- **eagle / bow / bear_trap** (`assets/models/blender/`) — modelados neste projeto no Blender 5.3 por
+  `tools/blender_hunter_props.py` (sem assets de terceiros). Ícones das habilidades por `tools/gen_image.py`.

@@ -20,6 +20,8 @@ func wait(sec: float) -> void:
 func _ready() -> void:
 	print("== Smoke test Fase 1 ==")
 	Settings.tutorial_done = true  # o tutorial tem teste próprio
+	# Os testes de combate/habilidades usam o Cavaleiro (corpo a corpo); o Caçador tem teste próprio.
+	GameManager.hero_skin = "knight"
 	GameManager.difficulty = "normal"
 	ResourceManager.reset()
 	TimeManager.setup("normal")
@@ -44,6 +46,7 @@ func _ready() -> void:
 	await _test_tech()
 	await _test_special_enemies()
 	await _test_horror_gameplay()
+	await _test_hunter()
 	await _test_fixes()
 	await _test_army()
 	await _test_harvest_and_loot()
@@ -616,6 +619,108 @@ func _test_special_enemies() -> void:
 	hero.health.max_health = hero.total_max_health()
 	hero.health.current = hero.health.max_health
 	hero.health.invulnerable = was_invulnerable
+
+func _test_hunter() -> void:
+	print("[caçador: arco, armadilhas e águia]")
+	var hero := world.hero
+	await _clear_enemies()
+	var was_inv := hero.health.invulnerable
+	hero.health.invulnerable = true
+	hero.apply_class("hunter")
+	await wait(0.1)
+	check(hero.ranged and hero.model.has_bow(), "Caçador ataca com arco (arco na mão)")
+	check(hero.abilities.map(func(a: AbilityDef) -> StringName: return a.id) == [&"multishot", &"bear_trap", &"arrow_rain", &"eagle"], "habilidades do Caçador")
+	var spot := Vector3(-60, 0, 40)
+	hero.global_position = spot
+	# Flecha acerta zumbi a 9 m.
+	var z := _spawn_def("zombie", spot + Vector3(9, 0, 0))
+	await wait(0.05)
+	z.set_physics_process(false)
+	var hp0 := z.health.current
+	hero._aim_point = z.global_position
+	hero._start_attack()
+	check(not hero._melee_swing and hero._shot_target == z, "mira o zumbi a 9 m")
+	await wait(1.0)
+	check(z.health.current < hp0, "flecha fere o zumbi à distância (%d -> %d)" % [int(hp0), int(z.health.current)])
+	check(hero.reach() >= 13.0, "alcance do arco %.0f m" % hero.reach())
+	# Sem inimigo e perto de uma árvore: usa o machado para coletar.
+	await _clear_enemies()
+	var tree_node: Node3D = null
+	for h in get_tree().get_nodes_in_group("harvestable"):
+		tree_node = h as Node3D
+		break
+	if tree_node:
+		hero.global_position = tree_node.global_position + Vector3(1.6, 0, 0)
+		hero._aim_point = tree_node.global_position
+		hero._attack_timer = 0.0
+		hero._start_attack()
+		check(hero._melee_swing, "perto de árvore/pedra o Caçador coleta com o machado")
+	hero.global_position = spot
+	hero.level = 6
+	# Tiro Múltiplo: um inimigo por flecha.
+	var pack: Array[Enemy] = []
+	for i in 4:
+		var m := _spawn_def("zombie", spot + Vector3(8, 0, -3 + i * 2))
+		pack.append(m)
+	await wait(0.05)
+	for m in pack:
+		m.set_physics_process(false)
+	var hps := pack.map(func(m: Enemy) -> float: return m.health.current)
+	hero.energy = hero.max_energy
+	hero._aim_point = spot + Vector3(8, 0, 0)
+	check(hero.cast_ability(0) == "", "Tiro Múltiplo lançado")
+	await wait(1.0)
+	var hit := 0
+	for i in pack.size():
+		if pack[i].health.current < hps[i]:
+			hit += 1
+	check(hit == 4, "Tiro Múltiplo acerta vários (%d de 4)" % hit)
+	# Chuva de Flechas no grupo: dano contínuo e lentidão.
+	var hps2 := pack.map(func(m: Enemy) -> float: return m.health.current)
+	hero.energy = hero.max_energy
+	check(hero.cast_ability(2) == "", "Chuva de Flechas lançada")
+	await wait(1.3)
+	var rained := 0
+	for i in pack.size():
+		if is_instance_valid(pack[i]) and (pack[i].is_dead() or pack[i].health.current < hps2[i]) and (pack[i].is_dead() or pack[i]._fear > 0.0):
+			rained += 1
+	check(rained >= 3, "chuva fere e deixa lentos (%d de 4)" % rained)
+	await _clear_enemies()
+	await wait(3.0)
+	# Armadilha de urso: prende quem pisa.
+	hero.energy = hero.max_energy
+	hero._aim_point = spot + Vector3(5, 0, 0)
+	var n0 := BearTrap.active.size()
+	check(hero.cast_ability(1) == "", "Armadilha armada")
+	await wait(0.05)
+	check(BearTrap.active.size() == n0 + 1, "armadilha no chão")
+	var trap := BearTrap.active.back() as BearTrap
+	var victim := _spawn_def("zombie_brute", trap.global_position + Vector3(0.3, 0, 0))
+	var vhp := victim.health.current
+	await wait(0.4)
+	check(not trap.is_armed() and victim.is_stunned() and victim.health.current < vhp, "armadilha fecha, fere e prende")
+	await _clear_enemies()
+	# Águia: voa com o herói e mergulha nos inimigos; revela Espreitadores.
+	hero.energy = hero.max_energy
+	check(hero.cast_ability(3) == "", "Chamado da Águia")
+	await wait(0.1)
+	var eagles := get_tree().get_nodes_in_group(&"eagles")
+	check(eagles.size() == 1 and (eagles[0] as Node).is_in_group(&"reveal_lights"), "águia invocada (e revela Espreitadores)")
+	var prey := _spawn_def("zombie_brute", spot + Vector3(6, 0, 3))
+	await wait(0.05)
+	prey.set_physics_process(false)
+	var php := prey.health.current
+	await wait(4.0)
+	check(prey.health.current < php, "águia mergulha e fere (%d -> %d)" % [int(php), int(prey.health.current)])
+	for e in get_tree().get_nodes_in_group(&"eagles"):
+		e.queue_free()
+	for t in get_tree().get_nodes_in_group(&"bear_traps"):
+		t.queue_free()
+	await _clear_enemies()
+	hero.apply_class("knight")
+	hero.level = 1
+	hero.health.invulnerable = was_inv
+	check(not hero.ranged and hero.abilities[0].id == &"whirlwind", "Cavaleiro continua corpo a corpo")
 
 func _test_horror_gameplay() -> void:
 	print("[terror na jogabilidade]")

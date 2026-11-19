@@ -400,5 +400,29 @@
   "out": "assets/ui/hud/src/o_hunt.jpg",
   "size": "1024x1024",
   "prompt": "Game UI icon of a red crosshair over a zombie skull, glossy stylized hand-painted mobile strategy game UI icon, chunky readable shape, vibrant saturated colors, soft specular highlights, thick dark outline, centered, isolated on a completely black #000000 background, the background must be pitch black, no frame, no border, no text"
+ },
+ {
+  "name": "ui_ab_multishot",
+  "out": "assets/ui/hud/src/ab_multishot.jpg",
+  "size": "1024x1024",
+  "prompt": "Game ability icon of five glowing arrows fanning out from a drawn wooden longbow, glossy stylized hand-painted MOBA ability icon in the style of Dota 2, dynamic composition, glowing magical effects, vibrant saturated colors, thick dark outline, centered, isolated on a completely black #000000 background, the background must be pitch black, no frame, no border, no text"
+ },
+ {
+  "name": "ui_ab_bear_trap",
+  "out": "assets/ui/hud/src/ab_bear_trap.jpg",
+  "size": "1024x1024",
+  "prompt": "Game ability icon of an open steel bear trap with sharp jagged teeth, snapping, sparks, glossy stylized hand-painted MOBA ability icon in the style of Dota 2, dynamic composition, glowing magical effects, vibrant saturated colors, thick dark outline, centered, isolated on a completely black #000000 background, the background must be pitch black, no frame, no border, no text"
+ },
+ {
+  "name": "ui_ab_arrow_rain",
+  "out": "assets/ui/hud/src/ab_arrow_rain.jpg",
+  "size": "1024x1024",
+  "prompt": "Game ability icon of a rain of golden arrows falling from the sky onto a glowing target circle, glossy stylized hand-painted MOBA ability icon in the style of Dota 2, dynamic composition, glowing magical effects, vibrant saturated colors, thick dark outline, centered, isolated on a completely black #000000 background, the background must be pitch black, no frame, no border, no text"
+ },
+ {
+  "name": "ui_ab_eagle",
+  "out": "assets/ui/hud/src/ab_eagle.jpg",
+  "size": "1024x1024",
+  "prompt": "Game ability icon of a fierce bald eagle diving with talons out and wings spread, golden glow, glossy stylized hand-painted MOBA ability icon in the style of Dota 2, dynamic composition, glowing magical effects, vibrant saturated colors, thick dark outline, centered, isolated on a completely black #000000 background, the background must be pitch black, no frame, no border, no text"
  }
 ]
