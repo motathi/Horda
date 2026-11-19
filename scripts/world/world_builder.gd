@@ -777,16 +777,16 @@ func _build_decor(world: Node3D) -> void:
 	var pebbles := [[N, "Pebble_Round_1", 0.15, 0.35], [N, "Pebble_Round_2", 0.15, 0.35], [N, "Pebble_Round_3", 0.15, 0.3]]
 	var plan := {
 		"Floresta": [Vector2(-25, -78), Vector2(85, 38), [
-			[N, "Bush_Common_Flowers", 90, 0.9, 1.4], [N, "Fern_1", 110, 0.6, 1.0],
+			[N, "Bush_Common", 70, 0.9, 1.4], [N, "Fern_1", 110, 0.6, 1.0],
 			[N, "Mushroom_Common", 40, 0.25, 0.5], [N, "Mushroom_Laetiporus", 15, 0.3, 0.5], [N, "Plant_1_Big", 40, 0.8, 1.3],
-			[N, "Clover_1", 60, 0.15, 0.3], [N, "Flower_3_Group", 30, 0.4, 0.7],
-			[N, "Grass_Wispy_Tall", 60, 0.5, 0.9], [N, "Rock_Medium_1", 12, 0.6, 1.3], [N, "Rock_Medium_2", 10, 0.6, 1.3]]],
+			[N, "Clover_1", 60, 0.15, 0.3], [N, "Flower_3_Group", 6, 0.4, 0.7],
+			[N, "Grass_Wispy_Tall", 80, 0.5, 0.9], [N, "Rock_Medium_1", 12, 0.6, 1.3], [N, "Rock_Medium_2", 10, 0.6, 1.3]]],
 		"Campos": [Vector2.ZERO, Vector2(112, 112), [
-			[N, "Bush_Common_Flowers", 60, 0.9, 1.3], [N, "Flower_4_Group", 70, 0.4, 0.7], [N, "Flower_3_Group", 50, 0.4, 0.7],
+			[N, "Bush_Common", 50, 0.9, 1.3], [N, "Flower_4_Group", 8, 0.4, 0.7], [N, "Grass_Wispy_Tall", 70, 0.5, 0.9],
 			[N, "Fern_1", 40, 0.6, 1.0], [N, "Grass_Common_Tall", 80, 0.5, 0.9], [N, "Rock_Medium_3", 20, 0.6, 1.2]]],
 		"Fazenda": [Vector2(-35, 78), Vector2(40, 34), [
-			[N, "Flower_4_Group", 40, 0.4, 0.7], [N, "Flower_3_Group", 20, 0.4, 0.7], [N, "Bush_Common_Flowers", 20, 0.9, 1.3]]],
-		"Cidade": [Vector2(80, 12), Vector2(30, 42), [[N, "Bush_Common_Flowers", 12, 0.8, 1.2], [N, "Grass_Common_Tall", 30, 0.5, 0.8]]],
+			[N, "Flower_4_Group", 6, 0.4, 0.7], [N, "Grass_Wispy_Tall", 40, 0.5, 0.9], [N, "Bush_Common", 16, 0.9, 1.3]]],
+		"Cidade": [Vector2(80, 12), Vector2(30, 42), [[N, "Bush_Common", 10, 0.8, 1.2], [N, "Grass_Wispy_Tall", 30, 0.5, 0.8]]],
 		"Contaminada": [Vector2(88, -88), Vector2(26, 26), [
 			[H, "ribcage", 10, 0.5, 0.7], [H, "skull", 18, 0.25, 0.32], [H, "bone_A", 25, 0.1, 0.16],
 			[N, "Mushroom_Laetiporus", 15, 0.3, 0.5], [H, "tree_dead_medium", 6, 3.0, 4.0], [H, "tree_dead_large", 4, 4.0, 5.5]]],

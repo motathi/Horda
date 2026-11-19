@@ -21,7 +21,8 @@ func build(map_half: float, density: float, is_grass: Callable, seed_value: int)
 	# Um quad por tufo: o shader o vira para a câmera (billboard no eixo Y).
 	var tuft := _single_mesh(quad)
 	var flower_mesh := _flower_mesh()
-	var flower_colors := [Color(1.0, 0.85, 0.3), Color(0.95, 0.4, 0.55), Color(0.65, 0.55, 1.0), Color(1, 1, 1)]
+	# Poucas flores, murchas e desbotadas.
+	var flower_colors := [Color(0.62, 0.55, 0.36), Color(0.55, 0.38, 0.36), Color(0.6, 0.58, 0.52)]
 	var x := -map_half
 	while x < map_half:
 		var z := -map_half
@@ -36,7 +37,7 @@ func build(map_half: float, density: float, is_grass: Callable, seed_value: int)
 					continue
 				var basis := Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3.ONE * rng.randf_range(0.7, 1.4))
 				grass_t.append(Transform3D(basis, p))
-				if rng.randf() < 0.06:
+				if rng.randf() < 0.015:
 					var fb := Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3.ONE * rng.randf_range(0.8, 1.3))
 					flowers.append(Transform3D(fb, p + Vector3(rng.randf_range(-0.3, 0.3), 0, rng.randf_range(-0.3, 0.3))))
 					fcolors.append(flower_colors[rng.randi() % flower_colors.size()])
