@@ -109,19 +109,26 @@ func _build() -> void:
 	match kind:
 		Kind.WALL_WOOD:
 			half_extents = Vector3(length * 0.5, 1.3, 0.45)
-			if ModelLibrary.has("wall"):
+			if ResourceLoader.exists(RING_DIR + "ring_wall_a.glb"):
+				_build_ring_wall()
+			elif ModelLibrary.has("wall"):
 				_build_wall_model()
 			else:
 				_build_palisade()
 		Kind.GATE:
 			half_extents = Vector3(length * 0.5, 1.5, 0.45)
-			if ModelLibrary.has("gate") and ModelLibrary.has("tower"):
+			if ResourceLoader.exists(RING_DIR + "ring_gate.glb"):
+				_build_ring_gate()
+			elif ModelLibrary.has("gate") and ModelLibrary.has("tower"):
 				_build_gate_model()
 			else:
 				_build_gate()
 		Kind.CORE:
 			half_extents = Vector3(1.9, 2.0, 1.9)
-			if ModelLibrary.has("keep"):
+			if ResourceLoader.exists(RUIN_KEEP):
+				half_extents = Vector3(3.1, 2.5, 2.7)
+				_build_ruin_keep()
+			elif ModelLibrary.has("keep"):
 				half_extents = Vector3(3.0, 2.5, 2.6)
 				_build_core_model()
 			else:
@@ -142,6 +149,49 @@ func _mesh(parent: Node3D, mesh: Mesh, pos: Vector3, mat: Material, rot: Vector3
 	return mi
 
 # --- Versões com modelos 3D gerados ---------------------------------------------
+
+# --- Muralha do Blender (tools/blender_scenery.py): paliçada sobre base de pedra ----------
+const RING_DIR := "res://assets/models/blender/"
+const RING_LEN := 4.2
+
+func _ring(model: String) -> Node3D:
+	return (load(RING_DIR + model + ".glb") as PackedScene).instantiate() as Node3D
+
+func _build_ring_wall() -> void:
+	var i := int(structure_id.trim_prefix("wall"))
+	var w := _ring("ring_wall_b" if i % 3 == 1 else "ring_wall_a")
+	# Estica um pouco para fechar as juntas do anel; o lado com arame/estacas fica para fora.
+	w.scale = Vector3(length * 1.08 / RING_LEN, 1.0, 1.0)
+	_visual.add_child(w)
+
+func _build_ring_gate() -> void:
+	var hinge := Node3D.new()
+	hinge.position = Vector3(-length * 0.42, 0, 0)
+	_visual.add_child(hinge)
+	var door := _ring("ring_gate")
+	door.scale = Vector3(length * 0.84 / 3.55, 1.0, 1.0)
+	door.position = Vector3(length * 0.42, 0, 0)
+	hinge.add_child(door)
+	hinge.set_meta("side", -1.0)
+	_gate_doors.append(hinge)
+	for sx: float in [-1.0, 1.0]:
+		var tower := _ring("ring_tower")
+		tower.position = Vector3(sx * (length * 0.5 + 0.75), 0, 0.2)
+		_visual.add_child(tower)
+		# Tocha no alto de cada torre do portão (acende ao entardecer).
+		var torch := Node3D.new()
+		torch.add_to_group("night_lights")
+		torch.position = tower.position + Vector3(0, 4.3, -0.9)
+		_visual.add_child(torch)
+		var fire := EffectsHub.make_fire_particles(0.6)
+		fire.visible = false
+		torch.add_child(fire)
+		var light := OmniLight3D.new()
+		light.light_color = Color(1.0, 0.6, 0.25)
+		light.light_energy = 1.6
+		light.omni_range = 7.0
+		light.visible = false
+		torch.add_child(light)
 
 func _build_wall_model() -> void:
 	# Muralha de pedra: o segmento é esticado levemente para fechar as juntas do anel.
@@ -164,6 +214,35 @@ func _build_gate_model() -> void:
 		tower.position = Vector3(sx * (length * 0.5 + 0.6), 0, 0.3)
 		tower.rotation.y = PI if sx < 0.0 else 0.0
 		_visual.add_child(tower)
+
+## Fortaleza em ruínas modelada no Blender (tools/blender_scenery.py, "keep_ruin"): forte de pedra
+## com canto desmoronado e andaime; fogueira-farol no topo da torre (luz que revela Espreitadores)
+## e luz quente no portão, nas posições dos marcadores "Beacon" e "GateLight" do modelo.
+const RUIN_KEEP := "res://assets/models/blender/keep_ruin.glb"
+
+func _build_ruin_keep() -> void:
+	var keep := (load(RUIN_KEEP) as PackedScene).instantiate() as Node3D
+	_visual.add_child(keep)
+	var beacon := keep.find_child("Beacon", true, false) as Node3D
+	var gate := keep.find_child("GateLight", true, false) as Node3D
+	var top := beacon.position if beacon else Vector3(0, 7.8, 0)
+	var fire := EffectsHub.make_fire_particles(1.3)
+	fire.position = top
+	_visual.add_child(fire)
+	var light := OmniLight3D.new()
+	light.light_color = Color(1.0, 0.55, 0.22)
+	light.light_energy = 3.2
+	light.omni_range = 15.0
+	light.position = top + Vector3(0, 0.6, 0)
+	_visual.add_child(light)
+	light.add_to_group("reveal_lights")
+	light.set_meta(&"reveal_radius", 13.0)
+	var warm := OmniLight3D.new()
+	warm.light_color = Color(1.0, 0.62, 0.25)
+	warm.light_energy = 2.0
+	warm.omni_range = 9.0
+	warm.position = gate.position if gate else Vector3(0, 1.8, 4.0)
+	_visual.add_child(warm)
 
 func _build_core_model() -> void:
 	var keep := ModelLibrary.instance_footprint("keep", 7.5)

@@ -28,3 +28,5 @@ Baixados com `tools/itch_fetch.py` e copiados com `tools/import_third_party.py`.
   modelados neste projeto no Blender 5.3 por `tools/blender_scenery.py` (sem assets de terceiros).
 - **archer_tower / ballista / cannon / tesla** (`assets/models/blender/`) — modelados neste projeto no Blender 5.3
   por `tools/blender_defenses.py` (sem assets de terceiros).
+- **keep_ruin, ring_wall_a/b, ring_gate, ring_tower** (`assets/models/blender/`) — modelados neste projeto no
+  Blender 5.3 por `tools/blender_scenery.py` (sem assets de terceiros).

@@ -196,12 +196,14 @@ func _find_shots(world: World, hero: Hero, prefix: String) -> void:
 	var t := found[idx % found.size()]
 	print("%d %s; enquadrando %s" % [found.size(), prefix, t.global_position])
 	world.hud.visible = false
-	world.camera_rig.set(&"distance", 12.0)
-	world.camera_rig.set(&"_zoom_target", 12.0)
+	var zoom := float(OS.get_environment("ATMO_ZOOM")) if OS.get_environment("ATMO_ZOOM") != "" else 12.0
+	world.camera_rig.set(&"distance", zoom)
+	world.camera_rig.set(&"_zoom_target", zoom)
 	world.camera_rig.global_position = t.global_position
 	await _wait_frames(5)
 	var cb := get_viewport().get_camera_3d().global_transform.basis
-	hero.global_position = t.global_position + Vector3(cb.z.x, 0, cb.z.z).normalized() * 3.5
+	# A câmera segue o herói: ele fica um pouco atrás do objeto, que fica no centro da tela.
+	hero.global_position = t.global_position + Vector3(cb.z.x, 0, cb.z.z).normalized() * (3.5 if zoom < 14.0 else -0.5)
 	TimeManager.running = false
 	TimeManager.set_state(TimeManager.Phase.DAY, 3, 20.0)
 	await _wait_frames(40)

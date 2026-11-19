@@ -115,6 +115,16 @@ gerador. A arma da balista e do canhão é o objeto `Turret` do GLB e gira para 
 
 ![Torres modeladas no Blender](docs/screenshots/torres_blender.jpg)
 
+**Fortaleza e muralha feitas no Blender** (`tools/blender_scenery.py`): a fortaleza virou um forte de pedra em
+ruínas adaptado pelos sobreviventes — alvenaria suja com musgo e fuligem, ameias falhadas, canto da frente
+desmoronado e remendado com andaime, tábuas e zinco, portão em arco reforçado com ferro, deck com lona e
+caixotes e uma torre de vigia com fogueira-farol (a luz que revela Espreitadores; marcadores `Beacon` e
+`GateLight` no GLB). A muralha da base é uma paliçada de troncos apontados sobre base de pedra (duas
+variações), com portões de estacas e torres de madeira com tochas. Os modelos antigos que estes substituíram
+ficam fora do export (só servem de reserva no editor).
+
+![Fortaleza e muralha modeladas no Blender](docs/screenshots/fortaleza_blender.jpg)
+
 **Inimigos especiais:** a partir da horda 4 surge o *Zumbi Explosivo* (incha e explode ao alcançar o alvo,
 arrasando muros; abatido, explode ferindo os zumbis ao redor), na 7 o *Cuspidor* (cospe ácido de 10 m,
 inclusive por cima dos muros, deixando poças corrosivas, e recua se você se aproximar) e na 9 o *Saltador*

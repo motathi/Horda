@@ -655,7 +655,325 @@ def build_rubble_pile():
     bd.place(bd.log("beam", 2.2, 0.09, wood, rng, 1, bend=0.02), (0.2, 0.1, 0.45), (75, 0, 30))
 
 
+# --- Fortaleza central (forte de pedra em ruínas, adaptado pelos sobreviventes) ------------
+
+def mat_masonry():
+    """Alvenaria de pedra (textura de tijolo do Blender) suja, com fuligem, musgo e escorridos.
+    Coordenada u = x + y serve tanto para as paredes da frente quanto para as laterais."""
+    m, nt, bsdf = bd._mat("masonry")
+    tc = nt.nodes.new("ShaderNodeTexCoord")
+    sep = nt.nodes.new("ShaderNodeSeparateXYZ")
+    nt.links.new(tc.outputs["Object"], sep.inputs[0])
+    add = nt.nodes.new("ShaderNodeMath")
+    add.operation = "ADD"
+    nt.links.new(sep.outputs[0], add.inputs[0])
+    nt.links.new(sep.outputs[1], add.inputs[1])
+    comb = nt.nodes.new("ShaderNodeCombineXYZ")
+    nt.links.new(add.outputs[0], comb.inputs[0])
+    nt.links.new(sep.outputs[2], comb.inputs[1])
+    brick = nt.nodes.new("ShaderNodeTexBrick")
+    brick.inputs["Scale"].default_value = 1.0
+    brick.inputs["Mortar Size"].default_value = 0.035
+    brick.inputs["Brick Width"].default_value = 0.62
+    brick.inputs["Row Height"].default_value = 0.34
+    brick.inputs["Color1"].default_value = (*srgb((0.42, 0.4, 0.36)), 1)
+    brick.inputs["Color2"].default_value = (*srgb((0.3, 0.29, 0.27)), 1)
+    brick.inputs["Mortar"].default_value = (*srgb((0.08, 0.075, 0.07)), 1)
+    brick.offset = 0.5
+    nt.links.new(comb.outputs[0], brick.inputs["Vector"])
+    var = bd._ramp(nt, bd._noise(nt, 6.0, 6.0, 0.6), [(0.3, (0.62, 0.6, 0.56)), (0.7, (1, 1, 1))])
+    c = bd._mix(nt, 1.0, brick.outputs["Color"], var, "MULTIPLY")
+    soot = bd._ramp(nt, bd._noise(nt, 1.5, 5.0, 0.6, bd._coords(nt, (1.0, 1.0, 0.35))), [(0.48, (1, 1, 1)), (0.66, (0.16, 0.15, 0.14))])
+    c = bd._mix(nt, 1.0, c, soot, "MULTIPLY")
+    streak = bd._ramp(nt, bd._noise(nt, 3.0, 4.0, 0.5, bd._coords(nt, (7.0, 7.0, 0.5))), [(0.45, (1, 1, 1)), (0.68, (0.5, 0.47, 0.42))])
+    c = bd._mix(nt, 1.0, c, streak, "MULTIPLY")
+    moss = bd._ramp(nt, bd._noise(nt, 4.0, 6.0, 0.6), [(0.6, (0, 0, 0)), (0.7, (1, 1, 1))])
+    c = bd._mix(nt, moss, c, (0.17, 0.19, 0.1))
+    nt.links.new(bd._height_dirt(nt, c), bsdf.inputs["Base Color"])
+    return m
+
+
+def wall_loft(name, a, b, thick, top_fn, mat, segs=16, base=0.0):
+    """Muro de A a B (no chão), espessura `thick`, com o topo dado por top_fn(t) (desmoronado)."""
+    a, b = Vector((a[0], a[1], 0.0)), Vector((b[0], b[1], 0.0))
+    d = (b - a).normalized()
+    nrm = Vector((-d.y, d.x, 0)) * (thick / 2)
+    secs = []
+    for i in range(segs + 1):
+        t = i / segs
+        p = a.lerp(b, t)
+        h = top_fn(t)
+        secs.append([p - nrm + Vector((0, 0, base)), p + nrm + Vector((0, 0, base)), p + nrm + Vector((0, 0, h)), p - nrm + Vector((0, 0, h))])
+    return loft(name, secs, mat)
+
+
+def build_keep():
+    rng = random.Random(1234)
+    mas = mat_masonry()
+    stone = bd.mat_stone()
+    wood = bd.mat_old_wood("old_wood", blood=False)
+    bark = bd.mat_bark()
+    cut = bd.mat_fresh_cut()
+    rust = bd.mat_rust()
+    burlap = bd.mat_burlap()
+    canvas = mat_canvas()
+    iron = bd.mat_flat("iron", (0.14, 0.13, 0.13))
+    dark = bd.mat_flat("socket", (0.03, 0.025, 0.02))
+    bone = bd.mat_flat("bone", (0.66, 0.6, 0.48))
+    cloth = bd.mat_flat("rag", (0.26, 0.07, 0.05))
+    char = mat_char()
+    W, D, H, T = 5.8, 5.0, 4.8, 0.6   # largura (X), profundidade (Y), altura, espessura
+    hx, hy = W / 2, D / 2
+    # Frente = -Y (vira +Z no jogo, onde fica o portão).
+    def front_top(t):  # canto esquerdo da frente desmoronado
+        if t < 0.3:
+            return 2.1 + (H - 2.1) * (t / 0.3) ** 1.6 + rng.uniform(-0.12, 0.12)
+        return H + rng.uniform(-0.08, 0.05)
+    def left_top(t):   # o lado esquerdo também caiu perto da frente
+        if t < 0.28:
+            return 2.1 + (H - 2.1) * (t / 0.28) ** 1.4 + rng.uniform(-0.12, 0.12)
+        return H + rng.uniform(-0.08, 0.05)
+    flat = lambda t: H + rng.uniform(-0.06, 0.06)
+    wall_loft("wall_f", (-hx, -hy), (hx, -hy), T, front_top, mas)
+    wall_loft("wall_l", (-hx, -hy), (-hx, hy), T, left_top, mas)
+    wall_loft("wall_b", (-hx, hy), (hx, hy), T, flat, mas)
+    wall_loft("wall_r", (hx, -hy), (hx, hy), T, flat, mas)
+    # Embasamento de pedras grandes e cunhais (pedras de canto) para dar silhueta.
+    for (x0, y0, x1, y1) in ((-hx, -hy, hx, -hy), (hx, -hy, hx, hy), (hx, hy, -hx, hy), (-hx, hy, -hx, -hy)):
+        n = 9
+        for i in range(n):
+            t = (i + 0.5) / n
+            x, y = x0 + (x1 - x0) * t, y0 + (y1 - y0) * t
+            ang = math.degrees(math.atan2(y1 - y0, x1 - x0))
+            bd.place(bd.rough_stone("plinth", (0.7, T + 0.25, 0.42), stone, rng, 1, 0.12), (x, y, 0.2), (0, 0, ang))
+    for cx, cy, top in ((hx, -hy, H), (hx, hy, H), (-hx, hy, H)):
+        z = 0.4
+        k = 0
+        while z < top - 0.2:
+            h = rng.uniform(0.38, 0.48)
+            sx, sy = (0.75, 0.55) if k % 2 == 0 else (0.55, 0.75)
+            bd.place(bd.rough_stone("quoin", (sx, sy, h * 0.96), stone, rng, 1, 0.1), (cx, cy, z + h / 2))
+            z += h
+            k += 1
+    # Ameias no topo (algumas caídas), só onde o muro está inteiro.
+    def merlons(a, b, skip_until=0.0):
+        a, b = Vector((a[0], a[1], 0.0)), Vector((b[0], b[1], 0.0))
+        n = int((b - a).length / 0.75)
+        ang = math.degrees(math.atan2(b.y - a.y, b.x - a.x))
+        for i in range(n):
+            t = (i + 0.5) / n
+            if t < skip_until or rng.random() < 0.18:
+                continue
+            p = a.lerp(b, t)
+            bd.place(bd.rough_stone("merlon", (0.48, T + 0.04, rng.uniform(0.5, 0.62)), mas, rng, 1, 0.08), (p.x, p.y, H + 0.27), (0, 0, ang))
+    merlons((-hx, -hy), (hx, -hy), 0.36)
+    merlons((-hx, -hy), (-hx, hy), 0.34)
+    merlons((-hx, hy), (hx, hy))
+    merlons((hx, -hy), (hx, hy))
+    # Seteiras escuras nas paredes.
+    for x in (0.9, 2.0):
+        bd.place(bd.box("slit", (0.14, 0.05, 0.7), dark, 1), (x, -hy - T / 2 - 0.005, 3.2))
+    for y in (-1.2, 0.2, 1.4):
+        bd.place(bd.box("slit", (0.05, 0.14, 0.7), dark, 1), (hx + T / 2 + 0.005, y, 3.2))
+        bd.place(bd.box("slit", (0.05, 0.14, 0.7), dark, 1), (-hx - T / 2 - 0.005, y + 0.6, 3.0)) if y > 0 else None
+    # Portão: arco de pedra, vão escuro e portas de madeira reforçadas com ferro.
+    gx = 0.55
+    bd.place(bd.box("gate_void", (1.7, 0.08, 2.5), dark, 1), (gx, -hy - T / 2 - 0.01, 1.25))
+    arch = [Vector((gx + math.cos(a) * 1.0, -hy - T / 2 - 0.08, 2.15 + math.sin(a) * 0.65)) for a in [math.pi * i / 12 for i in range(13)]]
+    bm = bmesh.new()
+    bd.tube(bm, arch, [0.17] * len(arch), 6, 0.08, rng)
+    bd.obj_from_bm("arch", bm, stone, 1)
+    for sx in (-1, 1):
+        bd.place(bd.box("jamb", (0.3, 0.3, 2.2), stone, 1), (gx + sx * 1.0, -hy - T / 2 - 0.08, 1.1))
+        for k in range(4):
+            bd.place(bd.plank("door", 2.1, 0.22, 0.06, wood, rng, 1), (gx + sx * (0.12 + k * 0.2), -hy - T / 2 - 0.1, 1.08), (0, 90, 0))
+        for z in (0.45, 1.55):
+            bd.place(bd.box("band", (0.82, 0.03, 0.09), iron, 1), (gx + sx * 0.42, -hy - T / 2 - 0.15, z))
+    bd.place(bd.plank("bar", 1.8, 0.2, 0.08, wood, rng, 1), (gx, -hy - T / 2 - 0.2, 1.05), (90, 0, 0))
+    for sx in (-1, 1):
+        for k in range(3):
+            bd.place(bd.sandbag("bag", burlap, rng, 1), (gx + sx * (1.55 + 0.1 * k), -hy - T / 2 - 0.45, 0.15 + k * 0.2),
+                     (0, 0, 90 + rng.uniform(-10, 10)))
+        st = bd.stake("gatepike", 2.2, 0.04, bark, cut, rng, 1, tip=0.22)
+        bd.place(st, (gx + sx * 2.05, -hy - T / 2 - 0.55, 0.0), (rng.uniform(-6, 6), sx * 6, 0))
+        bd.place(bd.skull("skull", bone, dark, 1), (gx + sx * 2.17, -hy - T / 2 - 0.55, 2.12), (0, 0, rng.uniform(-30, 30)))
+    gate = bpy.data.objects.new("GateLight", None)
+    gate.location = (gx, -hy - 1.2, 1.9)
+    bpy.context.scene.collection.objects.link(gate)
+    # Canto desmoronado: entulho na base, andaime de troncos e remendos de tábua e zinco.
+    for i in range(16):
+        a = rng.uniform(math.pi, 1.5 * math.pi) if i < 10 else rng.uniform(0, math.tau)
+        r = rng.uniform(0.3, 1.6)
+        bd.place(bd.rough_stone("rubble", (rng.uniform(0.25, 0.5),) * 3, mas if i % 3 else stone, rng, 1, 0.3),
+                 (-hx + math.cos(a) * r * 0.9, -hy + math.sin(a) * r * 0.9, rng.uniform(0.1, 0.35)), (rng.uniform(0, 40), rng.uniform(0, 40), rng.uniform(0, 90)))
+    for x in (-hx + 0.3, -hx + 1.5):
+        bd.place(bd.log("scaf", 4.6, 0.06, bark, rng, 1, bend=0.0), (x, -hy - T / 2 - 0.5, 2.3))
+    for y in (-hy + 0.3, -hy + 1.4):
+        bd.place(bd.log("scaf", 4.6, 0.06, bark, rng, 1, bend=0.0), (-hx - T / 2 - 0.5, y, 2.3))
+    for z in (1.6, 3.2, 4.4):
+        bd.place(bd.log("scafbar", 1.6, 0.045, bark, rng, 1, bend=0.0), (-hx + 0.9, -hy - T / 2 - 0.5, z), (0, 90, rng.uniform(-4, 4)))
+        bd.place(bd.log("scafbar", 1.5, 0.045, bark, rng, 1, bend=0.0), (-hx - T / 2 - 0.5, -hy + 0.85, z), (90, 0, rng.uniform(-4, 4)))
+    for k in range(6):
+        bd.place(bd.plank("patch", 1.7, 0.26, 0.04, wood, rng, 1, broken=k == 4), (-hx + 0.9, -hy - T / 2 - 0.08, 2.3 + k * 0.33), (0, rng.uniform(-6, 6), 0))
+    bd.place(bd.tin_sheet("tin", 1.5, 1.2, rust, rng, 1), (-hx - T / 2 - 0.08, -hy + 0.9, 2.9), (0, 0, 90))
+    bd.place(bd.tin_sheet("tin", 1.2, 1.0, rust, rng, 1), (1.9, -hy - T / 2 - 0.06, 1.0), (0, 4, 0))
+    # Deck de tábuas no topo (o que se vê de cima): lona, caixotes, barris e sacos de areia.
+    for i in range(14):
+        y = -hy + 0.25 + i * (D - 0.5) / 13
+        bd.place(bd.plank("deck", W - 0.4 if y > -hy + 1.3 else W - 1.9, 0.36, 0.05, wood, rng, 1, broken=(i == 2)),
+                 ((0.0 if y > -hy + 1.3 else 0.75) + rng.uniform(-0.04, 0.04), y, H - 0.4), (90, 0, rng.uniform(-1.5, 1.5)))
+    for x, y, r in ((-1.6, 1.4, 15), (-0.9, 1.8, -10), (0.2, 1.6, 30)):
+        bd.place(bd.box("crate", (0.6, 0.6, 0.55), wood, 1), (x, y, H - 0.1), (0, 0, r))
+    bd.place(bd.box("crate", (0.5, 0.5, 0.45), wood, 1), (-1.2, 1.6, H + 0.4), (0, 0, 40))
+    tarp_secs = []
+    for i in range(5):
+        y = -0.6 + i * 0.4
+        tarp_secs.append([Vector((-1.0, y, H - 0.3)), Vector((-0.2, y, H + 0.55 - 0.05 * i)), Vector((0.6, y, H - 0.3))])
+    bm = bmesh.new()
+    rows = [[bm.verts.new(p) for p in sec] for sec in tarp_secs]
+    for r0, r1 in zip(rows, rows[1:]):
+        for k in range(2):
+            bm.faces.new((r0[k], r0[k + 1], r1[k + 1], r1[k]))
+    bd.obj_from_bm("tarp", bm, canvas, 1)
+    for i in range(7):
+        bd.place(bd.sandbag("bag", burlap, rng, 1, (0.4, 0.22, 0.13)), (-2.3 + i * 0.55, -hy + 0.5, H - 0.25), (0, 0, rng.uniform(-8, 8)))
+    # Torre de vigia (fundo-direita): mais alta, com plataforma, fogueira-farol e antena de sucata.
+    tx, ty, TH = hx - 0.9, hy - 0.9, 7.2
+    wall_loft("tower_f", (tx - 1.15, ty - 1.15), (tx + 1.15, ty - 1.15), 0.5, lambda t: TH, mas, 4, base=H - 0.6)
+    wall_loft("tower_b", (tx - 1.15, ty + 1.15), (tx + 1.15, ty + 1.15), 0.5, lambda t: TH, mas, 4, base=H - 0.6)
+    wall_loft("tower_l", (tx - 1.15, ty - 1.15), (tx - 1.15, ty + 1.15), 0.5, lambda t: TH, mas, 4, base=H - 0.6)
+    wall_loft("tower_r", (tx + 1.15, ty - 1.15), (tx + 1.15, ty + 1.15), 0.5, lambda t: TH, mas, 4, base=H - 0.6)
+    for k in range(8):
+        a = k * math.tau / 8
+        if k == 5:
+            continue
+        x = tx + max(-1, min(1, math.cos(a) * 1.42)) * 1.15
+        y = ty + max(-1, min(1, math.sin(a) * 1.42)) * 1.15
+        bd.place(bd.rough_stone("tmerlon", (0.45, 0.45, 0.55), mas, rng, 1, 0.08), (x, y, TH + 0.27))
+    for i in range(6):
+        bd.place(bd.plank("tdeck", 2.1, 0.36, 0.05, wood, rng, 1), (tx, ty - 0.9 + i * 0.36, TH - 0.25), (90, 0, 0))
+    bm = bmesh.new()
+    bmesh.ops.create_cone(bm, cap_ends=True, segments=10, radius1=0.25, radius2=0.5, depth=0.4)
+    bd.place(bd.obj_from_bm("brazier", bm, iron, 1), (tx, ty, TH + 0.2))
+    bd.place(bd.rough_stone("coals", (0.42, 0.42, 0.08), char, rng, 1, 0.2), (tx, ty, TH + 0.42))
+    beacon = bpy.data.objects.new("Beacon", None)
+    beacon.location = (tx, ty, TH + 0.6)
+    bpy.context.scene.collection.objects.link(beacon)
+    # Antena de rádio improvisada com cabos e bandeira vermelha esfarrapada.
+    bm = bmesh.new()
+    bd.tube(bm, [Vector((tx + 0.85, ty + 0.85, TH)), Vector((tx + 0.9, ty + 0.88, TH + 2.4))], [0.04, 0.025], 5, 0.0, None)
+    bd.obj_from_bm("antenna", bm, rust, 1)
+    for k in range(3):
+        bd.place(bd.log("crossbar", 0.6 - k * 0.15, 0.015, rust, rng, 1, bend=0.0), (tx + 0.88, ty + 0.87, TH + 1.4 + k * 0.4), (0, 90, 30))
+    flag = bd.plank("flag", 0.9, 0.5, 0.01, cloth, rng, 1, broken=True)
+    bd.place(flag, (tx + 1.35, ty + 0.88, TH + 2.05), (90, 0, 0))
+    # Arame farpado ao longo da frente intacta e corrente pendurada.
+    bd.place(bd.barbed_wire("wire", W * 0.6, 0.12, iron, rng, 1, loops=12), (0.8, -hy - T / 2 - 0.05, H + 0.15))
+    bd.place(bd.chain("chain", 1.4, iron, 1), (2.4, -hy - T / 2 - 0.1, 4.2))
+
+
+# --- Muralha da base: paliçada sobre base de pedra, portão e torres do portão --------------
+
+RING_LEN = 4.2
+
+
+def build_ring_wall(variant):
+    rng = random.Random(500 + variant)
+    mas = mat_masonry()
+    stone = bd.mat_stone()
+    bark = bd.mat_bark()
+    cut = bd.mat_fresh_cut()
+    rust = bd.mat_rust()
+    rope = bd.mat_flat("rope", (0.4, 0.33, 0.22))
+    bone = bd.mat_flat("bone", (0.66, 0.6, 0.48))
+    dark = bd.mat_flat("socket", (0.03, 0.02, 0.02))
+    iron = bd.mat_flat("iron", (0.15, 0.14, 0.14))
+    L = RING_LEN
+    # Base de pedra (1 m) com topo irregular.
+    wall_loft("base", (-L / 2, 0), (L / 2, 0), 0.85, lambda t: 1.0 + rng.uniform(-0.08, 0.08), mas, 8)
+    for i in range(7):
+        bd.place(bd.rough_stone("foot", (0.62, 1.0, 0.36), stone, rng, 1, 0.14), (-L / 2 + 0.3 + i * (L - 0.6) / 6, 0, 0.17))
+    # Paliçada de troncos apontados por cima.
+    n = 11
+    for i in range(n):
+        x = -L / 2 + (i + 0.5) * L / n + rng.uniform(-0.03, 0.03)
+        h = rng.uniform(2.0, 2.35)
+        bd.place(bd.stake("pale", h, 0.19, bark, cut, rng, 1, tip=0.4), (x, rng.uniform(-0.05, 0.05), 0.85), (rng.uniform(-3, 3), rng.uniform(-3, 3), 0))
+    for z in (1.45, 2.3):
+        bd.place(bd.log("rail", L + 0.1, 0.07, bark, rng, 1, bend=0.02), (0, -0.24, z), (0, 90, 0))
+        bd.place(bd.log("rail", L + 0.1, 0.07, bark, rng, 1, bend=0.02), (0, 0.24, z), (0, 90, 0))
+    for x in (-L / 2 + 0.6, L / 2 - 0.6):
+        bd.place(bd.torus("lash", 0.24, 0.02, rope, 1), (x, 0, 2.3), (0, 0, 0))
+    if variant == 1:
+        bd.place(bd.tin_sheet("patch", 1.3, 0.9, rust, rng, 1), (0.6, -0.27, 1.75), (0, 3, 0))
+        bd.place(bd.skull("skull", bone, dark, 1), (-1.2, -0.12, 3.15), (0, 0, rng.uniform(-30, 30)))
+        bd.place(bd.barbed_wire("wire", L - 0.4, 0.1, iron, rng, 1, loops=10), (0, -0.3, 2.85))
+    else:
+        for i in range(4):
+            bd.place(bd.stake("outspike", 1.1, 0.04, bark, cut, rng, 1), (-1.5 + i, -0.6, 0.0), (-45 + rng.uniform(-6, 6), 0, rng.uniform(-10, 10)))
+
+
+def build_ring_gate():
+    """Folha do portão (centrada; o jogo a pendura pela borda): tábuas, travessas em Z, ferro e pontas."""
+    rng = random.Random(600)
+    wood = bd.mat_old_wood("old_wood", blood=True)
+    bark = bd.mat_bark()
+    cut = bd.mat_fresh_cut()
+    iron = bd.mat_flat("iron", (0.14, 0.13, 0.13))
+    rust = bd.mat_rust()
+    Wd, Hd = 3.55, 2.5
+    n = 10
+    for i in range(n):
+        x = -Wd / 2 + (i + 0.5) * Wd / n
+        h = Hd + rng.uniform(-0.1, 0.15)
+        bd.place(bd.stake("board", h, 0.17, bark, cut, rng, 1, tip=0.3), (x, 0, 0.05))
+    for z in (0.45, 2.0):
+        bd.place(bd.plank("cross", Wd, 0.26, 0.07, wood, rng, 1), (0, -0.2, z), (0, 0, 0))
+    bd.place(bd.plank("diag", 3.6, 0.24, 0.07, wood, rng, 1), (0, -0.25, 1.22), (0, -24, 0))
+    for z in (0.6, 1.85):
+        bd.place(bd.box("band", (Wd + 0.05, 0.04, 0.1), iron, 1), (0, -0.28, z))
+    for i in range(6):
+        bd.place(bd.stake("spike", 0.45, 0.025, iron, iron, rng, 1, tip=0.15), (-1.5 + i * 0.6, -0.3, 1.2), (90, 0, rng.uniform(-8, 8)))
+    bd.place(bd.tin_sheet("patch", 1.0, 0.7, rust, rng, 1), (-0.9, -0.24, 1.2), (0, 5, 0))
+
+
+def build_ring_tower():
+    rng = random.Random(700)
+    mas = mat_masonry()
+    bark = bd.mat_bark()
+    wood = bd.mat_old_wood("old_wood", blood=False)
+    cut = bd.mat_fresh_cut()
+    rust = bd.mat_rust()
+    burlap = bd.mat_burlap()
+    S = 0.85
+    # Base de pedra (1,8 m) e torre de troncos com plataforma, parapeito e meia-água de zinco.
+    for (a, b) in (((-S, -S), (S, -S)), ((-S, S), (S, S)), ((-S, -S), (-S, S)), ((S, -S), (S, S))):
+        wall_loft("tbase", a, b, 0.5, lambda t: 1.8 + rng.uniform(-0.1, 0.1), mas, 4)
+    bd.place(bd.box("cap", (2 * S + 0.5, 2 * S + 0.5, 0.22), mas, 1), (0, 0, 1.78))
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            bd.place(bd.log("post", 3.4, 0.09, bark, rng, 1, bend=0.0), (sx * S, sy * S, 3.3))
+    for i in range(7):
+        y = -S + i * (2 * S) / 6
+        bd.place(bd.plank("deck", 2 * S + 0.3, 0.3, 0.05, wood, rng, 1), (0, y, 3.4), (90, 0, rng.uniform(-2, 2)))
+    for side in range(4):
+        for k in range(6):
+            t = -1 + 2 * (k + 0.5) / 6
+            h = rng.uniform(0.8, 1.05)
+            pos = (t * S, S * (1 if side == 0 else -1), 3.45 + h / 2) if side < 2 else (S * (1 if side == 2 else -1), t * S, 3.45 + h / 2)
+            bd.place(bd.stake("pal", h, 0.07, bark, cut, rng, 1, tip=0.12), (pos[0], pos[1], 3.45), (0, 0, 0))
+    roof = bd.tin_sheet("roof", 2.2, 1.4, rust, rng, 1, corrugate=0.03)
+    bd.place(roof, (0, 0.35, 5.05), (90 - 24, 0, 0))
+    for k in range(4):
+        bd.place(bd.sandbag("bag", burlap, rng, 1, (0.36, 0.2, 0.12)), (-0.6 + k * 0.4, -S - 0.05, 3.55), (0, 0, rng.uniform(-8, 8)))
+
+
 BUILDERS = {
+    "ring_wall_a": lambda: build_ring_wall(0),
+    "ring_wall_b": lambda: build_ring_wall(1),
+    "ring_gate": build_ring_gate,
+    "ring_tower": build_ring_tower,
+    "keep_ruin": build_keep,
     "oil_drums": build_oil_drums,
     "rubble_pile": build_rubble_pile,
     "pike_heads": build_pike_heads,
