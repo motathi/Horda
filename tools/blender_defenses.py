@@ -792,7 +792,360 @@ def build_spikes():
               (90, 0, rng.uniform(0, 180)))
 
 
-BUILDERS = {"barricade": build_barricade, "stone_wall": build_stone_wall, "iron_wall": build_iron_wall,
+# --- Torre de arqueiros (atalaia de sucata) ------------------------------------------
+
+def ladder(name, h, mat, rng, lv, w=0.42):
+    objs = []
+    for x in (-w / 2, w / 2):
+        o = log(name + "_rail", h, 0.03, mat, rng, lv, bend=0.0, segs=6)
+        place(o, (x, 0, h / 2))
+    for i in range(int(h / 0.36)):
+        o = log(name + "_rung", w + 0.08, 0.02, mat, rng, lv, bend=0.0, segs=5)
+        place(o, (0, 0, 0.3 + i * 0.36), (0, 90, rng.uniform(-3, 3)))
+    return objs
+
+
+def build_archer_tower():
+    rng = random.Random(111)
+    bark = mat_bark()
+    wood = mat_old_wood()
+    cut = mat_fresh_cut()
+    rust = mat_rust()
+    burlap = mat_burlap()
+    iron = mat_flat("iron", (0.16, 0.15, 0.15))
+    rope = mat_flat("rope", (0.4, 0.33, 0.22))
+    cloth = mat_flat("rag", (0.24, 0.07, 0.05))
+    bone = mat_flat("bone", (0.66, 0.6, 0.48))
+    dark = mat_flat("socket", (0.03, 0.02, 0.02))
+    stone = mat_stone()
+    H = 4.3   # altura da plataforma
+    S = 1.05  # meia largura no topo
+    B = 1.3   # meia largura na base (pernas abertas)
+    # Pernas de tronco inclinadas, cada uma num pé de pedras.
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            a = Vector((sx * B, sy * B, 0.0))
+            b = Vector((sx * S, sy * S, H + 0.9))
+            bm = bmesh.new()
+            tube(bm, [a, a.lerp(b, 0.5) + Vector((rng.uniform(-0.03, 0.03), 0, 0)), b], [0.11, 0.1, 0.09], 8, 0.06, rng)
+            obj_from_bm("leg", bm, bark, 1)
+            for k in range(3):
+                place(rough_stone("foot", (0.22, 0.2, 0.14), stone, rng, 1, 0.25),
+                      (a.x + rng.uniform(-0.2, 0.2), a.y + rng.uniform(-0.2, 0.2), 0.07), (0, 0, rng.uniform(0, 90)))
+    # Travamentos em X nos quatro lados (corda amarrada nos cruzamentos).
+    for side in range(4):
+        ax = side % 2
+        sgn = -1 if side < 2 else 1
+        for z0, z1 in ((0.3, 2.2), (2.2, 4.1)):
+            def at(z, t):
+                w = B + (S - B) * (z / (H + 0.9))
+                return Vector((t * w, sgn * w, z)) if ax == 0 else Vector((sgn * w, t * w, z))
+            for t0, t1 in ((-1, 1), (1, -1)):
+                bm = bmesh.new()
+                tube(bm, [at(z0, t0 * 0.95), at(z1, t1 * 0.95)], [0.05, 0.05], 6, 0.05, rng)
+                obj_from_bm("brace", bm, bark, 1)
+            mid = at((z0 + z1) / 2, 0)
+            place(torus("lash", 0.07, 0.02, rope, 1), mid.to_tuple(), (90 if ax == 0 else 0, 0 if ax == 0 else 90, 0))
+    # Plataforma de tábuas com vigas por baixo.
+    for x in (-S + 0.1, S - 0.1):
+        place(log("joist", 2.5, 0.07, bark, rng, 1, bend=0.01), (x, 0, H - 0.08), (90, 0, 0))
+    for i in range(9):
+        y = -S - 0.15 + i * (2 * S + 0.3) / 8
+        place(plank("deck", 2 * S + 0.45, 0.26, 0.05, wood, rng, 1, broken=(i == 7)), (rng.uniform(-0.04, 0.04), y, H), (90, 0, rng.uniform(-2, 2)))
+    # Parapeito: tábuas na vertical, umas mais curtas, e postes nos cantos.
+    for side in range(4):
+        for k in range(7):
+            t = -1 + 2 * (k + 0.5) / 7
+            h = rng.uniform(0.75, 1.0)
+            pos = (t * (S + 0.18), (S + 0.2) * (1 if side == 0 else -1), H + h / 2) if side < 2 else ((S + 0.2) * (1 if side == 2 else -1), t * (S + 0.18), H + h / 2)
+            o = plank("pal", h, 0.28, 0.04, wood, rng, 1, broken=rng.random() < 0.3)
+            place(o, pos, (0, 90, 0 if side < 2 else 90))
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            place(log("post", 2.1, 0.055, bark, rng, 1, bend=0.0), (sx * (S + 0.2), sy * (S + 0.2), H + 1.05))
+    # Telhado de zinco inclinado (cai para trás), escada e bandeira esfarrapada.
+    # Meia-água: cobre só a metade de trás (de cima ainda se vê a plataforma e o parapeito).
+    roof = tin_sheet("roof", 2.6, 1.5, rust, rng, 1, corrugate=0.03)
+    place(roof, (0, 0.5, H + 2.05), (90 - 24, 0, 0))
+    lad = ladder("ladder", H + 0.2, bark, rng, 1)
+    bpy.context.view_layer.update()
+    for o in [o for o in bpy.context.scene.objects if o.name.startswith("ladder")]:
+        o.matrix_world = Matrix.Translation(Vector((0.3, -B - 0.25, 0))) @ Euler((math.radians(-14), 0, 0)).to_matrix().to_4x4() @ o.matrix_world
+    place(log("flagpole", 1.6, 0.025, bark, rng, 1, bend=0.0), (S + 0.2, S + 0.2, H + 2.9))
+    flag = plank("flag", 0.7, 0.4, 0.01, cloth, rng, 1, broken=True)
+    place(flag, (S + 0.55, S + 0.2, H + 3.45), (90, 0, 0))
+    # Nível 2: sacos de areia no parapeito e chapas de zinco remendando a frente.
+    for k in range(5):
+        place(sandbag("bag", burlap, rng, 2, (0.4, 0.22, 0.13)), (-0.9 + k * 0.45, -(S + 0.32), H + 0.95), (0, 0, rng.uniform(-8, 8)))
+    for side, (pos, rot) in enumerate((((0, -(S + 0.26), H + 0.45), (0, 0, 0)), ((S + 0.26, 0, H + 0.45), (0, 0, 90)))):
+        place(tin_sheet("patch", 1.6, 0.8, rust, rng, 2), pos, (rot[0] + 90 if False else 0, 0, rot[2]))
+    for i in range(6):
+        a = i * math.tau / 6 + 0.3
+        place(stake("legspike", 0.9, 0.035, bark, cut, rng, 2), (math.cos(a) * 1.75, math.sin(a) * 1.75, 0.0),
+              (math.degrees(math.sin(a)) * 0.6, -math.degrees(math.cos(a)) * 0.6, 0))
+    # Nível 3: arame farpado em volta da plataforma, crânios no parapeito e lampião.
+    for side in range(4):
+        rot = 0 if side < 2 else 90
+        pos = (0, (S + 0.24) * (1 if side == 0 else -1), H + 1.1) if side < 2 else ((S + 0.24) * (1 if side == 2 else -1), 0, H + 1.1)
+        place(barbed_wire("wire", 2 * S + 0.3, 0.1, iron, rng, 3, loops=9), pos, (0, 0, rot))
+    for sx, sy in ((-1, -1), (1, -1)):
+        place(skull("skull", bone, dark, 3), (sx * (S + 0.2), sy * (S + 0.2), H + 2.2), (0, 0, rng.uniform(-30, 30)))
+    place(barbed_wire("legwire", 2.6, 0.12, iron, rng, 3, loops=10), (0, -B - 0.05, 0.5), (0, 0, 0))
+
+
+# --- Base comum: berço de dormentes (toras empilhadas em cruz) ---------------------------
+
+def crib(bark, rng, half, layers, lv=1, z0=0.0, r=0.1):
+    for k in range(layers):
+        z = z0 + r + k * (2 * r * 0.9)
+        for s_ in (-1, 1):
+            if k % 2 == 0:
+                place(log("crib", 2 * half + 0.35, r, bark, rng, lv, bend=0.01), (0, s_ * (half - r), z), (0, 90, rng.uniform(-2, 2)))
+            else:
+                place(log("crib", 2 * half + 0.35, r, bark, rng, lv, bend=0.01), (s_ * (half - r), 0, z), (90, 0, rng.uniform(-2, 2)))
+    top = z0 + layers * 2 * r * 0.9 + r * 0.4
+    return top
+
+
+def deck(wood, rng, half, z, lv=1):
+    n = int(2 * half / 0.26) + 1
+    for i in range(n):
+        x = -half + i * (2 * half) / (n - 1)
+        place(plank("deck", 2 * half + 0.1, 0.26, 0.05, wood, rng, lv), (x, 0, z), (90, 0, 90 + rng.uniform(-2, 2)))
+
+
+# --- Balista ----------------------------------------------------------------------------
+
+def build_ballista():
+    rng = random.Random(222)
+    bark = mat_bark()
+    wood = mat_old_wood("old_wood", blood=False)
+    cut = mat_fresh_cut()
+    rust = mat_rust()
+    burlap = mat_burlap()
+    iron = mat_flat("iron", (0.16, 0.15, 0.15))
+    rope = mat_flat("rope", (0.42, 0.35, 0.23))
+    bone = mat_flat("bone", (0.66, 0.6, 0.48))
+    dark = mat_flat("socket", (0.03, 0.02, 0.02))
+    painted = mat_painted_metal()
+    half = 1.15
+    top = crib(bark, rng, half, 5)
+    deck(wood, rng, half, top)
+    z = top + 0.03
+    # Arma (gira): poste central, berço em A, coronha, arcos de madeira, corda, virote e manivela.
+    T = 0
+    place(log("pivot", 0.9, 0.12, bark, rng, T, bend=0.0), (0, 0, z + 0.45))
+    place(torus("collar", 0.14, 0.03, iron, T), (0, 0, z + 0.85), (0, 0, 0))
+    place(box("stock", (0.2, 2.3, 0.18), wood, T), (0, 0.15, z + 1.0))
+    place(box("trough", (0.08, 2.0, 0.04), iron, T), (0, 0.2, z + 1.1))
+    for sx in (-1, 1):
+        pts = [Vector((sx * 0.08, 1.05, z + 1.02)), Vector((sx * 0.55, 0.95, z + 1.03)), Vector((sx * 0.95, 0.72, z + 1.04)),
+               Vector((sx * 1.2, 0.42, z + 1.05))]
+        bm = bmesh.new()
+        tube(bm, pts, [0.075, 0.065, 0.05, 0.04], 7, 0.05, rng)
+        obj_from_bm("arm", bm, bark, T)
+        bm = bmesh.new()
+        tube(bm, [pts[-1], Vector((0, -0.55, z + 1.1))], [0.012, 0.012], 4, 0.0, None)
+        obj_from_bm("string", bm, rope, T)
+        place(torus("wrap", 0.085, 0.02, rope, T), (sx * 0.35, 1.0, z + 1.02), (0, 90, 0))
+    bolt = stake("bolt", 2.1, 0.035, wood, iron, rng, T, tip=0.25)
+    place(bolt, (0, -0.85, z + 1.16), (-90, 0, 0))
+    place(torus("winch", 0.22, 0.03, iron, T), (0.18, -0.85, z + 0.95), (0, 90, 0))
+    place(log("winchaxle", 0.5, 0.03, iron, rng, T, bend=0.0), (0, -0.85, z + 0.95), (0, 90, 0))
+    place(plate("shield", 1.0, 0.55, 0.03, painted, iron, rng, T), (0, 1.12, z + 0.6), (0, 0, 0))
+    # Munição ao lado: feixe de virotes amarrado.
+    for i in range(5):
+        place(stake("spare", 1.7, 0.03, wood, iron, rng, 1, tip=0.2), (-0.75 + i * 0.07, -0.6, z + 0.04 + (i % 2) * 0.06), (-90, 0, rng.uniform(-3, 3)))
+    # Nível 2: sacos de areia em volta e chapas pregadas no berço.
+    for side in range(4):
+        for k in range(4):
+            t = -0.9 + k * 0.6
+            pos = (t, -(half + 0.25), 0.15) if side == 0 else ((t, half + 0.25, 0.15) if side == 1 else ((-(half + 0.25), t, 0.15) if side == 2 else (half + 0.25, t, 0.15)))
+            place(sandbag("bag", burlap, rng, 2), pos, (0, 0, (0 if side < 2 else 90) + rng.uniform(-8, 8)))
+    place(tin_sheet("patch", 1.6, 0.6, rust, rng, 2), (0, -(half + 0.05), top - 0.4), (0, 0, 0))
+    place(tin_sheet("patch", 1.6, 0.6, rust, rng, 2), (half + 0.05, 0, top - 0.4), (0, 0, 90))
+    # Nível 3: estacas para fora, arame farpado e crânio pendurado.
+    for i in range(8):
+        a = i * math.tau / 8 + 0.2
+        place(stake("spike", 1.0, 0.04, bark, cut, rng, 3), (math.cos(a) * 1.55, math.sin(a) * 1.55, 0.05),
+              (math.degrees(math.sin(a)) * 0.7, -math.degrees(math.cos(a)) * 0.7, 0))
+    place(barbed_wire("wire", 2.4, 0.11, iron, rng, 3, loops=9), (0, -(half + 0.1), top + 0.15))
+    place(barbed_wire("wire", 2.4, 0.11, iron, rng, 3, loops=9), (-(half + 0.1), 0, top + 0.15), (0, 0, 90))
+    place(skull("skull", bone, dark, 3), (half + 0.05, -(half + 0.05), top + 0.1), (0, 0, 40))
+
+
+# --- Torre de canhão --------------------------------------------------------------------
+
+def build_cannon():
+    rng = random.Random(333)
+    bark = mat_bark()
+    wood = mat_old_wood("old_wood", blood=False)
+    stone = mat_stone()
+    burlap = mat_burlap()
+    rust = mat_rust()
+    iron = mat_flat("iron", (0.13, 0.12, 0.12))
+    bone = mat_flat("bone", (0.66, 0.6, 0.48))
+    dark = mat_flat("socket", (0.03, 0.02, 0.02))
+    painted = mat_painted_metal()
+    # Base: plataforma de pedra circular (bastião baixo) com topo de tábuas.
+    R = 1.35
+    ring_n = 14
+    for layer in range(4):
+        for i in range(ring_n):
+            a = (i + 0.5 * (layer % 2)) * math.tau / ring_n
+            place(rough_stone("block", (0.5, 0.4, 0.3), stone, rng, 1, 0.18),
+                  (math.cos(a) * (R - 0.2), math.sin(a) * (R - 0.2), 0.15 + layer * 0.31), (0, 0, math.degrees(a)))
+    bm = bmesh.new()
+    bmesh.ops.create_cone(bm, cap_ends=True, segments=16, radius1=R - 0.25, radius2=R - 0.25, depth=1.2)
+    place(obj_from_bm("core", bm, stone, 1), (0, 0, 0.6))
+    z = 1.28
+    deck(wood, rng, R - 0.35, z)
+    z += 0.03
+    # Arma (gira): carreta de madeira com rodas e cano de ferro com cintas, apontando para +Y.
+    T = 0
+    for sx in (-1, 1):
+        bm = bmesh.new()
+        pts = [(-0.75, 0.0), (0.55, 0.0), (0.55, 0.32), (0.1, 0.5), (-0.55, 0.42), (-0.75, 0.2)]
+        top_v = [bm.verts.new((sx * 0.32 - 0.05, y, z + h)) for y, h in pts]
+        bot_v = [bm.verts.new((sx * 0.32 + 0.05, y, z + h)) for y, h in pts]
+        bm.faces.new(top_v)
+        bm.faces.new(list(reversed(bot_v)))
+        for i in range(len(pts)):
+            j = (i + 1) % len(pts)
+            bm.faces.new((top_v[i], top_v[j], bot_v[j], bot_v[i]))
+        bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+        obj_from_bm("cheek", bm, wood, T)
+        for y in (-0.5, 0.35):
+            place(torus("wheel", 0.24, 0.05, iron, T), (sx * 0.45, y, z + 0.24), (0, 90, 0))
+            place(log("hub", 0.16, 0.06, wood, rng, T, bend=0.0), (sx * 0.45, y, z + 0.24), (0, 90, 0))
+    place(log("axle", 1.0, 0.04, iron, rng, T, bend=0.0), (0, -0.5, z + 0.24), (0, 90, 0))
+    place(log("axle", 1.0, 0.04, iron, rng, T, bend=0.0), (0, 0.35, z + 0.24), (0, 90, 0))
+    prof = [(-0.75, 0.2), (-0.62, 0.22), (-0.55, 0.19), (0.0, 0.17), (0.6, 0.14), (1.05, 0.13), (1.15, 0.155), (1.25, 0.15)]
+    secs = []
+    for y, r in prof:
+        secs.append([Vector((math.cos(a) * r, y, math.sin(a) * r)) for a in [k * math.tau / 12 for k in range(12)]])
+    bm = bmesh.new()
+    rings = [[bm.verts.new(p) for p in sec] for sec in secs]
+    for ra, rb in zip(rings, rings[1:]):
+        for k in range(12):
+            bm.faces.new((ra[k], ra[(k + 1) % 12], rb[(k + 1) % 12], rb[k]))
+    bm.faces.new(list(reversed(rings[0])))
+    inner = [bm.verts.new(p.co * Vector((0.6, 1, 0.6)) + Vector((0, 0.02, 0))) for p in rings[-1]]
+    for k in range(12):
+        bm.faces.new((rings[-1][k], rings[-1][(k + 1) % 12], inner[(k + 1) % 12], inner[k]))
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    barrel = obj_from_bm("barrel", bm, iron, T)
+    place(barrel, (0, 0.1, z + 0.62), (8, 0, 0))
+    for y in (-0.35, 0.25, 0.85):
+        place(torus("band", 0.185 - y * 0.03, 0.022, rust, T), (0, 0.1 + y, z + 0.62 + y * 0.14), (90 - 8, 0, 0))
+    place(plate("mantlet", 1.0, 0.45, 0.03, painted, iron, rng, T), (0, 0.72, z + 0.38), (0, 0, 0))
+    # Balas empilhadas e barril de pólvora.
+    balls = [(0, 0, 0), (0.17, 0, 0), (0.085, 0.15, 0), (0.085, 0.05, 0.14)]
+    for bx, by, bz in balls:
+        bm = bmesh.new()
+        bmesh.ops.create_uvsphere(bm, u_segments=8, v_segments=6, radius=0.085)
+        place(obj_from_bm("ball", bm, iron, 1), (-0.75 + bx, -0.7 + by, z + 0.085 + bz))
+    bm = bmesh.new()
+    bmesh.ops.create_cone(bm, cap_ends=True, segments=10, radius1=0.2, radius2=0.2, depth=0.45)
+    place(obj_from_bm("keg", bm, wood, 1), (0.75, -0.7, z + 0.22))
+    # Nível 2: muro de sacos de areia na borda e mais barris.
+    for i in range(16):
+        a = i * math.tau / 16
+        if -0.6 < a - math.pi * 0.5 < 0.6:
+            continue  # vão na frente para o cano
+        place(sandbag("bag", burlap, rng, 2, (0.42, 0.24, 0.15)), (math.cos(a) * (R - 0.15), math.sin(a) * (R - 0.15), z + 0.16),
+              (0, 0, math.degrees(a) + 90 + rng.uniform(-6, 6)))
+    for i in range(3):
+        a = math.pi + 0.5 + i * 0.5
+        place(sandbag("bag", burlap, rng, 2, (0.42, 0.24, 0.15)), (math.cos(a) * (R - 0.15), math.sin(a) * (R - 0.15), z + 0.45),
+              (0, 0, math.degrees(a) + 90))
+    # Nível 3: chapas de ferro em volta da base, arame farpado e crânios.
+    for i in range(6):
+        a = i * math.tau / 6 + 0.25
+        place(plate("armor", 0.9, 0.9, 0.04, rust, iron, rng, 3), (math.cos(a) * (R + 0.05), math.sin(a) * (R + 0.05), 0.55),
+              (0, 0, math.degrees(a) + 90))
+    place(barbed_wire("wire", 2.6, 0.11, iron, rng, 3, loops=10), (0, -(R + 0.15), 1.25))
+    for a in (2.2, 4.0):
+        place(skull("skull", bone, dark, 3), (math.cos(a) * (R - 0.15), math.sin(a) * (R - 0.15), z + 0.35), (0, 0, math.degrees(a)))
+
+
+# --- Torre elétrica (gambiarra de sucata) ------------------------------------------------
+
+def mat_copper():
+    m, nt, bsdf = _mat("copper")
+    c = _ramp(nt, _noise(nt, 14.0, 6.0, 0.6), [(0.3, (0.32, 0.17, 0.08)), (0.55, (0.55, 0.3, 0.14)), (0.75, (0.22, 0.36, 0.3))])
+    nt.links.new(c, bsdf.inputs["Base Color"])
+    return m
+
+
+def build_tesla():
+    rng = random.Random(444)
+    rust = mat_rust()
+    copper = mat_copper()
+    iron = mat_flat("iron", (0.15, 0.14, 0.14))
+    conc = mat_stone()
+    painted = mat_painted_metal()
+    bat = mat_flat("battery", (0.08, 0.08, 0.09))
+    yellow = mat_flat("hazard", (0.55, 0.42, 0.08))
+    bone = mat_flat("bone", (0.66, 0.6, 0.48))
+    dark = mat_flat("socket", (0.03, 0.02, 0.02))
+    cable = mat_flat("cable", (0.04, 0.04, 0.04))
+    rubber = mat_flat("rubber", (0.07, 0.07, 0.07))
+    # Base: bloco de concreto com baterias de carro e um gerador velho.
+    place(rough_stone("pad", (1.15, 1.15, 0.3), conc, rng, 1, 0.08), (0, 0, 0.15))
+    for i, (x, y) in enumerate(((-0.6, -0.65), (-0.2, -0.7), (0.6, -0.55))):
+        place(box("battery", (0.32, 0.22, 0.24), bat, 1), (x, y, 0.42), (0, 0, rng.uniform(-10, 10)))
+        for dx in (-0.08, 0.08):
+            place(log("term", 0.05, 0.025, copper if dx < 0 else iron, rng, 1, bend=0.0), (x + dx, y, 0.56))
+    place(box("generator", (0.6, 0.45, 0.45), painted, 1), (0.45, 0.45, 0.52), (0, 0, 15))
+    place(log("exhaust", 0.4, 0.04, rust, rng, 1, bend=0.0), (0.6, 0.55, 0.9))
+    # Mastro: tripé de canos enferrujados com travessas.
+    Htop = 4.4
+    feet = [Vector((math.cos(a) * 0.75, math.sin(a) * 0.75, 0.3)) for a in (math.pi / 2, math.pi / 2 + math.tau / 3, math.pi / 2 + 2 * math.tau / 3)]
+    apex = Vector((0, 0, Htop))
+    for f in feet:
+        bm = bmesh.new()
+        tube(bm, [f, f.lerp(apex, 0.5), apex], [0.06, 0.055, 0.05], 8, 0.03, rng)
+        obj_from_bm("pipe", bm, rust, 1)
+    for t in (0.25, 0.5, 0.75):
+        pts = [f.lerp(apex, t) for f in feet]
+        for i in range(3):
+            bm = bmesh.new()
+            tube(bm, [pts[i], pts[(i + 1) % 3]], [0.03, 0.03], 6, 0.0, None)
+            obj_from_bm("rung", bm, rust, 1)
+    place(log("mast", 1.3, 0.05, iron, rng, 1, bend=0.0), (0, 0, Htop + 0.5))
+    # Bobina de cobre no topo, isoladores e prato de descarga.
+    for k in range(6):
+        place(torus("coil", 0.28 - k * 0.012, 0.03, copper, 1), (0, 0, Htop + 0.15 + k * 0.08))
+    place(torus("rim", 0.42, 0.045, iron, 1), (0, 0, Htop + 0.72))
+    bm = bmesh.new()
+    bmesh.ops.create_uvsphere(bm, u_segments=12, v_segments=8, radius=0.22)
+    place(obj_from_bm("ball", bm, iron, 1), (0, 0, Htop + 1.0))
+    # Cabos pendurados das baterias até o mastro.
+    for i, f in enumerate(feet):
+        a = Vector((-0.6 + i * 0.5, -0.65, 0.55))
+        b = f.lerp(apex, 0.5)
+        mid = (a + b) / 2 + Vector((0, 0, -0.35))
+        bm = bmesh.new()
+        tube(bm, [a, mid, b], [0.018, 0.018, 0.018], 4, 0.0, None)
+        obj_from_bm("cable", bm, cable, 1)
+    # Placa de perigo amarela presa no tripé.
+    place(plate("sign", 0.4, 0.3, 0.02, yellow, iron, rng, 1, rivets=False), (0, -0.48, 1.5), (0, 0, 0))
+    # Nível 2: segunda bobina, isoladores de vidro e pneus segurando os pés.
+    for k in range(5):
+        place(torus("coil2", 0.36, 0.025, copper, 2), (0, 0, 2.6 + k * 0.07))
+    for f in feet:
+        place(torus("tire", 0.28, 0.1, rubber, 2), (f.x, f.y, 0.38))
+    # Nível 3: arame farpado em volta da base e crânios nos isoladores.
+    for i in range(3):
+        a = i * math.tau / 3
+        place(barbed_wire("wire", 1.9, 0.1, iron, rng, 3, loops=8), (math.cos(a) * 1.0, math.sin(a) * 1.0, 0.45), (0, 0, math.degrees(a) + 90))
+    for f in feet[:2]:
+        p = f.lerp(apex, 0.75)
+        place(skull("skull", bone, dark, 3), (p.x * 1.4, p.y * 1.4, p.z), (0, 0, 0))
+
+
+BUILDERS = {"archer_tower": build_archer_tower, "ballista": build_ballista, "cannon": build_cannon, "tesla": build_tesla, "barricade": build_barricade, "stone_wall": build_stone_wall, "iron_wall": build_iron_wall,
             "spikes": build_spikes}
 
 
@@ -812,7 +1165,8 @@ def join_levels():
         bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
         bpy.ops.object.join()
         j = bpy.context.view_layer.objects.active
-        j.name = "Lv%d" % lv
+        # lv 0 = peça giratória (arma da torre), sempre visível; o jogo a gira para o alvo.
+        j.name = "Turret" if lv == 0 else "Lv%d" % lv
         out.append(j)
     # Mesma origem (0,0,0) para todos os níveis.
     for o in out:
@@ -891,7 +1245,7 @@ def render_levels(objs, out_png):
     gap = width + 0.7
     for i, n in enumerate((1, 2, 3)):
         for o in objs:
-            lv = int(o.name[2:])
+            lv = 0 if o.name == "Turret" else int(o.name[2:])
             if lv <= n:
                 c = o.copy()
                 c.data = o.data
@@ -902,7 +1256,7 @@ def render_levels(objs, out_png):
         o.hide_render = True
     ground = bpy.data.meshes.new("ground")
     bm = bmesh.new()
-    bmesh.ops.create_grid(bm, x_segments=1, y_segments=1, size=12)
+    bmesh.ops.create_grid(bm, x_segments=1, y_segments=1, size=30)
     bm.to_mesh(ground)
     g = bpy.data.objects.new("ground", ground)
     gm = mat_flat("dirt", (0.2, 0.16, 0.12))
@@ -911,9 +1265,10 @@ def render_levels(objs, out_png):
     cam = bpy.data.objects.new("cam", bpy.data.cameras.new("cam"))
     cam.data.lens = 40
     sc.collection.objects.link(cam)
-    k = max(gap * 3.0 / 10.8, height / 2.0)
-    cam.location = (0, -10.5 * k, 6.2 * k + height * 0.3)
-    cam.rotation_euler = Euler((math.radians(62), 0, 0))
+    k = max(gap * 3.0 / 10.8, height / 4.0)
+    tall = height > 3.5
+    cam.location = (0, -10.5 * k, 6.2 * k * (0.55 if tall else 1.0) + height * (0.55 if tall else 0.3))
+    cam.rotation_euler = Euler((math.radians(70 if tall else 62), 0, 0))
     sc.camera = cam
     sun = bpy.data.objects.new("sun", bpy.data.lights.new("sun", "SUN"))
     sun.data.energy = 3.0

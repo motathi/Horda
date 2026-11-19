@@ -253,8 +253,9 @@ func _defense_shots(world: World, hero: Hero, id: String) -> void:
 		if (h as Node3D).global_position.distance_to(p) < 12.0:
 			h.queue_free()
 	world.camera_rig.global_position = p
-	world.camera_rig.set(&"distance", 12.0)
-	world.camera_rig.set(&"_zoom_target", 12.0)
+	var zoom := 12.0 if Building.load_def(StringName(id)).height < 4.0 else 15.0
+	world.camera_rig.set(&"distance", zoom)
+	world.camera_rig.set(&"_zoom_target", zoom)
 	await _wait_frames(5)
 	# Alinha com a tela: comprimento na direita da câmera, frente virada para ela.
 	var cb := get_viewport().get_camera_3d().global_transform.basis
@@ -267,6 +268,14 @@ func _defense_shots(world: World, hero: Hero, id: String) -> void:
 	var gap := d.footprint.x + 1.6
 	for lv in [1, 2, 3]:
 		world.build_manager.place(d, p + right * ((lv - 2) * gap), yaw, false, lv)
+	if d.category == BuildingDef.Category.TOWER:
+		# Zumbi parado ao lado para as armas giratórias mirarem.
+		var z := (load("res://scenes/enemies/zombie.tscn") as PackedScene).instantiate() as Enemy
+		z.def = load("res://data/enemies/zombie.tres") as EnemyDef
+		world.enemies_root.add_child(z)
+		z.global_position = p + right * (gap * 2.2) - toward * 3.0
+		z.set_physics_process(false)
+		z.health.invulnerable = true
 	TimeManager.running = false
 	TimeManager.set_state(TimeManager.Phase.DAY, 3, 20.0)
 	await _wait_frames(40)

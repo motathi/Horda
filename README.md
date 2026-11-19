@@ -107,6 +107,14 @@ raiadas, lona rasgada, carga revirada) no lugar das carroças; estacas com cabe�
 
 ![Cenário modelado no Blender](docs/screenshots/cenario_blender.jpg)
 
+**Torres feitas no Blender** (também em `tools/blender_defenses.py`, com peças por nível): atalaia de
+troncos com parapeito de tábuas e meia-água de zinco; balista sobre berço de dormentes; canhão de ferro numa
+carreta sobre bastião de pedra; torre elétrica de canos enferrujados com bobinas de cobre, baterias de carro e
+gerador. A arma da balista e do canhão é o objeto `Turret` do GLB e gira para o inimigo mais próximo
+(`Building._update_turret`, também no cliente do coop).
+
+![Torres modeladas no Blender](docs/screenshots/torres_blender.jpg)
+
 **Inimigos especiais:** a partir da horda 4 surge o *Zumbi Explosivo* (incha e explode ao alcançar o alvo,
 arrasando muros; abatido, explode ferindo os zumbis ao redor), na 7 o *Cuspidor* (cospe ácido de 10 m,
 inclusive por cima dos muros, deixando poças corrosivas, e recua se você se aproximar) e na 9 o *Saltador*

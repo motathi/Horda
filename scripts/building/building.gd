@@ -93,6 +93,17 @@ static func make_visual(d: BuildingDef, lvl: int = 1) -> Node3D:
 				root.add_child(ModelLibrary.instance_width("wall", d.footprint.x * 1.05))
 			else:
 				_box(root, Vector3(d.footprint.x, d.height, d.footprint.y), Vector3(0, d.height * 0.5, 0), MaterialLib.textured("rock", Color.WHITE, 0.6))
+		&"ballista", &"cannon", &"tesla", &"archer_tower" when ResourceLoader.exists(BLENDER_DIR + String(d.id) + ".glb"):
+			_blender_levels(root, String(d.id), lvl)
+			if d.id == &"tesla":
+				var orb := MeshInstance3D.new()
+				var sph := SphereMesh.new()
+				sph.radius = 0.26
+				sph.height = 0.52
+				orb.mesh = sph
+				orb.material_override = MaterialLib.flat(Color(0.4, 0.75, 1.0), 0.3, 3.0)
+				orb.position.y = 5.42
+				root.add_child(orb)
 		&"ballista", &"cannon", &"tesla":
 			if ModelLibrary.has(String(d.id)):
 				root.add_child(ModelLibrary.instance_height(String(d.id), d.height))
@@ -279,7 +290,34 @@ func base_tower_range() -> float:
 func trap_damage() -> float:
 	return def.trap_damage * (1.0 + 0.4 * (level - 1)) * _eng_dmg() * (1.0 + Tech.bonus("tower_damage_pct"))
 
+## Arma giratória (objeto "Turret" dos modelos do Blender) mirando o inimigo mais próximo.
+var _turret: Node3D
+var _turret_yaw: float = 0.0
+var _turret_want: float = 0.0
+var _turret_scan: float = 0.0
+
+func _update_turret(delta: float) -> void:
+	if _turret == null or not is_instance_valid(_turret):
+		_turret = _visual.find_child("Turret", true, false) as Node3D if _visual else null
+		if _turret == null:
+			return
+		_turret_yaw = global_rotation.y
+		_turret_want = _turret_yaw
+	_turret_scan -= delta
+	if _turret_scan <= 0.0:
+		_turret_scan = 0.2
+		var t := _find_target(tower_range())
+		if t:
+			var dir := t.global_position - global_position
+			_turret_want = atan2(-dir.x, -dir.z)
+	_turret_yaw = lerp_angle(_turret_yaw, _turret_want, clampf(delta * 6.0, 0.0, 1.0))
+	var tr := _turret.global_transform
+	tr.basis = Basis(Vector3.UP, _turret_yaw).scaled(tr.basis.get_scale())
+	_turret.global_transform = tr
+
 func _process(delta: float) -> void:
+	if not health.dead and def and def.category == BuildingDef.Category.TOWER:
+		_update_turret(delta)
 	if health.dead or def == null or Coop.is_client():
 		return  # no coop, torres e armadilhas só agem no anfitrião
 	match def.category:

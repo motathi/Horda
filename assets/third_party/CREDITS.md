@@ -26,3 +26,5 @@ Baixados com `tools/itch_fetch.py` e copiados com `tools/import_third_party.py`.
   Blender 5.3 por `tools/blender_defenses.py` (sem assets de terceiros).
 - **car_wreck_a/b, burned_cart, pike_heads, corpse_pyre, oil_drums, rubble_pile** (`assets/models/blender/`) —
   modelados neste projeto no Blender 5.3 por `tools/blender_scenery.py` (sem assets de terceiros).
+- **archer_tower / ballista / cannon / tesla** (`assets/models/blender/`) — modelados neste projeto no Blender 5.3
+  por `tools/blender_defenses.py` (sem assets de terceiros).
