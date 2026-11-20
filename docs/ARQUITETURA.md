@@ -115,6 +115,17 @@ preparação até o passo final.
 - Teste: `tools/run_coop_test.sh` (dois processos com ENet). Depuração no navegador: `?autocoop=host` e
   `?autocoop=join&sala=CODIGO`.
 
+## Versão web no celular
+
+- `export_presets.cfg` → `html/head_include`: trava o zoom (meta viewport com `maximum-scale=1`), fixa
+  `html`/`body`/canvas na tela (sem rolagem) e, ao girar o aparelho, desfaz a rolagem e reavisa o tamanho em
+  vários instantes até assentar (o Godot mede `innerWidth`/`innerHeight` a cada quadro). Se a tela cheia cair
+  junto com a rotação, ela volta no primeiro toque já na horizontal (o navegador só permite pedir tela cheia
+  dentro de um toque).
+- `vercel.json`: `index.pck`/`index.wasm` com `max-age=0, must-revalidate` (sempre confere a versão; sem
+  mudança o servidor responde 304). O service worker do PWA não chega a instalar no export sem threads
+  (a lista dele inclui `index.worker.js`, que não existe), então não guarda versões antigas.
+
 ## Tecnologias
 
 Autoload `Tech` (`autoload/tech_manager.gd`) com `TechDef` (`data/tech`): custo, tempo, pré-requisitos,
