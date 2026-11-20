@@ -8,6 +8,8 @@ signal stats_changed
 signal leveled_up(level: int)
 signal ability_cast(index: int)
 signal gear_changed
+signal dodge_started
+signal dodge_success
 
 @export_group("Atributos")
 @export var max_health: float = 220.0
@@ -34,6 +36,13 @@ var xp: int = 0
 # --- Habilidades ---------------------------------------------------------------
 const ABILITY_IDS: Array[StringName] = [&"whirlwind", &"dash", &"warcry", &"nova"]
 const DASH_SPEED := 34.0
+## Esquiva (Shift / botão): corrida curta e rápida com invulnerabilidade. Desviar de um golpe no
+## último instante deixa o próximo ataque garantidamente crítico (contra-ataque).
+const DODGE_DIST := 4.6
+const DODGE_TIME := 0.26
+const DODGE_COOLDOWN := 0.85
+const DODGE_IFRAMES := 0.34
+const RIPOSTE_TIME := 1.6
 var abilities: Array[AbilityDef] = []
 var max_energy: float = 100.0
 var energy: float = 100.0
@@ -82,6 +91,11 @@ var gear_bag: Array[GearItem] = []
 ## Modo toque (celular): ataque pelo botão, mira automática, toque no mundo = mover/atacar.
 var touch_mode: bool = false
 var touch_attack_held: bool = false
+var _dodge_left: float = 0.0
+var _dodge_cd: float = 0.0
+var _dodge_dir: Vector3 = Vector3.ZERO
+var _iframes: float = 0.0
+var _riposte: float = 0.0
 ## Durante o modo de construção, cliques/toques posicionam a construção.
 var build_mode: bool = false
 var health: HealthComponent
@@ -409,8 +423,14 @@ func _physics_process(delta: float) -> void:
 		model.animate(delta, 0.0)
 		return
 	_tick_abilities(delta)
+	_dodge_cd = maxf(0.0, _dodge_cd - delta)
+	_iframes = maxf(0.0, _iframes - delta)
+	_riposte = maxf(0.0, _riposte - delta)
 	if _dash_left > 0.0:
 		_process_dash(delta)
+		return
+	if _dodge_left > 0.0:
+		_process_dodge(delta)
 		return
 	_attack_timer = maxf(0.0, _attack_timer - delta)
 	attack_cooldown_changed.emit(_attack_timer * attack_speed())
@@ -508,6 +528,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		use_consumable(&"meat")
 	elif event.is_action_pressed("use_slot_2"):
 		use_consumable(&"bandage")
+	elif event is InputEventKey and event.pressed and not event.echo and (event as InputEventKey).physical_keycode == KEY_3:
+		use_consumable(&"potion")
+	elif event is InputEventKey and event.pressed and not event.echo and (event as InputEventKey).physical_keycode == KEY_SHIFT:
+		dodge()
 	else:
 		for i in 4:
 			if event.is_action_pressed("ability_%d" % (i + 1)):
@@ -615,7 +639,7 @@ func _apply_hit() -> void:
 		if en == null or en.is_dead():
 			continue
 		if _in_arc(en.global_position, fwd, half_arc, reach() + en.get_radius()):
-			var crit := _rng.randf() < crit()
+			var crit := _rng.randf() < crit() or _riposte > 0.0
 			var info := DamageInfo.make(damage() * (crit_multiplier if crit else 1.0), self, crit)
 			en.take_damage(info)
 			hit_any = true
@@ -630,6 +654,9 @@ func _apply_hit() -> void:
 			hit_any = true
 	if hit_any:
 		EffectsHub.spawn_slash(global_position + Vector3.UP * 1.0 + fwd * 1.3, model.rotation.y)
+		if _riposte > 0.0:
+			_riposte = 0.0
+			EffectsHub.float_text(global_position + Vector3.UP * 2.6, "Contra-ataque!", Color(1.0, 0.8, 0.3), 36)
 
 ## Inimigo para a flecha: dentro do alcance e mais perto da direção da mira.
 func _bow_target() -> Enemy:
@@ -672,7 +699,10 @@ func _fire_arrow() -> void:
 	if t == null or not is_instance_valid(t) or not t.is_targetable():
 		t = _bow_target()
 	if t:
-		var crit := _rng.randf() < crit()
+		var crit := _rng.randf() < crit() or _riposte > 0.0
+		if _riposte > 0.0:
+			_riposte = 0.0
+			EffectsHub.float_text(global_position + Vector3.UP * 2.6, "Contra-ataque!", Color(1.0, 0.8, 0.3), 36)
 		var info := DamageInfo.make(damage() * BOW_DAMAGE_MULT * (crit_multiplier if crit else 1.0), self, crit)
 		EffectsHub.spawn_arrow(from, t, info, ARROW_SPEED)
 		Coop.fx_all("arrow", from, t.global_position + Vector3.UP)
@@ -696,6 +726,14 @@ func _in_arc(p: Vector3, fwd: Vector3, half_arc: float, reach: float) -> bool:
 	return fwd.angle_to(to / dist) <= half_arc
 
 func take_damage(info: DamageInfo) -> void:
+	if _iframes > 0.0 and not is_puppet and info.type != DamageInfo.Type.TRUE:
+		# Esquiva no momento certo: não toma dano e prepara o contra-ataque.
+		if _riposte <= 0.0:
+			EffectsHub.float_text(global_position + Vector3.UP * 2.4, "Esquivou!", Color(0.6, 0.9, 1.0), 34)
+			AudioManager.play_3d(&"swing", global_position, -4.0, 1.4)
+		_riposte = RIPOSTE_TIME
+		dodge_success.emit()
+		return
 	if is_puppet:
 		# O dono deste herói aplica o dano (armadura e vida são dele).
 		if not health.dead:
@@ -921,6 +959,40 @@ func _cast_whirlwind(a: AbilityDef) -> void:
 	for e in _enemies_in_radius(global_position, a.radius):
 		var crit := _rng.randf() < crit()
 		e.take_damage(DamageInfo.make(damage() * a.power * ability_power() * (crit_multiplier if crit else 1.0), self, crit))
+
+## Esquiva: para onde o jogador está andando (ou para trás, se parado). Retorna false em recarga.
+func dodge() -> bool:
+	if is_puppet or health.dead or _dodge_cd > 0.0 or _dash_left > 0.0 or _dodge_left > 0.0 or not GameManager.is_playing():
+		return false
+	var dir := _input_direction()
+	if dir == Vector3.ZERO:
+		dir = -facing()
+	_dodge_dir = dir.normalized()
+	_dodge_left = DODGE_TIME
+	_dodge_cd = DODGE_COOLDOWN
+	_iframes = DODGE_IFRAMES
+	_pending_hit = -1.0
+	_cancel_interaction()
+	_has_move_target = false
+	_target_enemy = null
+	EffectsHub.spawn_debris(global_position + Vector3.UP * 0.2, false)
+	AudioManager.play_3d(&"ab_dash", global_position, -9.0, 1.3)
+	dodge_started.emit()
+	return true
+
+func dodge_ratio() -> float:
+	return _dodge_cd / DODGE_COOLDOWN
+
+func _process_dodge(delta: float) -> void:
+	_dodge_left -= delta
+	# Arranque forte que desacelera no fim.
+	var k := clampf(_dodge_left / DODGE_TIME, 0.0, 1.0)
+	var speed := DODGE_DIST / DODGE_TIME * (0.45 + 1.1 * k)
+	velocity = _dodge_dir * speed
+	velocity.y = 0.0
+	move_and_slide()
+	global_position.y = maxf(global_position.y, 0.0)
+	model.animate(delta, 1.6)
 
 func _cast_dash(a: AbilityDef) -> void:
 	var dir := _input_direction()

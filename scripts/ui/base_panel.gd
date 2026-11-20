@@ -113,7 +113,7 @@ func _rebuild() -> void:
 		"+%d de dano por nível" % int(Hero.SHARPEN_BONUS), sharp_cost,
 		func() -> String: return services.sharpen(hero), can_sharp, false)
 	for r in services.recipes:
-		_add_row("Fabricar: %s" % r.display_name, r.description, r.inputs,
+		_add_row(("Comprar: %s" if r.buy else "Fabricar: %s") % r.display_name, r.description, r.inputs,
 			func() -> String: return services.craft(r), true, false)
 
 func _build_army() -> void:

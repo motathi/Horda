@@ -424,5 +424,17 @@
   "out": "assets/ui/hud/src/ab_eagle.jpg",
   "size": "1024x1024",
   "prompt": "Game ability icon of a fierce bald eagle diving with talons out and wings spread, golden glow, glossy stylized hand-painted MOBA ability icon in the style of Dota 2, dynamic composition, glowing magical effects, vibrant saturated colors, thick dark outline, centered, isolated on a completely black #000000 background, the background must be pitch black, no frame, no border, no text"
+ },
+ {
+  "name": "ui_potion_red",
+  "out": "assets/ui/hud/src/potion_red.jpg",
+  "size": "1024x1024",
+  "prompt": "Game UI icon of a heart-shaped glass flask full of glowing crimson red healing potion with a cork and a small leather tag, sparkles inside, glossy stylized hand-painted mobile strategy game UI icon, chunky readable shape, vibrant saturated colors, soft specular highlights, thick dark outline, centered, isolated on pure solid black background, no frame, no border, no text, no ground shadow"
+ },
+ {
+  "name": "ui_dodge",
+  "out": "assets/ui/hud/src/dodge.jpg",
+  "size": "1024x1024",
+  "prompt": "Game UI icon of a hooded survivor doing a fast sideways dodge roll with white motion streaks, a rotten green zombie claw swiping through empty air behind him, glossy stylized hand-painted mobile strategy game UI icon, chunky readable shape, vibrant saturated colors, soft specular highlights, thick dark outline, centered, isolated on pure solid black background, no frame, no border, no text, no ground shadow"
  }
 ]

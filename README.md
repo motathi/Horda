@@ -46,6 +46,17 @@ Ao adicionar texturas novas, use o mesmo modo de compressão no `.import`.
 
 ## Como jogar (PC)
 
+**Combate desafiador:** o golpe dos zumbis é lento e anunciado — um setor laranja no chão se enche durante a
+preparação (~0,85 s; rápidos ~0,6 s; brutamontes ~1,2 s) e fica vermelho perto do golpe; no fim da preparação
+o zumbi para de girar, então dá para sair da frente. Quem continua na frente e ao alcance toma **1,9x** o dano
+de antes. **Esquiva (Shift ou botão ⇧):** corrida curta e rápida com invulnerabilidade (recarga de 0,85 s);
+desviar de um golpe no último instante mostra "Esquivou!" e deixa o próximo ataque garantidamente crítico
+(**contra-ataque**). **Poção de Cura** (tecla 3 ou botão): cura 160 na hora; compre no menu da base (B) por
+4 sucatas + 1 erva.
+
+![Golpe anunciado no chão e os botões de esquiva e poção](docs/screenshots/combate_esquiva.jpg)
+
+
 1. Abra a pasta no Godot 4.3 (ou mais novo) e pressione **F5**.
 2. *Novo jogo* → escolha a dificuldade.
 

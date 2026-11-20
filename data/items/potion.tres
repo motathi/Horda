@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="ItemDef" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/inventory/item_def.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/ui/hud/potion_red.png" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = &"potion"
+display_name = "Poção de Cura"
+description = "Consumível (tecla 3): recupera 160 de vida na hora. Compre na base."
+category = 1
+icon = ExtResource("2")
+weight = 1
+color = Color(1, 0.3, 0.3, 1)
+heal_instant = 160.0
+heal_over_time = 0.0
+heal_duration = 0.0

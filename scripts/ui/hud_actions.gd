@@ -29,10 +29,13 @@ func _ready() -> void:
 		{"id": "ab2", "off": Vector2(-198, -268), "r": 42.0, "key": "R", "icon": UIStyle.hud_icon("ab_warcry"), "touch": -99, "glow": 0.0},
 		{"id": "ab3", "off": Vector2(-88, -294), "r": 46.0, "key": "T", "icon": UIStyle.hud_icon("ab_nova"), "touch": -99, "glow": 0.0},
 		# Fileira de utilidades
+		# Esquiva (Shift): ao lado do ataque, fácil de alcançar com o polegar.
+		{"id": "dodge", "off": Vector2(-350, -128), "r": 38.0, "key": "⇧", "icon": UIStyle.hud_icon("dodge"), "touch": -99, "glow": 0.0},
 		{"id": "loot", "off": Vector2(-378, -50), "r": 34.0, "key": "E", "icon": UIStyle.hud_icon("loot"), "touch": -99, "glow": 0.0},
-		{"id": "meat", "off": Vector2(-460, -50), "r": 34.0, "key": "1", "icon": UIStyle.hud_icon("meat"), "touch": -99, "glow": 0.0},
-		{"id": "bandage", "off": Vector2(-542, -50), "r": 34.0, "key": "2", "icon": UIStyle.hud_icon("potion"), "touch": -99, "glow": 0.0},
-		{"id": "build", "off": Vector2(-624, -50), "r": 34.0, "key": "G", "icon": UIStyle.hud_icon("build"), "touch": -99, "glow": 0.0},
+		{"id": "potion", "off": Vector2(-460, -50), "r": 34.0, "key": "3", "icon": UIStyle.hud_icon("potion_red"), "touch": -99, "glow": 0.0},
+		{"id": "meat", "off": Vector2(-542, -50), "r": 34.0, "key": "1", "icon": UIStyle.hud_icon("meat"), "touch": -99, "glow": 0.0},
+		{"id": "bandage", "off": Vector2(-624, -50), "r": 34.0, "key": "2", "icon": UIStyle.hud_icon("potion"), "touch": -99, "glow": 0.0},
+		{"id": "build", "off": Vector2(-706, -50), "r": 34.0, "key": "G", "icon": UIStyle.hud_icon("build"), "touch": -99, "glow": 0.0},
 	]
 	_lock_icon = UIStyle.hud_icon("lock")
 
@@ -124,6 +127,8 @@ func _press(id: String) -> void:
 		"attack": hero.touch_attack_held = true
 		"loot": hero.try_interact()
 		"meat": hero.use_consumable(&"meat")
+		"potion": hero.use_consumable(&"potion")
+		"dodge": hero.dodge()
 		"bandage": hero.use_consumable(&"bandage")
 		"build": build_pressed.emit()
 		"ab0", "ab1", "ab2", "ab3":
@@ -178,10 +183,15 @@ func _draw() -> void:
 			_draw_ability(b, c, r, pressed, f)
 			continue
 		var count := -1
-		if b.id in ["meat", "bandage"] and hero:
+		if b.id in ["meat", "bandage", "potion"] and hero:
 			var cid := StringName(b.id)
 			count = ResourceManager.hero_inventory.count(cid) + (ResourceManager.storage.count(cid) if BaseZone.hero_inside else 0)
-		UIStyle.draw_hex_button(self, c, r, b.icon, pressed, b.glow, count == 0)
+		var dim := count == 0
+		if b.id == "dodge" and hero:
+			dim = hero.dodge_ratio() > 0.0
+		UIStyle.draw_hex_button(self, c, r, b.icon, pressed, b.glow, dim)
+		if b.id == "dodge" and hero and hero.dodge_ratio() > 0.0:
+			draw_arc(c, r * 0.82, -PI * 0.5, -PI * 0.5 + TAU * (1.0 - hero.dodge_ratio()), 32, Color(0.6, 0.9, 1.0, 0.9), 4.0, true)
 		if b.key != "" and not (Platform.touch and b.id == "attack"):
 			UIStyle.draw_badge(self, c + Vector2(r * 0.6, r * 0.62), 15.0, b.key, 19)
 		if count > 0:

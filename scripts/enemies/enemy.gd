@@ -29,6 +29,14 @@ var _wander_point: Vector3
 var _think_left: float = 0.0
 var _attack_cd: float = 0.0
 var _windup: float = -1.0
+## Golpe corpo a corpo: preparação longa e anunciada (aviso vermelho no chão); a mira trava no fim
+## para o jogador poder sair da frente ou esquivar. Contra heróis o golpe dói bem mais.
+const HERO_DAMAGE_MULT := 1.9
+const HIT_HALF_ANGLE := 1.0   # ~57° para cada lado da frente
+const AIM_LOCK_AT := 0.45     # depois de 45% da preparação, para de girar
+var _melee_total: float = 0.0
+var _tele: MeshInstance3D
+static var _tele_shader: Shader
 var _stuck_time: float = 0.0
 var _last_pos: Vector3
 var _separation: Vector3 = Vector3.ZERO
@@ -213,6 +221,8 @@ func _physics_process(delta: float) -> void:
 		_stun_left -= delta
 		velocity = Vector3.ZERO
 		_windup = -1.0
+		_melee_total = 0.0
+		_hide_tele()
 		model.animate(delta, 0.0)
 		return
 	var hero := nearest_hero()
@@ -276,8 +286,9 @@ func _physics_process(delta: float) -> void:
 			if GameManager.base_core:
 				move_dir = _nav_direction(GameManager.base_core.global_position)
 		State.ATTACK:
-			if _target_valid():
+			if _target_valid() and (_melee_total <= 0.0 or _windup < 0.0 or 1.0 - _windup / _melee_total < AIM_LOCK_AT):
 				_face(_target.global_position, delta)
+			if _target_valid():
 				# Cuspidor mantém distância do herói (recua enquanto cospe).
 				if def.behavior == EnemyDef.Behavior.SPITTER and _target is Hero and _dist_to(_target) < def.special_range:
 					var away := global_position - _target.global_position
@@ -287,8 +298,12 @@ func _physics_process(delta: float) -> void:
 	if _windup >= 0.0:
 		_windup -= delta
 		speed *= 0.2
+		if _melee_total > 0.0:
+			_update_tele(1.0 - _windup / _melee_total)
 		if _windup < 0.0:
 			_resolve_attack()
+			_melee_total = 0.0
+			_hide_tele()
 
 	var sep_w := 0.25 if state == State.ATTACK else 0.6
 	var v := (move_dir + _separation * sep_w)
@@ -376,9 +391,12 @@ func _try_attack() -> void:
 		_start_fuse()
 		net_attack_count += 1
 		return
-	_attack_cd = def.attack_cooldown
-	_windup = minf(0.45, def.attack_cooldown * 0.4)
+	_windup = melee_windup(def)
+	_melee_total = _windup
+	_attack_cd = maxf(def.attack_cooldown, _windup + 0.55)
 	model.play_attack(_windup + 0.2)
+	if _target is Hero:
+		_show_tele()
 	net_attack_count += 1
 	AudioManager.play_3d(&"skeleton" if _is_skeleton() else &"zombie_attack", global_position, -3.0, 1.0 / maxf(0.7, def.model_scale), 140)
 
@@ -388,7 +406,16 @@ func _resolve_attack() -> void:
 		return
 	if not _target_valid():
 		return
-	if _dist_to(_target) > def.attack_range + _target_radius() + 0.8:
+	if _target is Hero:
+		# Herói: só acerta quem continua na frente e ao alcance (dá para sair do golpe).
+		var to := _target.global_position - global_position
+		to.y = 0.0
+		var fwd := Vector3(-sin(model.rotation.y), 0, -cos(model.rotation.y))
+		if to.length() > def.attack_range + _target_radius() + 0.35:
+			return
+		if to.length() > 0.3 and fwd.angle_to(to) > HIT_HALF_ANGLE + 0.15:
+			return
+	elif _dist_to(_target) > def.attack_range + _target_radius() + 0.8:
 		return
 	if def.behavior == EnemyDef.Behavior.SPITTER:
 		var to := (_target as Structure).closest_point(global_position) if _target is Structure else _target.global_position
@@ -400,7 +427,7 @@ func _resolve_attack() -> void:
 		AudioManager.play_3d(&"spit", global_position, -2.0)
 		return
 	# Espreitador: o primeiro golpe depois de sair da escuridão é uma emboscada.
-	var info := DamageInfo.make(damage_value * (1.8 if _ambush else 1.0), self)
+	var info := DamageInfo.make(damage_value * (1.8 if _ambush else 1.0) * (HERO_DAMAGE_MULT if _target is Hero else 1.0), self)
 	_ambush = false
 	info.structure_multiplier = def.structure_damage_mult
 	_target.call(&"take_damage", info)
@@ -519,6 +546,8 @@ func _on_died(info: DamageInfo) -> void:
 	Coop.enemy_died(self, info.source if info else null)
 	var was_leaping := _leap_t >= 0.0
 	state = State.DEAD
+	_melee_total = 0.0
+	_hide_tele()
 	_leap_wind = -1.0
 	_leap_t = -1.0
 	if was_leaping:
@@ -784,6 +813,63 @@ func nearest_hero() -> Hero:
 			best = h
 	return best
 
+var _puppet_tele: float = 0.0
+
+## Duração da preparação do golpe: zumbis comuns ~0,85 s, rápidos 0,6 s, brutamontes ~1,2 s.
+static func melee_windup(d: EnemyDef) -> float:
+	var w := clampf(d.attack_cooldown * 0.62, 0.6, 1.1)
+	if d.behavior == EnemyDef.Behavior.BRUTE:
+		w *= 1.3
+	elif d.behavior == EnemyDef.Behavior.CHARGER:
+		w = maxf(0.55, w * 0.75)
+	return w
+
+## Aviso no chão: setor vermelho na frente do zumbi que vai se enchendo até o golpe.
+func _show_tele() -> void:
+	if _tele == null:
+		_tele = MeshInstance3D.new()
+		var pm := PlaneMesh.new()
+		var r := (def.attack_range + 0.6) * 2.0
+		pm.size = Vector2(r, r)
+		_tele.mesh = pm
+		_tele.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		if _tele_shader == null:
+			_tele_shader = Shader.new()
+			_tele_shader.code = """
+shader_type spatial;
+render_mode unshaded, cull_disabled, depth_draw_never, blend_mix, shadows_disabled;
+uniform float progress = 0.0;
+uniform float half_angle = 1.0;
+void fragment() {
+	vec2 p = (UV - 0.5) * 2.0;
+	float r = length(p);
+	float ang = abs(atan(p.x, -p.y));
+	float inside = step(r, 1.0) * (1.0 - smoothstep(half_angle - 0.06, half_angle, ang));
+	float fill = 1.0 - smoothstep(progress - 0.04, progress, r);
+	float rim = smoothstep(0.86, 0.97, r) * step(r, 1.0);
+	float urgent = smoothstep(0.75, 1.0, progress);
+	ALBEDO = mix(vec3(1.0, 0.45, 0.1), vec3(1.0, 0.08, 0.04), urgent);
+	ALPHA = inside * (0.12 + fill * (0.3 + 0.3 * urgent) + rim * 0.55);
+}
+"""
+		var m := ShaderMaterial.new()
+		m.shader = _tele_shader
+		m.set_shader_parameter("half_angle", HIT_HALF_ANGLE)
+		_tele.material_override = m
+		_tele.position.y = 0.06
+		add_child(_tele)
+	_tele.visible = true
+	_update_tele(0.0)
+
+func _update_tele(k: float) -> void:
+	if _tele and _tele.visible:
+		_tele.rotation.y = model.rotation.y
+		(_tele.material_override as ShaderMaterial).set_shader_parameter("progress", clampf(k, 0.0, 1.0))
+
+func _hide_tele() -> void:
+	if _tele:
+		_tele.visible = false
+
 func apply_net_state(pos: Vector3, yaw: float, hp: float, speed: float, atk: int) -> void:
 	puppet_target = pos
 	_puppet_yaw = yaw
@@ -792,7 +878,13 @@ func apply_net_state(pos: Vector3, yaw: float, hp: float, speed: float, atk: int
 	health.changed.emit(health.current, health.max_health)
 	if atk != _puppet_atk:
 		_puppet_atk = atk
-		model.play_attack(0.55)
+		var w := melee_windup(def)
+		model.play_attack(w + 0.2)
+		# Cliente: mostra o mesmo aviso no chão durante a preparação.
+		if def.behavior != EnemyDef.Behavior.EXPLODER and def.behavior != EnemyDef.Behavior.SPITTER:
+			_show_tele()
+			_puppet_tele = w
+			_melee_total = w
 		AudioManager.play_3d(&"skeleton" if _is_skeleton() else &"zombie_attack", global_position, -3.0, 1.0, 140)
 
 func _puppet_process(delta: float) -> void:
@@ -803,12 +895,19 @@ func _puppet_process(delta: float) -> void:
 		global_position = global_position.lerp(puppet_target, clampf(delta * 10.0, 0.0, 1.0))
 	model.rotation.y = lerp_angle(model.rotation.y, _puppet_yaw, clampf(delta * 10.0, 0.0, 1.0))
 	model.animate(delta, _puppet_speed)
+	if _puppet_tele > 0.0:
+		_puppet_tele -= delta
+		_update_tele(1.0 - _puppet_tele / maxf(0.01, _melee_total))
+		if _puppet_tele <= 0.0:
+			_hide_tele()
 
 ## Cliente: o anfitrião avisou que morreu (sem saque; o anfitrião replica os itens).
 func puppet_die(killer: Node) -> void:
 	if state == State.DEAD:
 		return
 	state = State.DEAD
+	_puppet_tele = 0.0
+	_hide_tele()
 	collision_layer = 0
 	remove_from_group("enemies")
 	($HealthBar as HealthBar3D).visible = false

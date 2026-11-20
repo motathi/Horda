@@ -17,6 +17,7 @@ func _ready() -> void:
 				var r := load(RECIPES_DIR + "/" + file) as Recipe
 				if r:
 					recipes.append(r)
+	recipes.sort_custom(func(a: Recipe, b: Recipe) -> bool: return a.buy and not b.buy)
 
 func _walls() -> Array[Structure]:
 	var out: Array[Structure] = []
@@ -131,7 +132,7 @@ func craft(r: Recipe) -> String:
 		return "Recursos insuficientes: " + ResourceManager.cost_to_string(r.inputs)
 	ResourceManager.hero_inventory.add(r.output_item, r.output_amount)
 	AudioManager.play(&"loot")
-	return "Fabricado: %d %s" % [r.output_amount, ResourceManager.item_name(r.output_item)]
+	return ("Comprado: %d %s" if r.buy else "Fabricado: %d %s") % [r.output_amount, ResourceManager.item_name(r.output_item)]
 
 # --- Forja (equipamentos) ----------------------------------------------------
 

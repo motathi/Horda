@@ -141,7 +141,7 @@ func _ready() -> void:
 	_interact_box.visible = false
 	root.add_child(_interact_box)
 
-	_hint = UIStyle.label("F1: Controles  •  P: Personagem  •  I: Inventário  •  B: Base  •  M: Mapa  •  Esc: Menu", 14, UIStyle.TEXT_DIM)
+	_hint = UIStyle.label("F1: Controles  •  Shift: Esquiva  •  3: Poção  •  P: Personagem  •  I: Inventário  •  B: Base  •  M: Mapa  •  Esc: Menu", 14, UIStyle.TEXT_DIM)
 	_anchor(_hint, Control.PRESET_BOTTOM_LEFT, Vector2(14, -10), Control.GROW_DIRECTION_END, Control.GROW_DIRECTION_BEGIN)
 	_hint.visible = not Platform.touch
 	root.add_child(_hint)
@@ -648,11 +648,13 @@ func _build_help() -> Control:
 		["Clique direito (inimigo)", "Selecionar e atacar"],
 		["Clique esquerdo / Espaço", "Atacar na direção do cursor (também corta árvores e quebra pedras)"],
 		["E", "Saquear caixas, carros e armários próximos"],
-		["1 / 2", "Comer carne / usar curativo"],
+		["Shift", "Esquiva: corrida rápida sem tomar dano; desvie do golpe no último instante para um contra-ataque crítico"],
+		["1 / 2 / 3", "Comer carne / usar curativo / beber poção de cura (compre poções no menu da base)"],
+		["M", "Mapa grande"],
 		["P", "Personagem: pontos de atributo (toque no retrato)"],
 		["V", "Exército: trocar a ordem (defender / seguir / caçar)"],
 		["I ou Tab", "Inventário (mochila e armazém)"],
-		["B", "Menu da base: reparar muros/núcleo, afiar arma, fabricar curativos"],
+		["B", "Menu da base: reparar muros/núcleo, afiar arma, comprar poções, fabricar curativos"],
 		["G", "Construir: muros, barricadas, torres de arqueiros e armadilhas (T gira, clique constrói)"],
 		["Q / F / R / T", "Habilidades: Golpe Giratório, Investida, Grito de Guerra, Explosão Arcana"],
 		["Roda do mouse", "Zoom"],

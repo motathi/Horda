@@ -45,6 +45,30 @@ func _ready() -> void:
 			var lan := get_tree().get_nodes_in_group(&"hero_lantern")
 			print("%s_%s luzes=%d lanterna=%s" % [sname, tname, cnt, [(lan[0] as OmniLight3D).visible, (lan[0] as OmniLight3D).light_energy] if lan.size() > 0 else "nenhuma"])
 			get_viewport().get_texture().get_image().save_png(out_dir.path_join("%s_%s.png" % [sname, tname]))
+	if OS.get_environment("ATMO_COMBAT") != "":
+		# Zumbis preparando o golpe (aviso no chão) e os botões de esquiva/poção.
+		TimeManager.set_state(TimeManager.Phase.DAY, 1, 25.0)
+		hero.global_position = Vector3(36, 0, 30)
+		world.camera_rig.set(&"distance", 11.0)
+		world.camera_rig.set(&"_zoom_target", 11.0)
+		ResourceManager.hero_inventory.add(&"potion", 3)
+		for k in 3:
+			var z := (load("res://scenes/enemies/zombie.tscn") as PackedScene).instantiate() as Enemy
+			world.enemies_root.add_child(z)
+			var a := k * 2.1
+			z.global_position = hero.global_position + Vector3(sin(a), 0, cos(a)) * 1.7
+			z.configure(load("res://data/enemies/zombie_brute.tres" if k == 0 else "res://data/enemies/zombie.tres"))
+		var best := 0.0
+		for i in 120:
+			await get_tree().process_frame
+			for z in Enemy.all:
+				if is_instance_valid(z) and z._melee_total > 0.0 and z._windup >= 0.0:
+					best = maxf(best, 1.0 - z._windup / z._melee_total)
+			if best > 0.6:
+				break
+		await _save("combate_aviso")
+		get_tree().quit()
+		return
 	if OS.get_environment("ATMO_MAP") != "":
 		# Minimapa no HUD e o mapa grande aberto.
 		TimeManager.set_state(TimeManager.Phase.DAY, 1, 25.0)

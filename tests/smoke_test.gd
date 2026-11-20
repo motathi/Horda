@@ -40,6 +40,7 @@ func _ready() -> void:
 	await _test_atmosphere()
 	await _test_settings_tutorial()
 	await _test_combat()
+	await _test_combat_challenge()
 	await _test_abilities()
 	await _test_attributes()
 	await _test_equipment()
@@ -295,6 +296,78 @@ func _test_combat() -> void:
 	e2.take_damage(DamageInfo.make(9999, hero))
 	hero.health.heal(9999)
 
+## Golpe lento e anunciado, mais dano no herói, esquiva com invulnerabilidade e contra-ataque.
+func _test_combat_challenge() -> void:
+	print("[combate desafiador: golpe lento, esquiva e contra-ataque]")
+	var hero := world.hero
+	var start := hero.global_position
+	var start_yaw := hero.model.rotation.y
+	var zdef := load("res://data/enemies/zombie.tres") as EnemyDef
+	var bdef := load("res://data/enemies/zombie_brute.tres") as EnemyDef
+	check(Enemy.melee_windup(zdef) >= 0.8, "golpe do zumbi é lento (%.2f s de preparação)" % Enemy.melee_windup(zdef))
+	check(Enemy.melee_windup(bdef) > Enemy.melee_windup(zdef), "brutamontes demora ainda mais (%.2f s)" % Enemy.melee_windup(bdef))
+	hero.health.heal(9999)
+	# Zumbi parado de frente para o herói: o golpe acerta com dano aumentado.
+	var e := (load("res://scenes/enemies/zombie.tscn") as PackedScene).instantiate() as Enemy
+	world.enemies_root.add_child(e)
+	e.global_position = Vector3(60, 0, 60)
+	e.configure(zdef)
+	hero.global_position = Vector3(60, 0, 61.2)
+	await wait(0.3)
+	var hp0 := hero.health.current
+	var t := 0.0
+	while hero.health.current >= hp0 and t < 4.0:
+		await wait(0.1)
+		t += 0.1
+	var lost := hp0 - hero.health.current
+	check(lost >= e.damage_value * 1.5, "golpe do zumbi dói mais no herói (%.0f de dano, base %.0f)" % [lost, e.damage_value])
+	check(e._tele != null, "aviso vermelho no chão durante a preparação do golpe")
+	# Sair da frente durante a preparação faz o golpe errar.
+	hero.health.heal(9999)
+	e._attack_cd = 0.0
+	e._windup = -1.0
+	await wait(0.05)
+	var hp1 := hero.health.current
+	t = 0.0
+	while e._windup < 0.0 and t < 3.0:
+		await wait(0.05)
+		t += 0.05
+	check(e._windup >= 0.0, "zumbi começa a preparar outro golpe")
+	await wait(e._melee_total * 0.6)  # mira já travada
+	var fwd := Vector3(-sin(e.model.rotation.y), 0, -cos(e.model.rotation.y))
+	hero.global_position = e.global_position - fwd * 1.6  # pelas costas
+	await wait(e._melee_total * 0.6)
+	check(hero.health.current >= hp1, "sair da frente no fim da preparação faz o golpe errar")
+	# Esquiva: invulnerável por um instante; desviar de um golpe arma um contra-ataque crítico.
+	e.take_damage(DamageInfo.make(9999, hero))
+	await wait(0.3)
+	check(hero.dodge(), "esquiva funciona (Shift / botão)")
+	check(not hero.dodge(), "esquiva tem recarga")
+	var hp2 := hero.health.current
+	hero.take_damage(DamageInfo.make(50, null))
+	check(hero.health.current == hp2, "esquiva evita o dano")
+	check(hero._riposte > 0.0, "esquiva no momento certo arma o contra-ataque")
+	await wait(0.6)
+	hero.take_damage(DamageInfo.make(30, null))
+	check(hero.health.current < hp2, "fora da esquiva o herói volta a tomar dano")
+	var e3 := (load("res://scenes/enemies/zombie.tscn") as PackedScene).instantiate() as Enemy
+	world.enemies_root.add_child(e3)
+	e3.global_position = Vector3(64, 0, 64)
+	e3.configure(bdef)
+	hero.global_position = Vector3(64, 0, 65.6)
+	hero._riposte = 1.0
+	var e3hp := e3.health.current
+	hero.model.rotation.y = atan2(-(e3.global_position.x - hero.global_position.x), -(e3.global_position.z - hero.global_position.z))
+	hero._attack_timer = 0.0
+	hero._start_attack()
+	await wait(0.5)
+	check(e3.health.current < e3hp and hero._riposte == 0.0, "contra-ataque acerta e é consumido (%.0f de dano)" % (e3hp - e3.health.current))
+	e3.take_damage(DamageInfo.make(99999, hero))
+	hero.health.heal(9999)
+	hero.global_position = start
+	hero.model.rotation.y = start_yaw
+	await wait(0.2)
+
 func _spawn_zombie(pos: Vector3) -> Enemy:
 	var e := (load("res://scenes/enemies/zombie.tscn") as PackedScene).instantiate() as Enemy
 	world.enemies_root.add_child(e)
@@ -337,7 +410,7 @@ func _test_abilities() -> void:
 	why = hero.cast_ability(1)
 	await wait(0.6)
 	var moved := hero.global_position.distance_to(p0)
-	check(why == "" and moved > 5.0, "Investida avança %.1f m" % moved)
+	check(why == "" and moved > 5.0, "Investida avança %.1f m (%s)" % [moved, why])
 	check(victim.is_stunned() or victim.health.current < victim.health.max_health, "Investida fere/atordoa quem está no caminho")
 	victim.take_damage(DamageInfo.make(99999, null))
 	# Grito de Guerra
@@ -1033,9 +1106,23 @@ func _test_base_services() -> void:
 	var dmg0 := hero.damage()
 	msg = world.services.sharpen(hero)
 	check(hero.damage() > dmg0, "arma afiada: " + msg)
-	var r: Recipe = world.services.recipes[0]
+	var r: Recipe = null
+	var potion_r: Recipe = null
+	for rr: Recipe in world.services.recipes:
+		if rr.id == &"bandage":
+			r = rr
+		elif rr.id == &"potion":
+			potion_r = rr
 	msg = world.services.craft(r)
 	check(ResourceManager.hero_inventory.count(&"bandage") >= 1, "curativo fabricado: " + msg)
+	# Poção de cura comprada na base: cura 160 na hora (tecla 3).
+	check(potion_r != null and potion_r.buy, "poção de cura à venda no menu da base")
+	msg = world.services.craft(potion_r)
+	check(ResourceManager.hero_inventory.count(&"potion") >= 1 and msg.begins_with("Comprado"), "poção comprada: " + msg)
+	hero.health.take_damage(DamageInfo.make(200, null))
+	var hp_p := hero.health.current
+	hero.use_consumable(&"potion")
+	check(hero.health.current >= minf(hero.health.max_health, hp_p + 150.0), "poção cura na hora (%.0f -> %.0f)" % [hp_p, hero.health.current])
 	hero.health.take_damage(DamageInfo.make(80, null))
 	var hp := hero.health.current
 	hero.use_consumable(&"bandage")

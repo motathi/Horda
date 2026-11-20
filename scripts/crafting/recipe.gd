@@ -9,3 +9,5 @@ extends Resource
 @export var inputs: Dictionary = {}
 @export var output_item: StringName
 @export var output_amount: int = 1
+## true: aparece como "Comprar" no menu da base (troca de recursos por item pronto).
+@export var buy: bool = false
