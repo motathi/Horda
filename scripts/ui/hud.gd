@@ -99,6 +99,8 @@ func _ready() -> void:
 	mm_frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	minimap = Minimap.new()
 	minimap.custom_minimum_size = Vector2(172, 172)
+	minimap.tooltip_text = "Mapa (M)"
+	minimap.pressed.connect(_toggle_map)
 	mm_frame.add_child(minimap)
 	mm_holder.add_child(mm_frame)
 	var north := _NorthBadge.new()
@@ -139,7 +141,7 @@ func _ready() -> void:
 	_interact_box.visible = false
 	root.add_child(_interact_box)
 
-	_hint = UIStyle.label("F1: Controles  •  P: Personagem  •  I: Inventário  •  B: Base  •  Esc: Menu", 14, UIStyle.TEXT_DIM)
+	_hint = UIStyle.label("F1: Controles  •  P: Personagem  •  I: Inventário  •  B: Base  •  M: Mapa  •  Esc: Menu", 14, UIStyle.TEXT_DIM)
 	_anchor(_hint, Control.PRESET_BOTTOM_LEFT, Vector2(14, -10), Control.GROW_DIRECTION_END, Control.GROW_DIRECTION_BEGIN)
 	_hint.visible = not Platform.touch
 	root.add_child(_hint)
@@ -327,6 +329,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		if _settings and _settings.visible:
 			_settings.visible = false
 			_pause.visible = true
+		elif _map_overlay and _map_overlay.visible:
+			_map_overlay.visible = false
 		elif inventory.visible or base_panel.visible or _help.visible or build_panel.visible or character.visible:
 			character.visible = false
 			inventory.visible = false
@@ -354,6 +358,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event.is_action_pressed("base_menu"):
 		_toggle_base()
 		get_viewport().set_input_as_handled()
+	elif event is InputEventKey and event.pressed and not event.echo and (event as InputEventKey).physical_keycode == KEY_M:
+		_toggle_map()
+		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("help"):
 		_help.visible = not _help.visible
 	elif event.is_action_pressed("quick_save"):
@@ -361,6 +368,75 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event.is_action_pressed("skip_phase"):
 		TimeManager.advance_phase()
 		_on_message("[Depuração] Período avançado para: %s" % TimeManager.phase_name(), UIStyle.TEXT_DIM)
+
+var _map_overlay: Control
+
+## Mapa grande (toque no minimapa ou tecla M): o mesmo mapa ampliado, com grade e legenda.
+func _toggle_map() -> void:
+	if _map_overlay == null:
+		_map_overlay = _build_map_overlay()
+		add_child(_map_overlay)
+	_map_overlay.visible = not _map_overlay.visible
+	if _map_overlay.visible:
+		var big := _map_overlay.find_child("BigMap", true, false) as Minimap
+		big.copy_layers_from(minimap)
+		big.regions = minimap.regions
+		big.lootables = minimap.lootables
+		_map_overlay.modulate.a = 0.0
+		create_tween().tween_property(_map_overlay, "modulate:a", 1.0, 0.18)
+
+func _build_map_overlay() -> Control:
+	var ov := Control.new()
+	ov.set_anchors_preset(Control.PRESET_FULL_RECT)
+	ov.visible = false
+	var dim := ColorRect.new()
+	dim.color = Color(0, 0, 0, 0.72)
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	dim.gui_input.connect(func(e: InputEvent) -> void:
+		if (e is InputEventMouseButton and e.pressed) or (e is InputEventScreenTouch and e.pressed):
+			_toggle_map())
+	ov.add_child(dim)
+	var center := CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	ov.add_child(center)
+	var panel := PanelContainer.new()
+	TitleStyle.style_panel(panel)
+	center.add_child(panel)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 18)
+	panel.add_child(row)
+	var big := Minimap.new()
+	big.name = "BigMap"
+	big.large = true
+	var side := clampf(get_viewport().get_visible_rect().size.y - 190.0, 300.0, 560.0)
+	big.custom_minimum_size = Vector2(side, side)
+	big.pressed.connect(_toggle_map)
+	row.add_child(big)
+	var legend := VBoxContainer.new()
+	legend.add_theme_constant_override("separation", 8)
+	row.add_child(legend)
+	legend.add_child(TitleStyle.title_label("Mapa", 30))
+	legend.add_child(TitleStyle.divider(200))
+	for it: Array in [[Color(0.45, 1.0, 0.4), "Você"], [Color(0.45, 0.85, 1.0), "Aliados"], [Color(0.9, 0.7, 0.3), "Fortaleza"],
+			[Color(1.0, 0.82, 0.3), "Saque"], [Color(0.9, 0.38, 0.3), "Zumbis"], [Color(1, 0.18, 0.12), "Horda"],
+			[Color(0.2, 0.24, 0.1), "Árvores"], [Color(0.52, 0.5, 0.47), "Pedras"], [Color(0.78, 0.68, 0.5), "Construções"],
+			[Color(0.44, 0.32, 0.2), "Estradas e terra"], [Color(0.3, 0.29, 0.28), "Calçamento"], [Color(0.32, 0.14, 0.36), "Área contaminada"]]:
+		var h := HBoxContainer.new()
+		h.add_theme_constant_override("separation", 8)
+		var sw := ColorRect.new()
+		sw.color = it[0]
+		sw.custom_minimum_size = Vector2(16, 16)
+		h.add_child(sw)
+		h.add_child(UIStyle.label(it[1], 16, TitleStyle.CREAM))
+		legend.add_child(h)
+	var spacer := Control.new()
+	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	legend.add_child(spacer)
+	var close := TitleStyle.button("Fechar (M)", 20)
+	close.pressed.connect(_toggle_map)
+	legend.add_child(close)
+	return ov
 
 func _quick_save() -> void:
 	if SaveManager.save_game():

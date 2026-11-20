@@ -45,6 +45,17 @@ func _ready() -> void:
 			var lan := get_tree().get_nodes_in_group(&"hero_lantern")
 			print("%s_%s luzes=%d lanterna=%s" % [sname, tname, cnt, [(lan[0] as OmniLight3D).visible, (lan[0] as OmniLight3D).light_energy] if lan.size() > 0 else "nenhuma"])
 			get_viewport().get_texture().get_image().save_png(out_dir.path_join("%s_%s.png" % [sname, tname]))
+	if OS.get_environment("ATMO_MAP") != "":
+		# Minimapa no HUD e o mapa grande aberto.
+		TimeManager.set_state(TimeManager.Phase.DAY, 1, 25.0)
+		hero.global_position = Vector3(30, 0, 20)
+		await _wait_frames(40)
+		await _save("mapa_hud")
+		world.hud.call("_toggle_map")
+		await _wait_frames(30)
+		await _save("mapa_grande")
+		get_tree().quit()
+		return
 	if OS.get_environment("ATMO_DECOR") != "":
 		await _decor_shots(world, hero, OS.get_environment("ATMO_DECOR"))
 		get_tree().quit()

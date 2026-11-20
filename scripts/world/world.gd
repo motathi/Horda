@@ -89,6 +89,7 @@ func _ready() -> void:
 	objectives.name = "DailyObjectives"
 	add_child(objectives)
 	hud.bind(hero, services, builder.regions, builder.lootables, objectives)
+	hud.minimap.set_layers(builder.map_splat, builder.map_objects, builder.map_noise)
 	build_manager = BuildManager.new()
 	build_manager.name = "BuildManager"
 	add_child(build_manager)

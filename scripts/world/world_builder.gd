@@ -24,6 +24,11 @@ var structures_root: Node3D
 var harvestables: Dictionary = {}  # id -> Harvestable
 var lootables: Dictionary = {}     # id -> Lootable
 var structures: Dictionary = {}    # id -> Structure
+## Camadas do mapa (minimapa e mapa grande): splat do terreno, objetos (r=árvore, g=pedra, b=construção)
+## e ruído; pintadas pelo shader do Minimap.
+var map_splat: Texture2D
+var map_objects: Texture2D
+var map_noise: Texture2D
 var spawn_points: Array[Vector3] = []
 var regions: Array[Dictionary] = []
 
@@ -67,6 +72,72 @@ func build(world: Node3D, seed_value: int) -> void:
 	_apply_terrain_material()
 	_build_foliage(world)
 	_build_decor(world)
+	_build_map_layers()
+
+## Imagem dos objetos para o mapa (512 px = 240 m): copas das árvores, pedras e o contorno das construções
+## (caixas de colisão giradas), mais a muralha da base e a fortaleza.
+const MAP_PX := 512
+
+func _build_map_layers() -> void:
+	var img := Image.create(MAP_PX, MAP_PX, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+	for h: Harvestable in harvestables.values():
+		var vis := h.get_child(h.get_child_count() - 1) as Node3D
+		var k := (vis.scale.x if vis else 1.0)
+		if h.kind == Harvestable.Kind.TREE:
+			_map_disc(img, h.position, 2.7 * clampf(k, 0.8, 1.3), Color(1, 0, 0))
+		else:
+			_map_disc(img, h.position, 1.1 * clampf(k, 0.6, 1.6), Color(0, 1, 0))
+	for n in nav_region.get_children():
+		if n is Harvestable or n is Lootable or not (n is StaticBody3D):
+			continue
+		for cs in n.get_children():
+			if cs is CollisionShape3D and (cs as CollisionShape3D).shape is BoxShape3D:
+				var sz := ((cs as CollisionShape3D).shape as BoxShape3D).size
+				if sz.x > 40.0 or sz.z > 40.0:
+					continue  # paredes invisíveis da borda
+				var xf := (n as Node3D).global_transform * (cs as CollisionShape3D).transform
+				_map_box(img, xf, Vector2(sz.x, sz.z), Color(0, 0, 1))
+	# Muralha da base (anel) e a fortaleza no centro.
+	for i in 96:
+		var a := i * TAU / 96.0
+		_map_disc(img, Vector3(sin(a) * BASE_RADIUS, 0, -cos(a) * BASE_RADIUS), 0.9, Color(0, 0, 1))
+	_map_box(img, Transform3D.IDENTITY, Vector2(6.5, 6.5), Color(0, 0, 1))
+	map_objects = ImageTexture.create_from_image(img)
+
+func _map_px(p: Vector3) -> Vector2:
+	return Vector2((p.x / (MAP_HALF * 2) + 0.5) * MAP_PX, (p.z / (MAP_HALF * 2) + 0.5) * MAP_PX)
+
+func _map_disc(img: Image, p: Vector3, r_m: float, ch: Color) -> void:
+	var c := _map_px(p)
+	var r := r_m / (MAP_HALF * 2) * MAP_PX
+	for y in range(int(c.y - r - 1), int(c.y + r + 2)):
+		for x in range(int(c.x - r - 1), int(c.x + r + 2)):
+			if x < 0 or y < 0 or x >= MAP_PX or y >= MAP_PX:
+				continue
+			var d := Vector2(x + 0.5, y + 0.5).distance_to(c)
+			var a := clampf(r + 0.5 - d, 0.0, 1.0)
+			if a > 0.0:
+				var o := img.get_pixel(x, y)
+				img.set_pixel(x, y, Color(maxf(o.r, ch.r * a), maxf(o.g, ch.g * a), maxf(o.b, ch.b * a), maxf(o.a, a)))
+
+func _map_box(img: Image, xf: Transform3D, size_m: Vector2, ch: Color) -> void:
+	var c := _map_px(xf.origin)
+	var k := MAP_PX / (MAP_HALF * 2)
+	var ax := Vector2(xf.basis.x.x, xf.basis.x.z).normalized()
+	var az := Vector2(xf.basis.z.x, xf.basis.z.z).normalized()
+	var hx := size_m.x * 0.5 * xf.basis.x.length() * k
+	var hz := size_m.y * 0.5 * xf.basis.z.length() * k
+	var ext := int(maxf(hx, hz) * 1.5) + 2
+	for y in range(int(c.y) - ext, int(c.y) + ext + 1):
+		for x in range(int(c.x) - ext, int(c.x) + ext + 1):
+			if x < 0 or y < 0 or x >= MAP_PX or y >= MAP_PX:
+				continue
+			var d := Vector2(x + 0.5, y + 0.5) - c
+			var a := clampf(hx + 0.5 - absf(d.dot(ax)), 0.0, 1.0) * clampf(hz + 0.5 - absf(d.dot(az)), 0.0, 1.0)
+			if a > 0.0:
+				var o := img.get_pixel(x, y)
+				img.set_pixel(x, y, Color(maxf(o.r, ch.r * a), maxf(o.g, ch.g * a), maxf(o.b, ch.b * a), maxf(o.a, a)))
 
 func _make_navmesh() -> NavigationMesh:
 	var nm := NavigationMesh.new()
@@ -119,7 +190,8 @@ func _apply_terrain_material() -> void:
 	mat.set_shader_parameter("stone_tex", load(TEX + "stone_floor.jpg"))
 	mat.set_shader_parameter("corrupt_tex", load(TEX + "corrupted.jpg"))
 	_splat.generate_mipmaps()
-	mat.set_shader_parameter("splat", ImageTexture.create_from_image(_splat))
+	map_splat = ImageTexture.create_from_image(_splat)
+	mat.set_shader_parameter("splat", map_splat)
 	var noise := FastNoiseLite.new()
 	noise.seed = rng.seed
 	noise.frequency = 0.02
@@ -129,6 +201,7 @@ func _apply_terrain_material() -> void:
 	nt.width = 256
 	nt.height = 256
 	mat.set_shader_parameter("noise_tex", nt)
+	map_noise = nt
 	mat.set_shader_parameter("map_size", MAP_HALF * 2.0)
 	for chunk in _ground_chunks:
 		chunk.material_override = mat

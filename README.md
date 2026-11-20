@@ -198,6 +198,16 @@ poeira e fuligem. Substitui o calçamento claro e azulado que destoava das const
 
 ![Chão de pedra antes e depois](docs/screenshots/chao_pedra_antes_depois.jpg)
 
+**Mapa** (minimapa e mapa grande, `scripts/ui/minimap.gd`): o terreno de verdade pintado por shader a partir
+das camadas que o `WorldBuilder` gera ao montar o mundo — o mesmo splat do terreno (capim seco, terra e
+estradas, calçamento, área contaminada com rachaduras verdes) e uma imagem com as copas das árvores, as pedras
+e o contorno das construções (casas, ruínas, muralha da base), com sombra projetada, papel envelhecido, grade
+tática e vinheta. Por cima: nomes das regiões, fortaleza, saques (losangos), zumbis e horda, aliados e a seta
+do herói apontando para onde ele olha. Toque no minimapa (ou tecla **M**) abre o mapa grande com grade A–H/1–8
+e legenda.
+
+![Mapa grande](docs/screenshots/mapa.jpg)
+
 **Inimigos especiais:** a partir da horda 4 surge o *Zumbi Explosivo* (incha e explode ao alcançar o alvo,
 arrasando muros; abatido, explode ferindo os zumbis ao redor), na 7 o *Cuspidor* (cospe ácido de 10 m,
 inclusive por cima dos muros, deixando poças corrosivas, e recua se você se aproximar) e na 9 o *Saltador*
