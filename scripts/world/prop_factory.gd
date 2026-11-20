@@ -252,6 +252,18 @@ static func make_house(rng: RandomNumberGenerator, ruined: bool) -> StaticBody3D
 	var b := StaticBody3D.new()
 	b.collision_layer = Layers.WORLD
 	b.collision_mask = 0
+	# Casas e barracos modelados no Blender (tools/blender_town.py); o modelo vem do style_rng.
+	var r := style_rng.randf()
+	var bm := "house_ruin_b" if ruined else ("house_ruin_a" if r < 0.6 else ("shack_a" if r < 0.8 else "shack_b"))
+	if ThirdParty.has(ThirdParty.BLENDER, bm):
+		var hm := ThirdParty.instance(ThirdParty.BLENDER, bm)
+		hm.scale = Vector3.ONE * style_rng.randf_range(0.95, 1.1)
+		b.add_child(hm)
+		var a := ThirdParty.aabb(ThirdParty.BLENDER, bm)
+		var sb := BoxShape3D.new()
+		sb.size = Vector3(a.size.x * 0.85, minf(a.size.y, 4.0), a.size.z * 0.85) * hm.scale.x
+		_collision(b, sb, Vector3(a.get_center().x, sb.size.y * 0.5, a.get_center().z) * hm.scale.x)
+		return b
 	if ModelLibrary.has("house"):
 		var g := rng.randf_range(0.85, 1.05)
 		var m := ModelLibrary.instance_footprint("house", rng.randf_range(8.0, 10.0), Color(g, g * 0.97, g * 0.93))

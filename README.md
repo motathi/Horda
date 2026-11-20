@@ -180,6 +180,17 @@ solta e cascalho ao pé e pedras pequenas (as de recurso), laje em camadas, lasc
 
 ![Pedras antes e depois](docs/screenshots/pedras_antes_depois.jpg)
 
+**Cidade e ruínas feitas no Blender** (`tools/blender_town.py`, mesmo pipeline de atlas da fortaleza):
+sobrado de pedra de 2 andares com o canto da frente e metade do telhado de ardósia desabados (caibros à
+mostra, janelas tapadas com tábuas, porta caída, chaminé, entulho), casa de enxaimel queimada (base de
+pedra, esteios e vigas carbonizados, restos de reboco rachado, chaminé de pé, telhado caído no chão), dois
+barracos de sobreviventes (tábuas, zinco enferrujado, lona, chaminé de lata, sacos de areia; puxadinho num
+muro quebrado com fogueira), muros de alvenaria arruinados (reto com janela e em L) e coluna partida com um
+tambor caído. Substituem a casa gerada por IA e as ruínas cartunescas do *Dungeon Pack* (o acampamento da
+base continua com ele).
+
+![Cidade antes e depois](docs/screenshots/cidade_antes_depois.jpg)
+
 **Inimigos especiais:** a partir da horda 4 surge o *Zumbi Explosivo* (incha e explode ao alcançar o alvo,
 arrasando muros; abatido, explode ferindo os zumbis ao redor), na 7 o *Cuspidor* (cospe ácido de 10 m,
 inclusive por cima dos muros, deixando poças corrosivas, e recua se você se aproximar) e na 9 o *Saltador*

@@ -849,31 +849,37 @@ func _build_decor(world: Node3D) -> void:
 		sc.commit(Settings.quality >= 2)
 
 ## Ruínas (KayKit Dungeon Pack, CC0): muros quebrados, colunas e escombros espalhados.
+## Ruínas modeladas no Blender (tools/blender_town.py): muros quebrados, coluna partida e entulho.
 func _ruin_cluster(c: Vector3, rot: float) -> void:
-	var D := ThirdParty.DUNGEON
+	var B := ThirdParty.BLENDER
 	var basis := Basis(Vector3.UP, rot)
-	var walls := ["wall_broken", "wall_cracked", "wall_half"]
-	_place_solid(D, walls[_srng.randi() % 3], c + basis * Vector3(0, 0, -1.8), _srng.randf_range(2.2, 3.2), rot, 0.0)
-	if _srng.randf() < 0.7:
-		_place_solid(D, walls[_srng.randi() % 3], c + basis * Vector3(-2.1, 0, 0.2), _srng.randf_range(1.8, 2.8), rot + PI * 0.5, 0.0)
-	_place_solid(D, "pillar" if _srng.randf() < 0.5 else "pillar_decorated", c + basis * Vector3(2.4, 0, -1.6), 3.2, rot, 0.0)
-	_place_solid(D, "rubble_large" if _srng.randf() < 0.6 else "rubble_half", c + basis * Vector3(0.8, 0, 1.2), 0.9, _srng.randf() * TAU, 0.0)
-	_reserve(c, 3.6)
+	var wm := "ruin_wall_a" if _srng.randf() < 0.55 else "ruin_wall_b"
+	_place_native(wm, c + basis * Vector3(0, 0, -1.6), _srng.randf_range(0.85, 1.15), rot)
+	if _srng.randf() < 0.6:
+		_place_native("ruin_pillar", c + basis * Vector3(2.8, 0, 0.8), _srng.randf_range(0.85, 1.1), _srng.randf() * TAU)
+	_place_native("rubble_pile", c + basis * Vector3(-0.6, 0, 1.6), _srng.randf_range(0.8, 1.2), _srng.randf() * TAU)
+	_reserve(c, 3.8)
+
+## Coloca um modelo do Blender sólido no tamanho natural vezes `k`.
+func _place_native(model: String, p: Vector3, k: float, rot_y: float) -> void:
+	if ThirdParty.has(ThirdParty.BLENDER, model):
+		_place_solid(ThirdParty.BLENDER, model, p, ThirdParty.aabb(ThirdParty.BLENDER, model).size.y * k, rot_y, 0.0)
 
 func _build_ruins() -> void:
 	var D := ThirdParty.DUNGEON
-	if not ThirdParty.has(D, "wall_broken"):
+	if not ThirdParty.has(ThirdParty.BLENDER, "ruin_wall_a"):
 		return
 	for spec: Array in [[Vector2(80, 12), Vector2(30, 42), 4], [Vector2(-85, 15), Vector2(26, 30), 3], [Vector2(-25, -78), Vector2(80, 34), 2], [Vector2.ZERO, Vector2(100, 100), 3]]:
 		for i in int(spec[2]):
 			var p: Variant = _try_place_s(spec[0], spec[1], 3.8, 2.0)
 			if p != null and (p as Vector3).length() > 30.0:
 				_ruin_cluster(p, _srng.randf() * TAU)
-	# Colunas antigas soltas na pedreira.
+	# Colunas antigas partidas na pedreira.
 	for i in 6:
 		var cp: Variant = _try_place_s(Vector2(-85, 15), Vector2(26, 30), 1.0)
 		if cp != null:
-			_place_solid(D, "column", cp, _srng.randf_range(2.2, 3.4), _srng.randf() * TAU, 1.0)
+			_place_native("ruin_pillar", cp, _srng.randf_range(0.8, 1.15), _srng.randf() * TAU)
+			_reserve(cp, 1.0)
 	# Acampamento na base: barris, caixas, mesa quebrada e armas.
 	for item: Array in [["keg", Vector3(-8.2, 0, 1.2), 1.1], ["barrel_small_stack", Vector3(7.8, 0, 2.6), 1.2], ["crates_stacked", Vector3(-3.2, 0, -8.6), 1.4],
 			["sword_shield", Vector3(3.6, 0, 8.4), 1.2], ["table_long_broken", Vector3(-4.8, 0, 7.2), 0.9], ["stool", Vector3(-3.4, 0, 8.3), 0.5], ["trunk_large_A", Vector3(8.6, 0, -3.8), 0.9]]:

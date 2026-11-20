@@ -88,12 +88,22 @@ func _test_world() -> void:
 					break
 	check(crypt, "cemitério com cripta na Área Contaminada")
 	check(tp_trees > 300, "árvores feitas no Blender (%d)" % tp_trees)
-	# Ruínas (KayKit Dungeon) e sobreviventes (Quaternius).
+	# Ruínas (Blender), acampamento (KayKit Dungeon), casas (Blender) e sobreviventes (Quaternius).
 	var ruins := 0
+	var camp := 0
+	var houses := 0
 	for n in b.nav_region.get_children():
-		if n is StaticBody3D and n.get_child_count() > 0 and String(n.get_child(0).scene_file_path).contains("kaykit_dungeon"):
-			ruins += 1
-	check(ruins > 20, "ruínas e acampamento do Dungeon Pack (%d peças)" % ruins)
+		if n is StaticBody3D and n.get_child_count() > 0:
+			var path := String(n.get_child(0).scene_file_path)
+			if path.contains("models/blender/ruin_") or path.contains("models/blender/rubble_pile"):
+				ruins += 1
+			elif path.contains("kaykit_dungeon"):
+				camp += 1
+			elif path.contains("models/blender/house_ruin") or path.contains("models/blender/shack_"):
+				houses += 1
+	check(ruins > 20, "ruínas feitas no Blender (%d peças)" % ruins)
+	check(camp >= 5, "acampamento do Dungeon Pack na base (%d peças)" % camp)
+	check(houses >= 6, "casas e barracos feitos no Blender (%d)" % houses)
 	var survivors: Array[Survivor] = []
 	for n in b.structures_root.get_children():
 		if n is Survivor:
