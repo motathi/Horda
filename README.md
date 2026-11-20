@@ -154,6 +154,14 @@ verdes, virou MultiMesh dessas árvores em trechos de 40 m.
 
 ![Árvores antes e depois](docs/screenshots/arvores_antes_depois.jpg)
 
+**Pedras feitas no Blender** (`tools/blender_rocks.py`): cada pedra nasce de uma icosfera esticada e lascada
+por planos de corte aleatórios (faces planas e quinas vivas, base reta), com cor por face — cinza-marrom
+escuro, poeira nas faces de cima, líquen seco em algumas faces e base escurecida. Matacões com uma pedra
+solta e cascalho ao pé e pedras pequenas (as de recurso), laje em camadas, lascas de pedreira e seixos
+(decoração). Substituem as pedras claras e lisas do pacote antigo.
+
+![Pedras antes e depois](docs/screenshots/pedras_antes_depois.jpg)
+
 **Inimigos especiais:** a partir da horda 4 surge o *Zumbi Explosivo* (incha e explode ao alcançar o alvo,
 arrasando muros; abatido, explode ferindo os zumbis ao redor), na 7 o *Cuspidor* (cospe ácido de 10 m,
 inclusive por cima dos muros, deixando poças corrosivas, e recua se você se aproximar) e na 9 o *Saltador*

@@ -806,7 +806,8 @@ func _build_decor(world: Node3D) -> void:
 	var k := Settings.decor_density()
 	var N := ThirdParty.NATURE
 	var H := ThirdParty.HALLOWEEN
-	var pebbles := [[N, "Pebble_Round_1", 0.15, 0.35], [N, "Pebble_Round_2", 0.15, 0.35], [N, "Pebble_Round_3", 0.15, 0.3]]
+	# Seixos e pedras lascadas do Blender (tools/blender_rocks.py).
+	var pebbles := [[ThirdParty.BLENDER, "rock_pebbles", 0.12, 0.2]]
 	# Arbustos secos feitos no Blender (tools/blender_ground.py); o resto da vegetação rasteira (folhas caídas,
 	# samambaia, bardana, cardo, capim alto, galhos) fica no Foliage, em moitas perto da câmera.
 	var B := ThirdParty.BLENDER
@@ -814,14 +815,15 @@ func _build_decor(world: Node3D) -> void:
 		"Floresta": [Vector2(-25, -78), Vector2(85, 38), [
 			[B, "gc_dry_bush", 60, 0.8, 1.2],
 			[N, "Mushroom_Common", 40, 0.25, 0.5], [N, "Mushroom_Laetiporus", 15, 0.3, 0.5],
-			[N, "Rock_Medium_1", 12, 0.6, 1.3], [N, "Rock_Medium_2", 10, 0.6, 1.3]]],
-		"Campos": [Vector2.ZERO, Vector2(112, 112), [[B, "gc_dry_bush", 45, 0.8, 1.2], [N, "Rock_Medium_3", 20, 0.6, 1.2]]],
+			[B, "rock_slab", 10, 0.5, 0.9], [B, "rock_boulder_b", 10, 0.6, 1.2]]],
+		"Campos": [Vector2.ZERO, Vector2(112, 112), [[B, "gc_dry_bush", 45, 0.8, 1.2], [B, "rock_slab", 12, 0.5, 0.9], [B, "rock_small_a", 12, 0.4, 0.7]]],
 		"Fazenda": [Vector2(-35, 78), Vector2(40, 34), [[B, "gc_dry_bush", 16, 0.8, 1.2]]],
 		"Cidade": [Vector2(80, 12), Vector2(30, 42), [[B, "gc_dry_bush", 10, 0.7, 1.1]]],
 		"Contaminada": [Vector2(88, -88), Vector2(26, 26), [
 			[H, "ribcage", 10, 0.5, 0.7], [H, "skull", 18, 0.25, 0.32], [H, "bone_A", 25, 0.1, 0.16],
 			[N, "Mushroom_Laetiporus", 15, 0.3, 0.5], [H, "tree_dead_medium", 6, 3.0, 4.0], [H, "tree_dead_large", 4, 4.0, 5.5]]],
-		"Pedreira": [Vector2(-85, 15), Vector2(28, 32), [[N, "Rock_Medium_1", 15, 0.6, 1.4], [N, "Rock_Medium_2", 12, 0.6, 1.4]]],
+		"Pedreira": [Vector2(-85, 15), Vector2(28, 32), [[B, "rock_shards", 14, 0.9, 1.6], [B, "rock_slab", 10, 0.6, 1.1],
+			[B, "rock_boulder_a", 8, 0.7, 1.3]]],
 	}
 	for region: String in plan:
 		var spec: Array = plan[region]
@@ -829,7 +831,7 @@ func _build_decor(world: Node3D) -> void:
 		var half: Vector2 = spec[1]
 		var items: Array = (spec[2] as Array).duplicate()
 		for pb: Array in pebbles:
-			items.append([pb[0], pb[1], 20, pb[2], pb[3]])
+			items.append([pb[0], pb[1], 45, pb[2], pb[3]])
 		var sc := DecorScatter.new()
 		sc.name = "Decor_" + region
 		world.add_child(sc)

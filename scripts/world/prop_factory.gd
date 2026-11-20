@@ -130,6 +130,17 @@ static func make_rock(rng: RandomNumberGenerator, big: bool = true) -> Harvestab
 	sh.radius = r * 0.95
 	_collision(h, sh, Vector3(0, r * 0.4, 0))
 	var v := Node3D.new()
+	# Pedras lascadas modeladas no Blender (tools/blender_rocks.py); o modelo vem do style_rng.
+	var bm: String = (["rock_boulder_a", "rock_boulder_b"] if big else ["rock_small_a", "rock_small_b"])[style_rng.randi() % 2]
+	if ThirdParty.has(ThirdParty.BLENDER, bm):
+		var rk := ThirdParty.instance(ThirdParty.BLENDER, bm)
+		var a := ThirdParty.aabb(ThirdParty.BLENDER, bm)
+		var sc := r * 2.3 / maxf(0.1, maxf(a.size.x, a.size.z))
+		rk.scale = Vector3(sc, sc * style_rng.randf_range(0.85, 1.3), sc)
+		rk.rotation.y = style_rng.randf() * TAU
+		v.add_child(rk)
+		h.setup_visual(v)
+		return h
 	if ModelLibrary.has("rock"):
 		var g := rng.randf_range(0.6, 0.8)
 		var rm := ModelLibrary.instance_footprint("rock", r * 2.3, Color(g, g, g * 1.05))
