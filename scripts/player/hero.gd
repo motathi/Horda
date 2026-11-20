@@ -618,6 +618,9 @@ func _start_attack() -> void:
 				dir = facing()
 			_shot_point = _shot_target.global_position if _shot_target else global_position + dir.normalized() * BOW_RANGE
 			model.aim_bow(_shot_point + Vector3.UP * 1.2, d * 0.95)
+			if _shot_target:
+				# A flecha leva um tempo para chegar: o alvo pode desviar.
+				_shot_target.threatened(self, _pending_hit + _shot_target.global_position.distance_to(global_position) / ARROW_SPEED)
 			AudioManager.play_3d(&"swing", global_position, -14.0, 1.4)
 			return
 	net_attack_count += 1
@@ -625,6 +628,12 @@ func _start_attack() -> void:
 	_attack_timer = dur
 	_pending_hit = dur * 0.3
 	model.play_attack(dur * 0.85)
+	# Zumbis na frente percebem o golpe e podem desviar com um passo rápido.
+	var fwd := facing()
+	var half := deg_to_rad(attack_arc_degrees * 0.5)
+	for e in Enemy.all:
+		if is_instance_valid(e) and not e.is_dead() and _in_arc(e.global_position, fwd, half, reach() + e.get_radius() + 0.6):
+			e.threatened(self, _pending_hit)
 	AudioManager.play_3d(&"swing", global_position, -6.0)
 
 func _apply_hit() -> void:
@@ -641,6 +650,7 @@ func _apply_hit() -> void:
 		if _in_arc(en.global_position, fwd, half_arc, reach() + en.get_radius()):
 			var crit := _rng.randf() < crit() or _riposte > 0.0
 			var info := DamageInfo.make(damage() * (crit_multiplier if crit else 1.0), self, crit)
+			info.dodgeable = true
 			en.take_damage(info)
 			hit_any = true
 			var ls := gear(&"lifesteal_pct")
@@ -704,6 +714,7 @@ func _fire_arrow() -> void:
 			_riposte = 0.0
 			EffectsHub.float_text(global_position + Vector3.UP * 2.6, "Contra-ataque!", Color(1.0, 0.8, 0.3), 36)
 		var info := DamageInfo.make(damage() * BOW_DAMAGE_MULT * (crit_multiplier if crit else 1.0), self, crit)
+		info.dodgeable = true
 		EffectsHub.spawn_arrow(from, t, info, ARROW_SPEED)
 		Coop.fx_all("arrow", from, t.global_position + Vector3.UP)
 		var ls := gear(&"lifesteal_pct")

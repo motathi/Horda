@@ -364,6 +364,39 @@ func _test_combat_challenge() -> void:
 	check(e3.health.current < e3hp and hero._riposte == 0.0, "contra-ataque acerta e é consumido (%.0f de dano)" % (e3hp - e3.health.current))
 	e3.take_damage(DamageInfo.make(99999, hero))
 	hero.health.heal(9999)
+	# Zumbi esquiva do golpe do herói com um passo rápido (chance forçada a 100% no teste)...
+	var ev := (load("res://scenes/enemies/zombie.tscn") as PackedScene).instantiate() as Enemy
+	world.enemies_root.add_child(ev)
+	ev.global_position = Vector3(70, 0, 70)
+	ev.configure(zdef)
+	hero.global_position = Vector3(70, 0, 71.4)
+	await wait(0.2)
+	ev._attack_cd = 99.0  # parado, sem atacar
+	ev._windup = -1.0
+	Enemy.evade_override = 1.0
+	var ev_hp := ev.health.current
+	var ev_p := ev.global_position
+	hero.model.rotation.y = atan2(-(ev.global_position.x - hero.global_position.x), -(ev.global_position.z - hero.global_position.z))
+	hero._attack_timer = 0.0
+	hero._start_attack()
+	await wait(0.6)
+	check(ev.health.current == ev_hp and _flat(ev.global_position, ev_p) > 1.2, "zumbi desvia do golpe com um passo rápido (%.1f m)" % _flat(ev.global_position, ev_p))
+	# ...mas não durante a preparação do próprio golpe (janela para o contra-ataque).
+	ev._evade_cd = 0.0
+	ev._windup = 0.8
+	ev._melee_total = 0.8
+	ev.threatened(hero, 0.25)
+	check(ev._evade_delay < 0.0 and ev._evade_t <= 0.0, "zumbi não desvia enquanto prepara o próprio golpe")
+	ev._windup = -1.0
+	ev._melee_total = 0.0
+	Enemy.evade_override = 0.0
+	var zbrute := (load("res://scenes/enemies/zombie.tscn") as PackedScene).instantiate() as Enemy
+	world.enemies_root.add_child(zbrute)
+	zbrute.configure(bdef)
+	Enemy.evade_override = -1.0
+	check(zbrute.evade_chance() == 0.0 and ev.evade_chance() > 0.15, "brutamontes não desvia; zumbi comum desvia às vezes (%.0f%%)" % (ev.evade_chance() * 100.0))
+	ev.take_damage(DamageInfo.make(99999, hero))
+	zbrute.take_damage(DamageInfo.make(99999, hero))
 	hero.global_position = start
 	hero.model.rotation.y = start_yaw
 	await wait(0.2)

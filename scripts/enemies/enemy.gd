@@ -35,6 +35,18 @@ const HERO_DAMAGE_MULT := 1.9
 const HIT_HALF_ANGLE := 1.0   # ~57° para cada lado da frente
 const AIM_LOCK_AT := 0.45     # depois de 45% da preparação, para de girar
 var _melee_total: float = 0.0
+## Esquiva do zumbi: ao ver o herói começar um golpe, pode dar um passo rápido para o lado/para trás.
+## Não esquiva enquanto prepara o próprio golpe nem logo depois dele (janela para o contra-ataque).
+const EVADE_TIME := 0.2
+const EVADE_DIST := 2.4
+const EVADE_RECOVER := 0.65
+static var evade_override: float = -1.0  # testes: força a chance (0..1)
+var _evade_t: float = 0.0
+var _evade_delay: float = -1.0
+var _evade_cd: float = 0.0
+var _evade_dir: Vector3 = Vector3.ZERO
+var _evade_window: float = 0.0
+var _recover_t: float = 0.0
 var _tele: MeshInstance3D
 static var _tele_shader: Shader
 var _stuck_time: float = 0.0
@@ -183,6 +195,8 @@ func get_radius() -> float:
 func take_damage(info: DamageInfo) -> void:
 	if state == State.DEAD:
 		return
+	if info.dodgeable and is_evading():
+		return
 	if puppet:
 		# Cliente: o anfitrião aplica o dano; aqui só o retorno visual imediato.
 		if info.source is Hero and not (info.source as Hero).is_puppet:
@@ -224,6 +238,16 @@ func _physics_process(delta: float) -> void:
 		_melee_total = 0.0
 		_hide_tele()
 		model.animate(delta, 0.0)
+		return
+	_evade_cd = maxf(0.0, _evade_cd - delta)
+	_evade_window = maxf(0.0, _evade_window - delta)
+	_recover_t = maxf(0.0, _recover_t - delta)
+	if _evade_delay >= 0.0:
+		_evade_delay -= delta
+		if _evade_delay < 0.0:
+			_start_evade()
+	if _evade_t > 0.0:
+		_process_evade(delta)
 		return
 	var hero := nearest_hero()
 	# Inimigos diurnos muito longe do herói "dormem" (economia de CPU).
@@ -302,6 +326,8 @@ func _physics_process(delta: float) -> void:
 			_update_tele(1.0 - _windup / _melee_total)
 		if _windup < 0.0:
 			_resolve_attack()
+			if _melee_total > 0.0:
+				_recover_t = EVADE_RECOVER
 			_melee_total = 0.0
 			_hide_tele()
 
@@ -814,6 +840,67 @@ func nearest_hero() -> Hero:
 	return best
 
 var _puppet_tele: float = 0.0
+
+## Chance de esquivar do ataque básico do herói, por tipo (brutamontes e explosivo não esquivam),
+## um pouco maior nas hordas avançadas e conforme a dificuldade.
+func evade_chance() -> float:
+	if evade_override >= 0.0:
+		return evade_override
+	var c := 0.0
+	match def.behavior:
+		EnemyDef.Behavior.MELEE: c = 0.28
+		EnemyDef.Behavior.CHARGER: c = 0.45
+		EnemyDef.Behavior.LEAPER: c = 0.45
+		EnemyDef.Behavior.STALKER: c = 0.45
+		EnemyDef.Behavior.SPITTER: c = 0.35
+		EnemyDef.Behavior.SCREAMER: c = 0.2
+		_: c = 0.0
+	if String(def.id).begins_with("skeleton") and c > 0.0:
+		c = 0.35
+	if c <= 0.0:
+		return 0.0
+	c += minf(0.12, TimeManager.wave() * 0.0025)
+	c *= {"facil": 0.6, "normal": 1.0, "dificil": 1.3}.get(GameManager.difficulty, 1.0)
+	return clampf(c, 0.0, 0.7)
+
+func is_evading() -> bool:
+	return _evade_t > 0.0 or _evade_window > 0.0
+
+## O herói começou um ataque básico contra este zumbi (o golpe cai em `hit_in` segundos).
+func threatened(by: Node3D, hit_in: float) -> void:
+	if puppet or state == State.DEAD or _evade_cd > 0.0 or _evade_t > 0.0 or _evade_delay >= 0.0:
+		return
+	if _windup >= 0.0 or _recover_t > 0.0 or _stun_left > 0.0 or is_leaping() or _burning >= 0.0:
+		return  # comprometido com o próprio golpe / atordoado: janela do contra-ataque
+	if randf() >= evade_chance():
+		return
+	_evade_cd = randf_range(2.2, 3.6)
+	var away := global_position - by.global_position
+	away.y = 0.0
+	away = away.normalized() if away.length_squared() > 0.01 else Vector3.BACK
+	var side := Vector3(-away.z, 0, away.x) * (1.0 if randf() < 0.5 else -1.0)
+	_evade_dir = (side * 0.85 + away * (0.55 if randf() < 0.5 else 0.25)).normalized()
+	# Reage um pouco antes do golpe cair.
+	_evade_delay = clampf(hit_in * 0.35, 0.02, 0.12)
+
+func _start_evade() -> void:
+	_evade_t = EVADE_TIME
+	_evade_window = EVADE_TIME + 0.18
+	_windup = -1.0
+	_melee_total = 0.0
+	_hide_tele()
+	EffectsHub.spawn_debris(global_position + Vector3.UP * 0.2, false)
+	EffectsHub.float_text(global_position + Vector3.UP * 2.3 * def.model_scale, "Desviou!", Color(0.82, 0.82, 0.88), 30)
+	AudioManager.play_3d(&"leap", global_position, -10.0, 1.4, 120)
+
+func _process_evade(delta: float) -> void:
+	_evade_t -= delta
+	var k := clampf(_evade_t / EVADE_TIME, 0.0, 1.0)
+	var sp := EVADE_DIST / EVADE_TIME * (0.4 + 1.2 * k)
+	velocity = _evade_dir * sp
+	velocity.y = 0.0 if is_on_floor() else velocity.y - 30.0 * delta
+	move_and_slide()
+	model.animate(delta, 1.8)
 
 ## Duração da preparação do golpe: zumbis comuns ~0,85 s, rápidos 0,6 s, brutamontes ~1,2 s.
 static func melee_windup(d: EnemyDef) -> float:

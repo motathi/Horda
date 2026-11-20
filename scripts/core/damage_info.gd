@@ -10,6 +10,8 @@ var type: Type = Type.PHYSICAL
 var is_crit: bool = false
 ## Multiplicador aplicado contra estruturas (zumbis brutos derrubam muros mais rápido).
 var structure_multiplier: float = 1.0
+## Ataque básico do herói (golpe/flecha): o zumbi pode desviar com um passo rápido. Habilidades não.
+var dodgeable: bool = false
 
 static func make(amt: float, src: Node, crit: bool = false) -> DamageInfo:
 	var d := DamageInfo.new()

@@ -51,7 +51,11 @@ preparação (~0,85 s; rápidos ~0,6 s; brutamontes ~1,2 s) e fica vermelho pert
 o zumbi para de girar, então dá para sair da frente. Quem continua na frente e ao alcance toma **1,9x** o dano
 de antes. **Esquiva (Shift ou botão ⇧):** corrida curta e rápida com invulnerabilidade (recarga de 0,85 s);
 desviar de um golpe no último instante mostra "Esquivou!" e deixa o próximo ataque garantidamente crítico
-(**contra-ataque**). **Poção de Cura** (tecla 3 ou botão): cura 160 na hora; compre no menu da base (B) por
+(**contra-ataque**). **Os zumbis também esquivam:** ao ver o herói começar um golpe (ou mirar uma flecha), podem
+dar um passo rápido para o lado/para trás ("Desviou!") — comuns ~28%, rápidos, saltadores e espreitadores ~45%,
+esqueletos ~35%; brutamontes e explosivos nunca; um pouco mais nas hordas avançadas e no Difícil. Mas eles
+**não esquivam enquanto preparam o próprio golpe nem logo depois** dele: a hora certa de bater é desviar do golpe
+lento e contra-atacar. Habilidades em área não podem ser esquivadas. **Poção de Cura** (tecla 3 ou botão): cura 160 na hora; compre no menu da base (B) por
 4 sucatas + 1 erva.
 
 ![Golpe anunciado no chão e os botões de esquiva e poção](docs/screenshots/combate_esquiva.jpg)
