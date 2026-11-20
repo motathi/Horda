@@ -281,8 +281,13 @@ Se o herói cair, renasce na base (e a mochila fica no chão onde morreu). Se o 
 
 Efeitos, músicas e ambientes **CC0** do OpenGameArt (créditos em
 [assets/sounds/CREDITS.md](assets/sounds/CREDITS.md)), com 3 a 17 variações por efeito sorteadas com leve
-variação de tom. Música dinâmica com crossfade: menu, preparação (2 faixas alternadas), horda (2 faixas),
-chefe e derrota; ambiente de pássaros de dia, grilos à noite e um ambiente sombrio perto do cemitério.
+variação de tom. **Trilha de terror** dinâmica com crossfade: piano desafinado no menu (*A Detuned Memory*);
+na preparação, ambiências de terror que alternam por horda — terra devastada com ruídos e estalos
+(*Horror Atmosphere*, Juhani Junkala), cordas sombrias (*Lost in a bad place*) e batidas de coração com piano
+distante (*A lurking evil*); na horda, ação sombria de baixo distorcido (*The Hunt*), perseguição (*Chase in the
+night*) e industrial pulsante (*Menacing Otherworld*); no chefe, a parede crescente de *Ancient Grudge*; na
+derrota, o fim em câmera lenta de *Bleeding out*. Ambiente de pássaros de dia, grilos à noite e um ambiente
+sombrio perto do cemitério.
 
 ### Atmosfera de terror
 

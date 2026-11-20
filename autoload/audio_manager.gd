@@ -243,8 +243,9 @@ func _process(_delta: float) -> void:
 	if mode != _music_mode:
 		_music_mode = mode
 		match mode:
-			"prep": play_music("prep_%d" % (1 + TimeManager.wave() % 2))
-			"battle": play_music("battle_%d" % (1 + TimeManager.wave() % 2))
+			# Trilha de terror: 3 ambiências de preparação e 3 temas de horda, alternando por horda.
+			"prep": play_music("prep_%d" % (1 + TimeManager.wave() % 3))
+			"battle": play_music("battle_%d" % (1 + TimeManager.wave() % 3))
 			_: play_music(mode)
 	_update_ambient()
 
