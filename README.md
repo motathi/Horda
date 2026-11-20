@@ -191,6 +191,13 @@ base continua com ele).
 
 ![Cidade antes e depois](docs/screenshots/cidade_antes_depois.jpg)
 
+**Chão de pedra** (cidade, pedreira e centro da base): lajotas gastas geradas por `tools/gen_stone_floor.py`
+(numpy, sem IA) — Voronoi periódico em grade (repete sem emenda), pedras cinza-marrom escuras com relevo
+calculado da distância à junta, juntas cheias de terra, pedras faltando, rachaduras, matinho seco nas frestas,
+poeira e fuligem. Substitui o calçamento claro e azulado que destoava das construções.
+
+![Chão de pedra antes e depois](docs/screenshots/chao_pedra_antes_depois.jpg)
+
 **Inimigos especiais:** a partir da horda 4 surge o *Zumbi Explosivo* (incha e explode ao alcançar o alvo,
 arrasando muros; abatido, explode ferindo os zumbis ao redor), na 7 o *Cuspidor* (cospe ácido de 10 m,
 inclusive por cima dos muros, deixando poças corrosivas, e recua se você se aproximar) e na 9 o *Saltador*
