@@ -647,7 +647,7 @@ func _build_help() -> Control:
 		["Clique direito (chão)", "Mover até o ponto"],
 		["Clique direito (inimigo)", "Selecionar e atacar"],
 		["Clique esquerdo / Espaço", "Atacar na direção do cursor (também corta árvores e quebra pedras)"],
-		["E", "Saquear caixas, carros e armários próximos"],
+		["E", "Saquear caixas, carros e armários próximos; no coop, segurar perto de um aliado caído para revivê-lo"],
 		["Shift", "Esquiva: corrida rápida sem tomar dano; desvie do golpe no último instante para um contra-ataque crítico"],
 		["1 / 2 / 3", "Comer carne / usar curativo / beber poção de cura (compre poções no menu da base)"],
 		["M", "Mapa grande"],

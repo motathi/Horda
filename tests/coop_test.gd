@@ -106,6 +106,16 @@ func _run_host() -> void:
 	var army := world.get(&"army") as Army
 	army.spawn(army.get_def(&"guard"), Vector3(4, 0, 9))
 	step.rpc("soldier_sent")
+	# Reviver: o cliente cai e o anfitrião o levanta (segurando E perto dele).
+	check(await wait_step("client_down", 30.0), "cliente avisou que caiu")
+	check(await wait_until(func() -> bool: return puppet.health.dead, 8.0), "herói caído do cliente aparece caído no anfitrião")
+	check(puppet._down_ring != null and puppet._down_ring.visible, "círculo de resgate sob o aliado caído")
+	var me: Hero = world.hero
+	me.global_position = puppet.global_position + Vector3(1.0, 0, 0)
+	await wait(0.3)
+	me.try_interact()
+	check(me.is_reviving(), "anfitrião começa a reviver o aliado (E)")
+	check(await wait_until(func() -> bool: return not puppet.health.dead, Hero.REVIVE_TIME + 5.0), "aliado revivido pelo anfitrião")
 	await wait_step("client_done", 40.0)
 
 # --- Cliente ---
@@ -165,4 +175,13 @@ func _run_client() -> void:
 	bm.cancel()
 	await wait_step("soldier_sent")
 	check(await wait_until(func() -> bool: return Soldier.all.any(func(so: Soldier) -> bool: return so.puppet), 8.0), "soldado do anfitrião aparece no cliente")
+	var where := hero.global_position
+	hero.health.invulnerable = false
+	var kill := DamageInfo.make(999999, null)
+	kill.type = DamageInfo.Type.TRUE
+	hero.take_damage(kill)
+	check(hero.health.dead, "herói do cliente caiu")
+	step.rpc_id(1, "client_down")
+	check(await wait_until(func() -> bool: return not hero.health.dead, 20.0), "cliente foi revivido pelo anfitrião")
+	check(hero.global_position.distance_to(where) < 2.5 and hero.health.current <= hero.health.max_health * 0.5, "levanta no lugar com parte da vida (%.0f/%.0f)" % [hero.health.current, hero.health.max_health])
 	step.rpc_id(1, "client_done")

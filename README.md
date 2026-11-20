@@ -46,6 +46,11 @@ Ao adicionar texturas novas, use o mesmo modo de compressão no `.import`.
 
 ## Como jogar (PC)
 
+**Reviver no coop:** quando um herói cai numa partida em grupo, ele fica caído no lugar com um círculo azul de
+resgate no chão; um aliado chega perto e segura **E** (ou o botão de saque) por 3 s para levantá-lo ali mesmo com
+40% da vida e 2 s de proteção. Tomar dano ou se mexer interrompe o resgate. Se ninguém reviver, ele renasce na base
+quando o tempo acabar, como antes (a mochila continua caindo onde ele caiu).
+
 **Combate desafiador:** o golpe dos zumbis é lento e anunciado — um setor laranja no chão se enche durante a
 preparação (~0,85 s; rápidos ~0,6 s; brutamontes ~1,2 s) e fica vermelho perto do golpe; no fim da preparação
 o zumbi para de girar, então dá para sair da frente. Quem continua na frente e ao alcance toma **1,9x** o dano

@@ -43,6 +43,10 @@ const DODGE_TIME := 0.26
 const DODGE_COOLDOWN := 0.85
 const DODGE_IFRAMES := 0.34
 const RIPOSTE_TIME := 1.6
+## Coop: herói caído pode ser revivido por um aliado (segurar E/saque perto dele por REVIVE_TIME).
+const REVIVE_TIME := 3.0
+const REVIVE_HP := 0.4
+const REVIVE_SHIELD := 2.0
 var abilities: Array[AbilityDef] = []
 var max_energy: float = 100.0
 var energy: float = 100.0
@@ -96,6 +100,10 @@ var _dodge_cd: float = 0.0
 var _dodge_dir: Vector3 = Vector3.ZERO
 var _iframes: float = 0.0
 var _riposte: float = 0.0
+var _revive_target: Hero = null
+var _revive_time: float = 0.0
+var _revive_shield: float = 0.0
+var _down_ring: MeshInstance3D
 ## Durante o modo de construção, cliques/toques posicionam a construção.
 var build_mode: bool = false
 var health: HealthComponent
@@ -424,6 +432,7 @@ func _physics_process(delta: float) -> void:
 		return
 	_tick_abilities(delta)
 	_dodge_cd = maxf(0.0, _dodge_cd - delta)
+	_revive_shield = maxf(0.0, _revive_shield - delta)
 	_iframes = maxf(0.0, _iframes - delta)
 	_riposte = maxf(0.0, _riposte - delta)
 	if _dash_left > 0.0:
@@ -482,6 +491,7 @@ func _physics_process(delta: float) -> void:
 
 	if dir != Vector3.ZERO:
 		_cancel_interaction()
+		_cancel_revive()
 	if want_attack:
 		_face(_aim_point, delta, 30.0)
 		if _attack_timer <= 0.0:
@@ -495,6 +505,7 @@ func _physics_process(delta: float) -> void:
 			_apply_hit()
 
 	_process_interaction(delta)
+	_process_revive(delta)
 	var planar := Vector2(velocity.x, velocity.z).length()
 	model.animate(delta, planar / current_move_speed())
 	_footsteps(delta, planar)
@@ -737,6 +748,8 @@ func _in_arc(p: Vector3, fwd: Vector3, half_arc: float, reach: float) -> bool:
 	return fwd.angle_to(to / dist) <= half_arc
 
 func take_damage(info: DamageInfo) -> void:
+	if _revive_shield > 0.0 and not is_puppet:
+		return  # acabou de ser revivido: proteção curta
 	if _iframes > 0.0 and not is_puppet and info.type != DamageInfo.Type.TRUE:
 		# Esquiva no momento certo: não toma dano e prepara o contra-ataque.
 		if _riposte <= 0.0:
@@ -756,6 +769,7 @@ func get_radius() -> float:
 	return 0.45
 
 func _on_damaged(_info: DamageInfo, amount: float) -> void:
+	_cancel_revive()
 	model.flash()
 	EventBus.hero_damaged.emit(amount)
 	AudioManager.play_3d(&"hero_hurt", global_position, -4.0)
@@ -774,13 +788,18 @@ func _on_died(_info: DamageInfo) -> void:
 	ResourceManager.hero_inventory.clear()
 	for id: StringName in bag:
 		EffectsHub.drop_item(global_position, id, bag[id])
+	_cancel_revive()
 	EventBus.hero_died.emit()
-	EventBus.banner.emit("VOCÊ CAIU", "Renascendo na base em %d segundos..." % int(_respawn_left), Color(0.85, 0.2, 0.15))
+	if coop_active():
+		EventBus.banner.emit("VOCÊ CAIU", "Um aliado pode te reviver (segurar E perto de você) • base em %d s" % int(_respawn_left), Color(0.85, 0.2, 0.15))
+	else:
+		EventBus.banner.emit("VOCÊ CAIU", "Renascendo na base em %d segundos..." % int(_respawn_left), Color(0.85, 0.2, 0.15))
 
 func respawn_seconds_left() -> float:
 	return _respawn_left
 
 func _process_respawn(delta: float) -> void:
+	_update_down_ring(delta)
 	if not GameManager.is_playing():
 		return
 	_respawn_left -= delta
@@ -795,8 +814,110 @@ func respawn() -> void:
 	model.reset_pose()
 	collision_layer = Layers.HERO
 	add_to_group("allies")
+	_update_down_ring(0.0)
 	EventBus.hero_respawned.emit()
 	EventBus.notify("O herói voltou à base.", Color(0.6, 0.9, 1.0))
+
+# --- Reviver (coop) --------------------------------------------------------
+
+func coop_active() -> bool:
+	return Net.in_game and Net.players.size() > 1
+
+## Dono do herói: um aliado terminou de reviver — levanta no lugar com parte da vida.
+func revive_here(by: String) -> void:
+	if is_puppet or not health.dead:
+		return
+	velocity = Vector3.ZERO
+	health.revive(REVIVE_HP)
+	model.reset_pose()
+	collision_layer = Layers.HERO
+	add_to_group("allies")
+	_respawn_left = 0.0
+	_revive_shield = REVIVE_SHIELD
+	_update_down_ring(0.0)
+	EffectsHub.spawn_heal(global_position)
+	AudioManager.play_3d(&"heal", global_position)
+	EventBus.hero_respawned.emit()
+	EventBus.banner.emit("REVIVIDO", "%s te levantou!" % by, Color(0.5, 0.9, 1.0))
+
+## Aliado caído perto o bastante para reviver (só no coop).
+func _downed_ally_near() -> Hero:
+	var best: Hero = null
+	var best_d := interact_range + 1.4
+	for h: Node in Coop.remote_heroes.values():
+		var a := h as Hero
+		if a and is_instance_valid(a) and a.health.dead:
+			var d := a.global_position.distance_to(global_position)
+			if d < best_d:
+				best_d = d
+				best = a
+	return best
+
+func _begin_revive(a: Hero) -> void:
+	_cancel_interaction()
+	_revive_target = a
+	_revive_time = 0.0
+	_face(a.global_position, 1.0, 100.0)
+
+func _process_revive(delta: float) -> void:
+	if _revive_target == null:
+		return
+	var a := _revive_target
+	if not is_instance_valid(a) or not a.health.dead or a.global_position.distance_to(global_position) > interact_range + 2.0:
+		_cancel_revive()
+		return
+	_revive_time += delta
+	EventBus.interaction_progress.emit("Revivendo %s" % Net.player_name(a.net_peer), _revive_time / REVIVE_TIME)
+	if _revive_time >= REVIVE_TIME:
+		_revive_target = null
+		EventBus.interaction_progress.emit("", -1.0)
+		Coop.request_revive(a.net_peer)
+		EffectsHub.spawn_heal(a.global_position)
+		EventBus.notify("Você reviveu %s!" % Net.player_name(a.net_peer), Color(0.5, 0.9, 1.0))
+
+func _cancel_revive() -> void:
+	if _revive_target != null:
+		_revive_target = null
+		EventBus.interaction_progress.emit("", -1.0)
+
+func is_reviving() -> bool:
+	return _revive_target != null
+
+## Círculo de resgate no chão debaixo do herói caído (visível para todos no coop).
+func _update_down_ring(delta: float) -> void:
+	var show := health.dead and coop_active()
+	if not show:
+		if _down_ring:
+			_down_ring.visible = false
+		return
+	if _down_ring == null:
+		_down_ring = MeshInstance3D.new()
+		var pm := PlaneMesh.new()
+		pm.size = Vector2(2.6, 2.6)
+		_down_ring.mesh = pm
+		_down_ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		var sh := Shader.new()
+		sh.code = """
+shader_type spatial;
+render_mode unshaded, cull_disabled, depth_draw_never, blend_add, shadows_disabled;
+void fragment() {
+	vec2 p = (UV - 0.5) * 2.0;
+	float r = length(p);
+	float pulse = 0.5 + 0.5 * sin(TIME * 4.0);
+	float ring = smoothstep(0.78, 0.86, r) * (1.0 - smoothstep(0.92, 1.0, r));
+	float wave = smoothstep(0.06, 0.0, abs(r - fract(TIME * 0.6)));
+	float cross = (step(abs(p.x), 0.09) + step(abs(p.y), 0.09)) * step(r, 0.42);
+	vec3 c = vec3(0.35, 0.8, 1.0);
+	ALBEDO = c;
+	ALPHA = clamp(ring * (0.55 + 0.45 * pulse) + wave * 0.35 + min(cross, 1.0) * 0.5, 0.0, 1.0);
+}
+"""
+		var m := ShaderMaterial.new()
+		m.shader = sh
+		_down_ring.material_override = m
+		_down_ring.position.y = 0.07
+		add_child(_down_ring)
+	_down_ring.visible = true
 
 # --- Habilidades ----------------------------------------------------------
 
@@ -1125,6 +1246,11 @@ func try_interact() -> void:
 	_try_interact()
 
 func _try_interact() -> void:
+	# Coop: aliado caído por perto tem prioridade sobre o saque.
+	var downed := _downed_ally_near()
+	if downed:
+		_begin_revive(downed)
+		return
 	var best: Lootable = null
 	var best_d := interact_range
 	for n: Node in get_tree().get_nodes_in_group("interactable"):
@@ -1272,6 +1398,7 @@ func apply_net_state(pos: Vector3, yaw: float, speed: float, hp: float, max_hp: 
 func _puppet_process(delta: float) -> void:
 	if not _net_has_state:
 		return
+	_update_down_ring(delta)
 	var d := _net_target - global_position
 	if d.length() > 8.0:
 		global_position = _net_target

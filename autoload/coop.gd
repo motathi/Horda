@@ -163,6 +163,18 @@ func _hero_hit(amount: float, true_damage: bool) -> void:
 		info.type = DamageInfo.Type.TRUE
 	h.take_damage(info)
 
+## Um jogador terminou de reviver o herói caído de `pid`: o dono do herói o levanta no lugar.
+func request_revive(pid: int) -> void:
+	if pid == Net.my_id():
+		return
+	_revive_me.rpc_id(pid, Net.my_name)
+
+@rpc("any_peer", "call_remote", "reliable")
+func _revive_me(by: String) -> void:
+	var h := local_hero()
+	if h:
+		h.revive_here(by)
+
 # --- Inimigos ---------------------------------------------------------------------------
 
 func _on_enemy_added(n: Node) -> void:

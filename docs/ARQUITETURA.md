@@ -130,6 +130,15 @@ preparação até o passo final.
 - Captura para revisão: `xvfb-run ... res://tests/menu_probe.tscn -- <pasta>` (entrada, menu e submenus;
   `MENU_FRAMES=1` salva 64 quadros da entrada para montar um GIF).
 
+## Reviver no coop
+
+- `Hero._try_interact` dá prioridade a um aliado caído por perto (`Coop.remote_heroes` com `health.dead`): o
+  resgate corre localmente (barra de `interaction_progress`, `REVIVE_TIME`), e no fim
+  `Coop.request_revive(pid)` manda `_revive_me` ao dono daquele herói (RPC com relay do servidor quando os dois
+  são clientes), que chama `Hero.revive_here` — o resto (posição, vida, "caído") volta pelo estado de rede normal.
+- `_update_down_ring` desenha o círculo de resgate (shader aditivo) sob o herói caído, no dono e nos fantoches.
+- Teste: `tests/coop_test.gd` derruba o herói do cliente e o anfitrião o revive.
+
 ## Versão web no celular
 
 - `export_presets.cfg` → `html/head_include`: trava o zoom (meta viewport com `maximum-scale=1`), fixa
