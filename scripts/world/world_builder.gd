@@ -465,27 +465,45 @@ func _build_borders() -> void:
 		var off := MAP_HALF + 2.0
 		body.position = [Vector3(0, 4, -off), Vector3(0, 4, off), Vector3(-off, 4, 0), Vector3(off, 4, 0)][side]
 		nav_region.add_child(body)
-	var bark := MaterialLib.textured("bark", Color(0.5, 0.45, 0.4))
-	var leaves := MaterialLib.textured("leaves", Color(0.35, 0.5, 0.3), 1.0)
-	var trunk := CylinderMesh.new()
-	trunk.top_radius = 0.3
-	trunk.bottom_radius = 0.5
-	trunk.height = 4.0
-	var crown := SphereMesh.new()
-	crown.radius = 2.6
-	crown.height = 4.5
-	crown.radial_segments = 8
-	crown.rings = 5
+	# Fileira densa de árvores secas do Blender (um MultiMesh por modelo). O modelo vem da posição,
+	# não do gerador do mapa, para a geração seguir igual.
+	var models: Array[String] = ["pine_dry_a", "pine_dry_b", "tree_dry_a", "pine_dry_a", "tree_dry_b"]
+	var lists := {}
 	var t := -MAP_HALF
 	while t <= MAP_HALF:
-		for p in [Vector3(t, 0, -MAP_HALF - 3), Vector3(t, 0, MAP_HALF + 3), Vector3(-MAP_HALF - 3, 0, t), Vector3(MAP_HALF + 3, 0, t)]:
-			var n := Node3D.new()
-			n.position = p + Vector3(rng.randf_range(-1.5, 1.5), 0, rng.randf_range(-1.5, 1.5))
-			n.scale = Vector3.ONE * rng.randf_range(1.0, 1.6)
-			PropFactory._mi(n, trunk, Vector3(0, 2, 0), bark)
-			PropFactory._mi(n, crown, Vector3(0, 5, 0), leaves)
-			add_child(n)
+		var sides := [Vector3(t, 0, -MAP_HALF - 3), Vector3(t, 0, MAP_HALF + 3), Vector3(-MAP_HALF - 3, 0, t), Vector3(MAP_HALF + 3, 0, t)]
+		for si in 4:
+			var pos: Vector3 = sides[si] + Vector3(rng.randf_range(-1.5, 1.5), 0, rng.randf_range(-1.5, 1.5))
+			var sc := rng.randf_range(1.0, 1.6)
+			var h := absi(int(pos.x * 7.0 + pos.z * 13.0))
+			var m: String = models[h % models.size()]
+			# Trechos de 40 m por lado: cada MultiMesh tem caixa pequena e sai da tela quando longe.
+			var key := "%s|%d_%d" % [m, si, int((t + MAP_HALF) / 40.0)]
+			if not lists.has(key):
+				lists[key] = []
+			var height := 7.0 * sc
+			var yaw := float(h % 360) * 0.0174533
+			(lists[key] as Array).append([pos, height, yaw])
 		t += 5.0
+	for key: String in lists:
+		var m := key.get_slice("|", 0)
+		if not ThirdParty.has(ThirdParty.BLENDER, m):
+			continue
+		var d := ThirdParty.mesh_data(ThirdParty.BLENDER, m)
+		var native := ThirdParty.aabb(ThirdParty.BLENDER, m).size.y
+		var mm := MultiMesh.new()
+		mm.transform_format = MultiMesh.TRANSFORM_3D
+		mm.mesh = d[0]
+		var arr: Array = lists[key]
+		mm.instance_count = arr.size()
+		for i in arr.size():
+			var e: Array = arr[i]
+			var bs := Basis(Vector3.UP, e[2]).scaled(Vector3.ONE * (float(e[1]) / maxf(0.1, native)))
+			mm.set_instance_transform(i, Transform3D(bs, e[0]) * (d[1] as Transform3D))
+		var mmi := MultiMeshInstance3D.new()
+		mmi.name = "Border_" + key.replace("|", "_")
+		mmi.multimesh = mm
+		add_child(mmi)
 
 # --- Base inicial ------------------------------------------------------------------
 

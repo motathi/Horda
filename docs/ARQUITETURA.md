@@ -179,6 +179,10 @@ Modelos riggados gerados pelo `tools/tripo_pipeline.py`.
   floresta em `Foliage.COVER`), usando `WorldBuilder._is_cover_ground` (capim ou terra, fora de estradas) e
   devolve os centros para o capim rarear em volta. Os MultiMesh levam o meta `kind` (o nome do modelo), que o
   `tests/atmo_probe.gd` usa no modo `ATMO_DECOR=<modelo>` para enquadrar a moita mais cheia.
+- Árvores: `tools/blender_trees.py` reaproveita as funções de `blender_ground.py` (folha, galho, cor por
+  vértice) e acrescenta tubos de casca, tufos de copa (icosfera irregular) e leques de agulhas. O modelo de
+  cada árvore vem do `PropFactory.style_rng` (não do gerador do mapa) e o das bordas vem da posição, para a
+  geração e os saves seguirem iguais.
 
 ## Áudio
 

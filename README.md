@@ -143,6 +143,15 @@ cardos e capim alto no campo), e o capim rareia em volta de cada moita para ela 
 
 ![Vegetação rasteira antes e depois](docs/screenshots/vegetacao_rasteira_antes_depois.jpg)
 
+**Árvores feitas no Blender** (`tools/blender_trees.py`, cor por vértice): duas folhosas secas (tronco torto
+com raízes, galhos à mostra, copa rala em tufos oliva, amarelos e ferrugem e pontas secas furando a copa), dois
+pinheiros meio secos (andares de galhos caídos com agulhas escuras, alguns galhos mortos cor de ferrugem, tronco
+pelado embaixo com tocos quebrados) e duas mortas (retorcida e queimada). Substituem as árvores verdes do
+pacote antigo em todo o mapa (`PropFactory.make_tree`), e a fileira de árvores das bordas, que eram esferas
+verdes, virou MultiMesh dessas árvores em trechos de 40 m.
+
+![Árvores antes e depois](docs/screenshots/arvores_antes_depois.jpg)
+
 **Inimigos especiais:** a partir da horda 4 surge o *Zumbi Explosivo* (incha e explode ao alcançar o alvo,
 arrasando muros; abatido, explode ferindo os zumbis ao redor), na 7 o *Cuspidor* (cospe ácido de 10 m,
 inclusive por cima dos muros, deixando poças corrosivas, e recua se você se aproximar) e na 9 o *Saltador*

@@ -32,19 +32,24 @@ static func _collision(body: CollisionObject3D, shape: Shape3D, pos: Vector3 = V
 ## (assim a geração continua igual e os saves seguem válidos).
 static var style_rng := RandomNumberGenerator.new()
 
+## Árvores modeladas no Blender (tools/blender_trees.py): folhosas e pinheiros secos, mortas e queimadas.
+const BLENDER_TREES: Array[String] = ["tree_dry_a", "tree_dry_b"]
+const BLENDER_PINES: Array[String] = ["pine_dry_a", "pine_dry_b"]
+
 static func _third_party_tree(dead: bool) -> Node3D:
 	var r := style_rng.randf()
 	var t: Node3D = null
+	var B := ThirdParty.BLENDER
 	if dead:
-		var names := ThirdParty.DEAD_TREES
-		var m: String = names[style_rng.randi() % names.size()]
-		if ThirdParty.has(ThirdParty.NATURE, m):
-			t = ThirdParty.instance(ThirdParty.NATURE, m, style_rng.randf_range(4.5, 6.5))
-	elif r < 0.55:
-		var pool := ThirdParty.TREES if r < 0.3 else ThirdParty.PINES
+		# Mortas: 70% secas e retorcidas, 30% queimadas.
+		var m := "tree_dead_a" if r < 0.7 else "tree_dead_b"
+		if ThirdParty.has(B, m):
+			t = ThirdParty.instance(B, m, style_rng.randf_range(4.5, 6.5))
+	else:
+		var pool := BLENDER_TREES if r < 0.45 else BLENDER_PINES
 		var m2: String = pool[style_rng.randi() % pool.size()]
-		if ThirdParty.has(ThirdParty.NATURE, m2):
-			t = ThirdParty.instance(ThirdParty.NATURE, m2, style_rng.randf_range(5.5, 8.5))
+		if ThirdParty.has(B, m2):
+			t = ThirdParty.instance(B, m2, style_rng.randf_range(5.5, 8.5))
 	if t:
 		t.rotation.y = style_rng.randf() * TAU
 	return t

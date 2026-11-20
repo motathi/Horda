@@ -70,7 +70,7 @@ func _test_world() -> void:
 	var nm := b.nav_region.navigation_mesh
 	check(nm.get_polygon_count() > 100, "malha de navegação assada (%d polígonos)" % nm.get_polygon_count())
 	check(BaseZone.hero_inside, "herói começa dentro da base")
-	# Cenário de terceiros (CC0): vegetação em MultiMesh, cemitério e árvores variadas.
+	# Cenário: vegetação em MultiMesh, cemitério (CC0) e árvores do Blender.
 	var decor := 0
 	for n in world.get_children():
 		if n is DecorScatter:
@@ -83,11 +83,11 @@ func _test_world() -> void:
 			crypt = true
 		if n is Harvestable:
 			for x: Node in n.find_children("*", "Node3D", true, false):
-				if x.scene_file_path.contains("third_party"):
+				if x.scene_file_path.contains("models/blender/tree_") or x.scene_file_path.contains("models/blender/pine_"):
 					tp_trees += 1
 					break
 	check(crypt, "cemitério com cripta na Área Contaminada")
-	check(tp_trees > 40, "árvores variadas do pacote de natureza (%d)" % tp_trees)
+	check(tp_trees > 300, "árvores feitas no Blender (%d)" % tp_trees)
 	# Ruínas (KayKit Dungeon) e sobreviventes (Quaternius).
 	var ruins := 0
 	for n in b.nav_region.get_children():

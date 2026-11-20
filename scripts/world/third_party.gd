@@ -12,9 +12,6 @@ const DUNGEON := "kaykit_dungeon"
 ## Modelos feitos no Blender neste projeto (tools/blender_scenery.py), em escala real.
 const BLENDER := "blender"
 
-const TREES: Array[String] = ["CommonTree_1", "CommonTree_2", "CommonTree_3", "CommonTree_4", "CommonTree_5"]
-const PINES: Array[String] = ["Pine_1", "Pine_2", "Pine_3", "Pine_4", "Pine_5"]
-const DEAD_TREES: Array[String] = ["DeadTree_1", "DeadTree_2", "DeadTree_3"]
 
 static var _scenes: Dictionary = {}
 static var _meshes: Dictionary = {}
