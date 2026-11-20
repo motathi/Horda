@@ -15,6 +15,12 @@ Baixados com `tools/itch_fetch.py` e copiados com `tools/import_third_party.py`.
 - **quaternius_base** — Quaternius, https://quaternius.itch.io/universal-base-characters — 8 modelos (27 arquivos), CC0 1.0
 - **quaternius_anims** — Quaternius, https://quaternius.itch.io/universal-animation-library — 1 modelos (1 arquivos), CC0 1.0
 
+## Fontes
+
+- **Gloock** (logotipo da tela inicial, renderizado em `assets/ui/title/ui_logo.png`) e **Crimson Pro Bold**
+  (botões e títulos da tela inicial, `assets/ui/fonts/`) — SIL Open Font License 1.1 (textos em
+  `assets/ui/fonts/OFL-*.txt`).
+
 ## Modelos enviados pelo jogador
 
 - **hero_paladin** (Cavaleiro, `assets/models/rigged/hero_paladin.glb`) — refeito pelo Tripo a partir de 4 vistas

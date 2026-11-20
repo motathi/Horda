@@ -7,6 +7,24 @@ inspirado em *Night of the Dead: Aftermath* (Warcraft III). Feito em **Godot 4.3
 > Arte gerada por IA no estilo Dota 2 / Warcraft III: texturas, retratos, ícones e conceitos na BytePlus ARK (Seedream);
 > **modelos 3D texturizados** (herói, zumbis, fortaleza, muralhas, torres, árvores, casas...) via image-to-3D. Veja o pipeline em docs/ARQUITETURA.md.
 
+## Tela inicial
+
+![Tela inicial animada](docs/screenshots/tela_inicial.gif)
+
+Tela inicial no estilo dos RTS de fantasia sombria: uma **cena 3D animada** (`scripts/ui/title_backdrop.gd`)
+com a fortaleza em ruínas, a muralha e o portão à noite, sob a lua e a névoa rasteira, uma horda de zumbis
+caminhando até o portão guardado por um herói, tochas e fogueira-farol tremulando, uma pira de corpos em
+chamas, brasas subindo, corvos circulando e raios que cortam o céu com trovão. A câmera passeia devagar e
+muda de enquadramento a cada submenu (novo jogo, coop, configurações). A interface (`scripts/ui/main_menu.gd`
++ `scripts/ui/title_style.gd`) usa arte **renderizada no Blender** (`tools/blender_ui.py`): logotipo em ferro
+escuro com rachaduras em brasa e chanfro dourado (reflexo que passa pelo metal e brasa pulsando), botões de
+ferro com filete dourado e rebites (brasa acesa no hover, brilho que atravessa o botão, lampejo no clique) e
+painéis com gemas vermelhas nos cantos. Entrada animada: a tela clareia, cai um raio, o logotipo despenca
+com um gongo e os botões deslizam um a um; os painéis trocam deslizando e o logotipo recua para o canto nos
+submenus. Fontes Gloock e Crimson Pro (SIL Open Font License).
+
+![Novo jogo na tela inicial](docs/screenshots/tela_inicial_novo_jogo.jpg)
+
 ## Jogar no navegador / celular
 
 **https://horda-five.vercel.app** — abra no celular na horizontal. No Android (Chrome), use

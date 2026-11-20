@@ -115,6 +115,21 @@ preparação até o passo final.
 - Teste: `tools/run_coop_test.sh` (dois processos com ENet). Depuração no navegador: `?autocoop=host` e
   `?autocoop=join&sala=CODIGO`.
 
+## Tela inicial
+
+- `main_menu.gd` (cena principal) cria o `TitleBackdrop` (Node3D filho do Control: câmera própria,
+  WorldEnvironment, fortaleza/muralha com os modelos do Blender, `Foliage` reaproveitado, zumbis com
+  `CharacterModel.build_zombie`, herói `build_hero("knight")`, corvos = `eagle.glb` com material escuro,
+  brasas em GPUParticles3D, névoa rasteira num plano com fbm no shader e raio = fita em zigue-zague gerada
+  por SurfaceTool) e a interface por cima. `TitleBackdrop.focus(nome)` troca o enquadramento (SHOTS) com
+  transição suave; `strike()` dispara um raio.
+- `TitleStyle`: StyleBoxTexture 9-slice com a arte de `assets/ui/title/` (gerada por `tools/blender_ui.py`;
+  os botões têm 400x80 px para os cantos de ~28 px encaixarem em botões de 50–70 px), shader de brilho
+  (uniform `hover`) e tweens de hover/clique. `main_menu._restyle` aplica o estilo aos painéis de
+  Configurações e Coop, que continuam sendo os mesmos componentes do jogo.
+- Captura para revisão: `xvfb-run ... res://tests/menu_probe.tscn -- <pasta>` (entrada, menu e submenus;
+  `MENU_FRAMES=1` salva 64 quadros da entrada para montar um GIF).
+
 ## Versão web no celular
 
 - `export_presets.cfg` → `html/head_include`: trava o zoom (meta viewport com `maximum-scale=1`), fixa
