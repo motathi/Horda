@@ -814,39 +814,77 @@ func _burning_pyre(body: Node3D) -> void:
 	light.set_meta(&"reveal_radius", 7.0)
 	fx.add_child(light)
 
-## Cemitério na Área Contaminada: cripta, portal, cercas, lápides, caixões, ossos e lanternas.
+## Cemitério na Área Contaminada (modelos do Blender, tools/blender_blight.py): mausoléu em ruínas com luz
+## verde vazando, portal de ferro torto, cercas de ferro, lápides partidas, covas abertas, cadáveres e lampiões.
 func _build_cemetery() -> void:
 	var c := Vector2(88, -88)
 	var yard := Vector3(c.x - 6, 0, c.y + 4)
-	_place_solid(ThirdParty.HALLOWEEN, "crypt", yard + Vector3(0, 0, -7), 4.8, 0.0, 4.0)
-	_place_solid(ThirdParty.HALLOWEEN, "arch_gate", yard + Vector3(0, 0, 8.5), 3.6, 0.0, 2.0)
-	# Cerca ao redor do pátio (com a entrada pelo portal).
-	for i in 12:
-		var ang := i * TAU / 12.0
+	_place_blight("crypt_ruin", yard + Vector3(0, 0, -7), 0.0, 4.0)  # porta virada para o pátio
+	_place_blight("cemetery_gate", yard + Vector3(0, 0, 8.5), 0.0, 2.0)
+	# Cerca de ferro ao redor do pátio (com a entrada pelo portal).
+	for i in 18:
+		var ang := i * TAU / 18.0
 		var fp := yard + Vector3(sin(ang) * 9.5, 0, cos(ang) * 9.5)
-		if absf(fp.x - yard.x) < 2.5 and fp.z > yard.z:
+		if absf(fp.x - yard.x) < 2.6 and fp.z > yard.z:
 			continue
-		_place_solid(ThirdParty.HALLOWEEN, "fence_broken" if _srng.randf() < 0.3 else "fence", fp, 1.4, ang + PI * 0.5, 1.2)
-	# Fileiras de túmulos.
-	var graves := ["grave_A", "grave_B", "gravestone", "gravemarker_A", "gravemarker_B"]
+		_place_blight("iron_fence_broken" if _srng.randf() < 0.35 else "iron_fence", fp, ang + PI * 0.5, 1.2)
+	# Fileiras de túmulos (lápides partidas, cruzes caídas e covas abertas).
+	var graves := ["gravestone_a", "gravestone_b", "gravestone_a", "gravestone_b", "grave_open"]
 	for row in 3:
 		for col in 5:
 			var gp := yard + Vector3(-6 + col * 3.0 + _srng.randf_range(-0.4, 0.4), 0, -2 + row * 3.2 + _srng.randf_range(-0.3, 0.3))
 			if _free_at(gp, 0.5):
-				var g: String = graves[_srng.randi() % graves.size()]
-				_place_solid(ThirdParty.HALLOWEEN, g, gp, _srng.randf_range(0.9, 1.3), _srng.randf_range(-0.2, 0.2), 0.7)
+				_place_blight(graves[_srng.randi() % graves.size()], gp, _srng.randf_range(-0.2, 0.2), 0.7)
 	for i in 3:
 		var cp: Variant = _try_place_s(c, Vector2(24, 24), 1.2)
 		if cp != null:
-			_place_solid(ThirdParty.HALLOWEEN, "coffin", cp, 0.7, _srng.randf() * TAU, 1.2)
+			_place_blight("body_remains", cp, _srng.randf() * TAU, 1.2, false)
+	# Lampiões de cemitério com luz esverdeada (acendem ao anoitecer e revelam Espreitadores).
 	for i in 4:
 		var lp: Variant = _try_place_s(c, Vector2(22, 22), 0.6)
 		if lp != null:
-			_place_solid(ThirdParty.HALLOWEEN, "lantern_standing" if i % 2 == 0 else "post_skull", lp, 1.8, _srng.randf() * TAU, 0.6)
-	for i in 2:
-		var sp: Variant = _try_place_s(c, Vector2(22, 22), 1.0)
-		if sp != null:
-			_place_solid(ThirdParty.HALLOWEEN, "shrine_candles", sp, 1.6, _srng.randf() * TAU, 1.0)
+			_place_blight("grave_lantern", lp, _srng.randf() * TAU, 0.6)
+			var holder := Node3D.new()
+			holder.position = (lp as Vector3) + Vector3(0, 2.1, 0)
+			holder.add_to_group("night_lights")
+			holder.add_to_group("reveal_lights")
+			holder.set_meta(&"reveal_radius", 6.0)
+			var l := OmniLight3D.new()
+			l.light_color = Color(0.6, 1.0, 0.45)
+			l.light_energy = 1.3
+			l.omni_range = 6.5
+			l.visible = false
+			holder.add_child(l)
+			nav_region.add_child(holder)
+	# Contaminação espalhada: casulos de carne, poças tóxicas e árvores doentes.
+	for i in 6:
+		var pp: Variant = _try_place_s(c, Vector2(24, 24), 1.6)
+		if pp != null:
+			_place_blight("blight_pod", pp, _srng.randf() * TAU, 1.6)
+	for i in 5:
+		var wp: Variant = _try_place_s(c, Vector2(25, 25), 2.0)
+		if wp != null:
+			_place_blight("blight_pool", wp, _srng.randf() * TAU, 0.0, false)
+	for i in 8:
+		var tp: Variant = _try_place_s(c, Vector2(26, 26), 1.4)
+		if tp != null:
+			_place_blight("blight_tree", tp, _srng.randf() * TAU, 1.4, true, _srng.randf_range(0.85, 1.25))
+
+## Modelo do Blender da Área Contaminada no tamanho natural (vezes k). solid=false: sem colisão (poças, restos).
+func _place_blight(model: String, p: Vector3, rot_y: float, radius: float, solid := true, k := 1.0) -> void:
+	var B := ThirdParty.BLENDER
+	if not ThirdParty.has(B, model):
+		return
+	if solid:
+		_place_solid(B, model, p, ThirdParty.aabb(B, model).size.y * k, rot_y, radius)
+	else:
+		var n := ThirdParty.instance(B, model)
+		n.position = p
+		n.rotation.y = rot_y
+		n.scale = Vector3.ONE * k
+		nav_region.add_child(n)
+		if radius > 0.0:
+			_reserve(p, radius)
 
 ## Oficina e estandartes dentro da base (perto da paliçada, longe dos portões).
 func _build_base_props() -> void:
@@ -878,7 +916,6 @@ func _build_decor(world: Node3D) -> void:
 	drng.seed = rng.seed + 911
 	var k := Settings.decor_density()
 	var N := ThirdParty.NATURE
-	var H := ThirdParty.HALLOWEEN
 	# Seixos e pedras lascadas do Blender (tools/blender_rocks.py).
 	var pebbles := [[ThirdParty.BLENDER, "rock_pebbles", 0.12, 0.2]]
 	# Arbustos secos feitos no Blender (tools/blender_ground.py); o resto da vegetação rasteira (folhas caídas,
@@ -893,8 +930,8 @@ func _build_decor(world: Node3D) -> void:
 		"Fazenda": [Vector2(-35, 78), Vector2(40, 34), [[B, "gc_dry_bush", 16, 0.8, 1.2]]],
 		"Cidade": [Vector2(80, 12), Vector2(30, 42), [[B, "gc_dry_bush", 10, 0.7, 1.1]]],
 		"Contaminada": [Vector2(88, -88), Vector2(26, 26), [
-			[H, "ribcage", 10, 0.5, 0.7], [H, "skull", 18, 0.25, 0.32], [H, "bone_A", 25, 0.1, 0.16],
-			[N, "Mushroom_Laetiporus", 15, 0.3, 0.5], [H, "tree_dead_medium", 6, 3.0, 4.0], [H, "tree_dead_large", 4, 4.0, 5.5]]],
+			[B, "bones_scatter", 16, 0.18, 0.26], [B, "body_remains", 4, 0.3, 0.4],
+			[N, "Mushroom_Laetiporus", 15, 0.3, 0.5]]],
 		"Pedreira": [Vector2(-85, 15), Vector2(28, 32), [[B, "rock_shards", 14, 0.9, 1.6], [B, "rock_slab", 10, 0.6, 1.1],
 			[B, "rock_boulder_a", 8, 0.7, 1.3]]],
 	}

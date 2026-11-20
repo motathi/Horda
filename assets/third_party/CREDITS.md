@@ -4,7 +4,7 @@ Modelos baixados do itch.io, todos sob **CC0 1.0** (domínio público; crédito 
 Baixados com `tools/itch_fetch.py` e copiados com `tools/import_third_party.py`.
 
 - **quaternius_nature** — Quaternius, https://quaternius.itch.io/stylized-nature-megakit — 31 modelos (31 arquivos), CC0 1.0
-- **kaykit_halloween** — Kay Lousberg, https://kaylousberg.itch.io/halloween-bits — 19 modelos (19 arquivos), CC0 1.0
+- **kaykit_halloween** — Kay Lousberg, https://kaylousberg.itch.io/halloween-bits — 19 modelos (19 arquivos), CC0 1.0 (não usado desde que a Área Contaminada foi refeita no Blender; fora do export)
 - **quaternius_props** — Quaternius, https://quaternius.itch.io/fantasy-props-megakit — 18 modelos (18 arquivos), CC0 1.0
 - **quaternius_village** — Quaternius, https://quaternius.itch.io/medieval-village-megakit — 5 modelos (5 arquivos), CC0 1.0
 - **kaykit_skeletons** — Kay Lousberg, https://kaylousberg.itch.io/kaykit-skeletons — 11 modelos (11 arquivos), CC0 1.0

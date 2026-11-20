@@ -71,16 +71,24 @@ func _test_world() -> void:
 	var nm := b.nav_region.navigation_mesh
 	check(nm.get_polygon_count() > 100, "malha de navegação assada (%d polígonos)" % nm.get_polygon_count())
 	check(BaseZone.hero_inside, "herói começa dentro da base")
-	# Cenário: vegetação em MultiMesh, cemitério (CC0) e árvores do Blender.
+	# Cenário: vegetação em MultiMesh, cemitério e árvores do Blender (casulos, poças e árvores doentes da
+	# Área Contaminada são colocados um a um, fora do DecorScatter).
 	var decor := 0
 	for n in world.get_children():
 		if n is DecorScatter:
 			decor += (n as DecorScatter).count()
-	check(decor > 600, "vegetação decorativa espalhada (%d peças)" % decor)
+	check(decor > 500, "vegetação decorativa espalhada (%d peças)" % decor)
+	var blight := 0
+	for n in world.builder.nav_region.get_children():
+		if n.get_child_count() > 0 and String(n.get_child(0).scene_file_path).contains("models/blender/blight_"):
+			blight += 1
+		elif String(n.scene_file_path).contains("models/blender/blight_"):
+			blight += 1
+	check(blight >= 10, "contaminação na Área Contaminada: casulos, poças e árvores doentes (%d)" % blight)
 	var crypt := false
 	var tp_trees := 0
 	for n in b.nav_region.get_children():
-		if n is StaticBody3D and n.get_child_count() > 0 and String(n.get_child(0).scene_file_path).ends_with("crypt.gltf"):
+		if n is StaticBody3D and n.get_child_count() > 0 and String(n.get_child(0).scene_file_path).ends_with("crypt_ruin.glb"):
 			crypt = true
 		if n is Harvestable:
 			for x: Node in n.find_children("*", "Node3D", true, false):
@@ -944,7 +952,7 @@ func _test_fixes() -> void:
 	# Surgimento sempre na malha de navegação.
 	var crypt_pos := Vector3.ZERO
 	for n in world.builder.nav_region.get_children():
-		if n is StaticBody3D and n.get_child_count() > 0 and String(n.get_child(0).scene_file_path).ends_with("crypt.gltf"):
+		if n is StaticBody3D and n.get_child_count() > 0 and String(n.get_child(0).scene_file_path).ends_with("crypt_ruin.glb"):
 			crypt_pos = (n as Node3D).global_position
 	var np := hd._nav_point(crypt_pos)
 	check(crypt_pos != Vector3.ZERO and np.distance_to(crypt_pos) > 1.0, "ponto de surgimento dentro de obstáculo (cripta) é movido para a malha de navegação (%.1f m)" % np.distance_to(crypt_pos))

@@ -218,6 +218,17 @@ poeira e fuligem. Substitui o calçamento claro e azulado que destoava das const
 
 ![Chão de pedra antes e depois](docs/screenshots/chao_pedra_antes_depois.jpg)
 
+**Área Contaminada feita no Blender** (`tools/blender_blight.py`, atlas por modelo; as partes que brilham
+ficam numa malha "_glow" com emissão): mausoléu de pedra em ruínas com colunas partidas, frontão rachado,
+porta de ferro caída e luz verde vazando de dentro; portal de ferro torto com a folha arrombada; cercas de
+ferro enferrujadas (inteira e quebrada); lápide partida, cruz caída e covas abertas com tampa de caixão e pá;
+cadáveres na mortalha rasgada e ossadas; casulos de carne doente com tentáculos e pústulas verdes brilhando;
+poças tóxicas com brilho e bolhas; árvores doentes retorcidas com tumores; lampiões de cemitério com luz
+esverdeada (acendem ao anoitecer e revelam Espreitadores). Substituem o cemitério cartunesco do *Halloween
+Bits* (fora do export).
+
+![Área Contaminada antes e depois](docs/screenshots/area_contaminada_antes_depois.jpg)
+
 **Mapa** (minimapa e mapa grande, `scripts/ui/minimap.gd`): o terreno de verdade pintado por shader a partir
 das camadas que o `WorldBuilder` gera ao montar o mundo — o mesmo splat do terreno (capim seco, terra e
 estradas, calçamento, área contaminada com rachaduras verdes) e uma imagem com as copas das árvores, as pedras
@@ -310,7 +321,7 @@ no herói (não na câmera alta), com limitador no canal principal. Para medir o
 
 Além da arte gerada por IA, o mapa usa pacotes **CC0** baixados do itch.io (créditos em
 [assets/third_party/CREDITS.md](assets/third_party/CREDITS.md)): vegetação, pedras e árvores do
-*Stylized Nature MegaKit* (Quaternius), cemitério do *Halloween Bits* (Kay Lousberg), objetos de cenário
+*Stylized Nature MegaKit* (Quaternius), objetos de cenário
 do *Fantasy Props* e *Medieval Village MegaKit* (Quaternius) e os **esqueletos** animados do *KayKit
 Skeletons* + *Character Animations* (Kay Lousberg), que entram na horda: *Esqueleto* (horda 2),
 *Ladino* (5), *Guerreiro* (8) e *Mago* (12, ataca de longe). Também: **escolha de herói** no "Novo jogo"

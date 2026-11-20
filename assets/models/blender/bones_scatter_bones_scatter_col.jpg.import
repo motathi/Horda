@@ -1,0 +1,37 @@
+[remap]
+
+importer="texture"
+type="CompressedTexture2D"
+uid="uid://go2pc2bh6hl7"
+path="res://.godot/imported/bones_scatter_bones_scatter_col.jpg-0594c623745c845393daeb9c57d0a6c6.ctex"
+metadata={
+"vram_texture": false
+}
+generator_parameters={
+"md5": "f5fd5ba39d14150c3b49f3f58ec82132"
+}
+
+[deps]
+
+source_file="res://assets/models/blender/bones_scatter_bones_scatter_col.jpg"
+dest_files=["res://.godot/imported/bones_scatter_bones_scatter_col.jpg-0594c623745c845393daeb9c57d0a6c6.ctex"]
+
+[params]
+
+compress/mode=1
+compress/high_quality=false
+compress/lossy_quality=0.8
+compress/hdr_compression=1
+compress/normal_map=0
+compress/channel_pack=0
+mipmaps/generate=true
+mipmaps/limit=-1
+roughness/mode=0
+roughness/src_normal=""
+process/fix_alpha_border=true
+process/premult_alpha=false
+process/normal_map_invert_y=false
+process/hdr_as_srgb=false
+process/hdr_clamp_exposure=false
+process/size_limit=0
+detect_3d/compress_to=1
