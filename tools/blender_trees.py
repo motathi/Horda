@@ -2,8 +2,9 @@
 
 Cada árvore é um GLB em assets/models/blender/ com cor por vértice (sem textura), lido por
 PropFactory.make_tree (scripts/world/prop_factory.gd):
-  tree_dry_a / tree_dry_b    folhosas secas: tronco torto, galhos à mostra, copa rala em tufos amarelados,
-                             oliva e ferrugem, com folhas soltas nas bordas para quebrar a silhueta
+  tree_dry_a / tree_dry_b    folhosas secas: tronco torto, galhos à mostra, copa rala feita de cachos de folhas
+                             (cartões com a textura de um raminho de folhas, gerada aqui mesmo e recortada
+                             pelo alfa) tingidos por vértice de oliva, amarelo e ferrugem
   pine_dry_a / pine_dry_b    pinheiros meio secos: andares de galhos caídos com agulhas escuras, alguns
                              galhos mortos cor de ferrugem e tocos quebrados no tronco pelado de baixo
   tree_dead_a / tree_dead_b  mortas: galhos retorcidos e pelados; a "b" queimada (carvão com pontas de cinza)
@@ -15,6 +16,7 @@ import math
 import os
 import random
 import sys
+import tempfile
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import bpy  # noqa: E402,I001
@@ -32,6 +34,138 @@ NEEDLES = [(0.15, 0.19, 0.1), (0.22, 0.24, 0.12), (0.27, 0.27, 0.14)]
 NEEDLES_DEAD = (0.4, 0.24, 0.1)
 CHAR = (0.06, 0.055, 0.05)
 ASH = (0.35, 0.33, 0.3)
+
+
+# ------------------------------------------------------------------ textura dos cachos de folhas
+
+LEAF_TEX = os.path.join(tempfile.gettempdir(), "horda_tree_leaves.png")
+
+
+def make_leaf_texture(path=LEAF_TEX, size=512):
+    """Raminho com ~90 folhas visto de cima, em tons neutros (a cor vem do vértice no jogo), fundo
+    transparente: vira a textura dos cartões da copa."""
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+    rng = random.Random(77)
+    bm, cl = new_bm()
+    lin = bg.srgb
+
+    def leaf_col():
+        v = rng.uniform(0.6, 1.0)
+        return lin((v, v * rng.uniform(0.95, 1.02), v * rng.uniform(0.82, 0.97)))
+
+    for i in range(7):
+        ang = i * math.tau / 7 + rng.uniform(-0.3, 0.3)
+        ln = rng.uniform(0.6, 0.85)
+        d = Vector((math.cos(ang), math.sin(ang), 0))
+        side = Vector((-d.y, d.x, 0))
+        tw = lin((0.32, 0.27, 0.22))
+        face(bm, cl, [V(bm, -side * 0.012), V(bm, side * 0.012), V(bm, d * ln + side * 0.005), V(bm, d * ln - side * 0.005)],
+             [tw] * 4)
+        for k in range(6):
+            p = d * ln * (k + 1) / 6.5
+            for sgn in (1, -1):
+                c = leaf_col()
+                leaf(bm, cl, p + Vector((0, 0, rng.uniform(0.0, 0.05))), ang + sgn * rng.uniform(0.5, 1.1),
+                     rng.uniform(0.21, 0.32) * (1.1 - k * 0.06), rng.uniform(0.11, 0.16), 0.0, c, c, fold=0.0)
+        c = leaf_col()
+        leaf(bm, cl, d * ln * 0.97, ang, 0.25, 0.12, 0.0, c, c, fold=0.0)
+    for _ in range(30):
+        a, r = rng.uniform(0, math.tau), 0.55 * math.sqrt(rng.random())
+        c = leaf_col()
+        leaf(bm, cl, Vector((math.cos(a) * r, math.sin(a) * r, 0.06)), rng.uniform(0, math.tau), 0.26, 0.14, 0.0, c, c,
+             fold=0.0)
+    me = bpy.data.meshes.new("spray")
+    bm.to_mesh(me)
+    bm.free()
+    m = bpy.data.materials.new("emit")
+    m.use_nodes = True
+    nt = m.node_tree
+    nt.nodes.clear()
+    attr = nt.nodes.new("ShaderNodeVertexColor")
+    attr.layer_name = "Col"
+    em = nt.nodes.new("ShaderNodeEmission")
+    out = nt.nodes.new("ShaderNodeOutputMaterial")
+    nt.links.new(attr.outputs["Color"], em.inputs["Color"])
+    nt.links.new(em.outputs[0], out.inputs["Surface"])
+    me.materials.append(m)
+    sc = bpy.context.scene
+    sc.collection.objects.link(bpy.data.objects.new("spray", me))
+    cam = bpy.data.objects.new("cam", bpy.data.cameras.new("cam"))
+    cam.data.type = "ORTHO"
+    cam.data.ortho_scale = 2.0
+    cam.location = (0, 0, 5)
+    sc.collection.objects.link(cam)
+    sc.camera = cam
+    sc.render.engine = "CYCLES"
+    sc.cycles.device = "CPU"
+    sc.cycles.samples = 8
+    sc.render.film_transparent = True
+    sc.view_settings.view_transform = "Standard"
+    sc.render.image_settings.file_format = "PNG"
+    sc.render.image_settings.color_mode = "RGBA"
+    sc.render.resolution_x = sc.render.resolution_y = size
+    sc.render.filepath = path
+    bpy.ops.render.render(write_still=True)
+    print("textura das folhas:", path)
+    return path
+
+
+def leaf_material():
+    """Material dos cartões: textura do raminho (cor) com recorte pelo alfa (glTF alphaMode MASK);
+    a cor de vértice tinge no jogo."""
+    m = bpy.data.materials.get("leaves")
+    if m:
+        return m
+    m = bpy.data.materials.new("leaves")
+    m.use_nodes = True
+    m.use_backface_culling = False
+    nt = m.node_tree
+    bsdf = nt.nodes["Principled BSDF"]
+    img = bpy.data.images.load(LEAF_TEX)
+    img.pack()
+    tex = nt.nodes.new("ShaderNodeTexImage")
+    tex.image = img
+    rnd = nt.nodes.new("ShaderNodeMath")
+    rnd.operation = "ROUND"
+    nt.links.new(tex.outputs["Color"], bsdf.inputs["Base Color"])
+    nt.links.new(tex.outputs["Alpha"], rnd.inputs[0])
+    nt.links.new(rnd.outputs[0], bsdf.inputs["Alpha"])
+    bsdf.inputs["Roughness"].default_value = 0.9
+    return m
+
+
+def leaf_cards(bm, cl, uvl, rng, center, radius, col, n=9, squash=0.65):
+    """Cacho de folhas: cartões com a textura do raminho espalhados num elipsoide achatado, virados
+    mais para cima (é como a câmera do jogo vê). Escuros por baixo e claros em cima."""
+    top = lerp3(col, (0.62, 0.55, 0.3), 0.25)
+    bot = lerp3(col, (0.04, 0.04, 0.02), 0.4)
+    for _ in range(n):
+        nz = rng.uniform(0.45, 1.0)
+        a = rng.uniform(0, math.tau)
+        rxy = math.sqrt(max(0.0, 1 - nz * nz))
+        nrm = Vector((math.cos(a) * rxy, math.sin(a) * rxy, nz))
+        off = Vector((rng.uniform(-1, 1), rng.uniform(-1, 1), rng.uniform(-1, 1) * squash)) * radius * 0.6
+        c = center + off
+        ref = Vector((1, 0, 0)) if abs(nrm.x) < 0.9 else Vector((0, 1, 0))
+        u = rot(nrm.cross(ref).normalized(), nrm, rng.uniform(0, math.tau))
+        v = nrm.cross(u)
+        sz = radius * rng.uniform(0.95, 1.35)
+        pts = [c + (-u - v) * sz * 0.5, c + (u - v) * sz * 0.5, c + (u + v) * sz * 0.5, c + (-u + v) * sz * 0.5]
+        tint = rng.uniform(0.88, 1.1)
+        cols = []
+        for p in pts:
+            t = max(0.0, min(1.0, (p.z - center.z) / (radius * squash) * 0.5 + 0.55))
+            cols.append(tuple(min(1.0, x * tint) for x in lerp3(bot, top, t)))
+        f = face(bm, cl, [V(bm, p) for p in pts], cols)
+        f.material_index = 1
+        for loop, uv in zip(f.loops, ((0, 0), (1, 0), (1, 1), (0, 1))):
+            loop[uvl].uv = uv
+
+
+def finish_tree(name, bm):
+    o = finish(name, bm)
+    o.data.materials.append(leaf_material())
+    return o
 
 
 def tube(bm, cl, pts, radii, cols, sides=6, rng=None):
@@ -140,6 +274,7 @@ def needle_fan(bm, cl, rng, pts, width, col, dead=False):
 def build_broadleaf(name, seed, height, n_main, crown_cols, sparse):
     rng = random.Random(seed)
     bm, cl = new_bm()
+    uvl = bm.loops.layers.uv.new("UVMap")
     trunk_h = height * rng.uniform(0.42, 0.5)
     lean = Vector((rng.uniform(-0.15, 0.15), rng.uniform(-0.15, 0.15), 1))
     tpts = curve(rng, Vector((0, 0, -0.15)), lean, trunk_h, 5, 0.08, up_bias=0.15)
@@ -174,33 +309,35 @@ def build_broadleaf(name, seed, height, n_main, crown_cols, sparse):
         el = math.radians(rng.uniform(30, 60))
         d = Vector((math.cos(a) * math.cos(el), math.sin(a) * math.cos(el), math.sin(el)))
         start = tpts[-2 - (i % 2)] if i % 3 else top
-        branch(start, d, height * rng.uniform(0.3, 0.4), tr[-1] * 0.75, 1)
+        branch(start, d, height * rng.uniform(0.3, 0.38), tr[-1] * 0.75, 2)
     # Galho seco quebrado no meio do tronco (pelado).
     q = tpts[2]
     a = rng.uniform(0, math.tau)
     tube(bm, cl, [q, q + Vector((math.cos(a) * 0.7, math.sin(a) * 0.7, 0.3))], [tr[2] * 0.4, 0.04],
          bark_cols(2, rng=rng), sides=4)
-    # Copa: tufos nas pontas; os mais altos e de fora maiores. Alguns galhos ficam pelados (copa rala).
+    # Copa: um cacho de folhas em cada ponta de galho (alguns galhos ficam pelados: copa rala), com
+    # cartões também no meio do galho para a copa não virar bolas separadas.
     for p, ln in tips:
         if rng.random() < sparse:
             continue
         col = rng.choice(crown_cols)
-        clump(bm, cl, rng, p + Vector((0, 0, 0.15)), rng.uniform(0.8, 1.15) * height / 7, col, leaves=9)
+        r = rng.uniform(0.85, 1.1) * height / 7
+        leaf_cards(bm, cl, uvl, rng, p + Vector((0, 0, 0.1)), r, col, n=rng.randint(11, 14))
     # Pontas de galhos secos furando a copa (a árvore está morrendo).
     for p, ln in tips[::3]:
         a = rng.uniform(0, math.tau)
         tube(bm, cl, [p, p + Vector((math.cos(a) * 0.5, math.sin(a) * 0.5, 0.9))], [0.05, 0.015],
              bark_cols(2, lerp3(BARK_D, BARK_L, 0.4), (0.45, 0.42, 0.37), rng), sides=4)
-    return finish(name, bm)
+    return finish_tree(name, bm)
 
 
 def build_tree_dry_a():
-    return build_broadleaf("tree_dry_a", 3, 7.0, 5, CROWN[:4], 0.18)
+    return build_broadleaf("tree_dry_a", 3, 7.0, 5, CROWN[:4], 0.1)
 
 
 def build_tree_dry_b():
     # Mais alta, mais rala e mais "morrendo": mais ferrugem e amarelo.
-    return build_broadleaf("tree_dry_b", 11, 7.5, 4, [CROWN[1], CROWN[2], CROWN[4], CROWN[2]], 0.32)
+    return build_broadleaf("tree_dry_b", 11, 7.5, 4, [CROWN[1], CROWN[2], CROWN[4], CROWN[2]], 0.22)
 
 
 # ------------------------------------------------------------------ pinheiros meio secos
@@ -330,6 +467,19 @@ def render_lineup(out_png):
         o = BUILDERS[n]()
         o.location = (i * 4.6 - 2.5 * 4.6, 3, 0)
     to_linear_for_preview()
+    lm = bpy.data.materials.get("leaves")
+    if lm:  # na prévia, multiplica a cor de vértice (no jogo o Godot já faz isso)
+        nt = lm.node_tree
+        tex = next(n for n in nt.nodes if n.type == "TEX_IMAGE")
+        ca = nt.nodes.new("ShaderNodeVertexColor")
+        ca.layer_name = "Col"
+        mul = nt.nodes.new("ShaderNodeMix")
+        mul.data_type = "RGBA"
+        mul.blend_type = "MULTIPLY"
+        mul.inputs[0].default_value = 1.0
+        nt.links.new(tex.outputs["Color"], mul.inputs[6])
+        nt.links.new(ca.outputs["Color"], mul.inputs[7])
+        nt.links.new(mul.outputs[2], nt.nodes["Principled BSDF"].inputs["Base Color"])
     sc = bpy.context.scene
     g = bpy.data.meshes.new("ground")
     bm = bmesh.new()
@@ -373,12 +523,15 @@ def main():
     out = a[0] if a else "assets/models/blender"
     names = a[1:] or list(BUILDERS)
     os.makedirs(out, exist_ok=True)
+    make_leaf_texture()
     for n in names:
         bpy.ops.wm.read_factory_settings(use_empty=True)
         BUILDERS[n]()
         bg.export(os.path.join(out, n + ".glb"))
     if render_dir:
         os.makedirs(render_dir, exist_ok=True)
+        import shutil
+        shutil.copy(LEAF_TEX, os.path.join(render_dir, "tree_leaves.png"))
         render_lineup(os.path.join(render_dir, "trees.png"))
 
 

@@ -180,7 +180,10 @@ Modelos riggados gerados pelo `tools/tripo_pipeline.py`.
   devolve os centros para o capim rarear em volta. Os MultiMesh levam o meta `kind` (o nome do modelo), que o
   `tests/atmo_probe.gd` usa no modo `ATMO_DECOR=<modelo>` para enquadrar a moita mais cheia.
 - Árvores: `tools/blender_trees.py` reaproveita as funções de `blender_ground.py` (folha, galho, cor por
-  vértice) e acrescenta tubos de casca, tufos de copa (icosfera irregular) e leques de agulhas. O modelo de
+  vértice) e acrescenta tubos de casca, cachos de folhas e leques de agulhas. A copa das folhosas é um
+  segundo material: cartões com a textura de raminho (renderizada no início do script, alphaMode MASK →
+  alpha scissor no Godot) multiplicada pela cor de vértice; o Godot extrai a textura para
+  `<árvore>_horda_tree_leaves.png` (importada com compressão com perdas). O modelo de
   cada árvore vem do `PropFactory.style_rng` (não do gerador do mapa) e o das bordas vem da posição, para a
   geração e os saves seguirem iguais.
 

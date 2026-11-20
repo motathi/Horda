@@ -144,7 +144,9 @@ cardos e capim alto no campo), e o capim rareia em volta de cada moita para ela 
 ![Vegetação rasteira antes e depois](docs/screenshots/vegetacao_rasteira_antes_depois.jpg)
 
 **Árvores feitas no Blender** (`tools/blender_trees.py`, cor por vértice): duas folhosas secas (tronco torto
-com raízes, galhos à mostra, copa rala em tufos oliva, amarelos e ferrugem e pontas secas furando a copa), dois
+com raízes, galhos à mostra, copa rala feita de cachos de folhas — cartões com a textura de um raminho de folhas
+gerada no próprio Blender, recortada pelo alfa e tingida por vértice de oliva, amarelo e ferrugem — e pontas
+secas furando a copa), dois
 pinheiros meio secos (andares de galhos caídos com agulhas escuras, alguns galhos mortos cor de ferrugem, tronco
 pelado embaixo com tocos quebrados) e duas mortas (retorcida e queimada). Substituem as árvores verdes do
 pacote antigo em todo o mapa (`PropFactory.make_tree`), e a fileira de árvores das bordas, que eram esferas
