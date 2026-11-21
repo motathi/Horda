@@ -401,6 +401,21 @@ func _test_map_threats() -> void:
 		m.animate(0.016, 1.0)
 		var expect: float = hero.current_move_speed() / float(m._stride["run"])
 		check(m._current == "run" and absf(m._anim.speed_scale - clampf(expect, 0.6, CharacterModel.RUN_MAX_SCALE)) < 0.05, "corrida no ritmo do passo (x%.2f)" % m._anim.speed_scale)
+		# Ciclos fechados: a última pose de andar/correr bate com a primeira (sem "pulo" a cada volta).
+		var sk := m.find_children("*", "Skeleton3D", true, false)[0] as Skeleton3D
+		var worst := 0.0
+		for key: String in ["walk", "run"]:
+			var an: StringName = m._anim_names[key]
+			var a := m._anim.get_animation(an)
+			m._anim.play(an)
+			var hand := sk.find_bone("L_Hand")
+			m._anim.seek(0.0, true)
+			var p0 := sk.get_bone_global_pose(hand).origin
+			m._anim.seek(a.length - 0.001, true)
+			var p1 := sk.get_bone_global_pose(hand).origin
+			worst = maxf(worst, (p0 - p1).length() * sk.global_transform.basis.get_scale().x)
+		check(worst < 0.03, "andar e correr fecham o ciclo sem salto (%.1f cm)" % (worst * 100.0))
+		m._current = ""
 	else:
 		check(false, "passo medido nas animações do herói")
 

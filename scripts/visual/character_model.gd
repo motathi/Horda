@@ -45,6 +45,8 @@ var _run_threshold: float = 0.7
 ## Velocidade real no chão (m/s). Quando >= 0 (herói), a cadência das animações de andar/correr é ajustada
 ## ao passo medido do esqueleto, sem "patinar"; -1 usa a razão de velocidade antiga (inimigos).
 var ground_speed: float = -1.0
+## Velocidade que o jogador está pedindo (direcional). -1 = desconhecida.
+var target_speed: float = -1.0
 ## Andando de costas (o arqueiro recua mirando): toca o passo ao contrário.
 var backpedal: bool = false
 const RUN_MAX_SCALE := 1.5
@@ -174,6 +176,9 @@ func _build_rigged(model_name: String, height: float) -> void:
 	_anim = players[0] as AnimationPlayer
 	for n in _anim.get_animation_list():
 		_strip_root_motion(_anim.get_animation(n))
+		var low := String(n).to_lower()
+		if low.ends_with("walk") or low.ends_with("run") or low.ends_with("idle"):
+			_make_seamless(_anim.get_animation(n))
 	for n in _anim.get_animation_list():
 		var key := String(n).to_lower().get_slice("|", String(n).get_slice_count("|") - 1)
 		for k: String in ["idle", "walk", "run", "slash", "hurt"]:
@@ -237,6 +242,35 @@ func _measure_stride(inst: Node3D, height: float) -> Dictionary:
 	_current = ""
 	return out
 
+## As animações da Tripo não fecham o ciclo (a corrida do Cavaleiro "pulava" 56 cm na mão a cada volta): no
+## último quarto, cada osso é desviado aos poucos até a pose final bater com a inicial.
+static func _make_seamless(a: Animation, window: float = 0.25) -> void:
+	if a == null or a.has_meta("seamless"):
+		return
+	a.set_meta("seamless", true)
+	var L := a.length
+	var start := L * (1.0 - window)
+	for t in a.get_track_count():
+		var kind := a.track_get_type(t)
+		if kind != Animation.TYPE_ROTATION_3D and kind != Animation.TYPE_POSITION_3D:
+			continue
+		var n := a.track_get_key_count(t)
+		if n < 3:
+			continue
+		var v0: Variant = a.track_get_key_value(t, 0)
+		var vl: Variant = a.track_get_key_value(t, n - 1)
+		for k in n:
+			var kt := a.track_get_key_time(t, k)
+			if kt < start:
+				continue
+			var w := smoothstep(0.0, 1.0, (kt - start) / maxf(0.0001, L - start))
+			var v: Variant = a.track_get_key_value(t, k)
+			if kind == Animation.TYPE_ROTATION_3D:
+				var fix := (v0 as Quaternion) * (vl as Quaternion).inverse()
+				a.track_set_key_value(t, k, (Quaternion.IDENTITY.slerp(fix, w) * (v as Quaternion)).normalized())
+			else:
+				a.track_set_key_value(t, k, (v as Vector3) + ((v0 as Vector3) - (vl as Vector3)) * w)
+
 ## As animações da Tripo deslocam o quadril para frente (root motion): o modelo
 ## "andava" para longe do personagem e voltava de repente a cada ciclo. Aqui a
 ## deriva linear do quadril é removida, mantendo o balanço natural do passo.
@@ -281,6 +315,7 @@ func _animate_rigged(delta: float, speed_ratio: float) -> void:
 		else:
 			return
 	if ground_speed >= 0.0 and _stride.has("walk"):
+		_stride_dt = delta
 		_animate_stride()
 	elif speed_ratio > _run_threshold and _anim_names.has("run"):
 		_play("run", 0.15, clampf(speed_ratio, 0.8, 1.4))
@@ -294,20 +329,36 @@ func _animate_rigged(delta: float, speed_ratio: float) -> void:
 			_set_overlay(null)
 
 ## Escolhe andar/correr pela velocidade real e toca a animação no ritmo do passo medido.
+var _idle_ease: float = -1.0
+var _stride_dt: float = 0.016
+
 func _animate_stride() -> void:
 	var walk_nat: float = _stride["walk"]
 	var run_nat: float = _stride.get("run", walk_nat * 2.6)
 	var gs := ground_speed
-	if gs < 0.2:
-		_play("idle", 0.25)
+	# Intenção do jogador (direcional) decide a animação: arrancar já cruza para a corrida (sem passar pelo
+	# andar) e soltar já cruza para o parado; com folga para não ficar trocando perto do limite.
+	var intent := target_speed if target_speed >= 0.0 else gs
+	var moving := intent > 0.15 or gs > (0.9 if _current == "idle" else 0.5)
+	if not moving:
+		_play("idle", 0.45)
+		# Ao parar, o passo em andamento desacelera durante a mistura (os braços não "chicoteiam").
+		if _anim.speed_scale > 1.0 or _idle_ease < 0.0:
+			_anim.speed_scale = 0.5
+			_idle_ease = 0.0
+		_idle_ease = minf(1.0, _idle_ease + _stride_dt * 2.2)
+		_anim.speed_scale = lerpf(0.5, 1.0, _idle_ease)
 		return
+	_idle_ease = -1.0
+	gs = maxf(gs, minf(intent, walk_nat) * 0.6)  # no arranque a passada já começa num ritmo natural
 	# Histerese: perto do limite não fica trocando andar/correr a cada quadro. Corrida até 1,5x (acima disso
 	# a cadência fica frenética; o pé desliza um pouco só na velocidade máxima).
 	var run_from := walk_nat * (1.45 if _current == "run" else 1.7)
-	if gs > run_from and _anim_names.has("run"):
-		_play("run", 0.25, clampf(gs / run_nat, 0.6, RUN_MAX_SCALE))
+	var pick := maxf(gs, intent * 0.85)
+	if pick > run_from and _anim_names.has("run"):
+		_play("run", 0.3 if _current == "idle" else 0.25, clampf(gs / run_nat, 0.6, RUN_MAX_SCALE))
 	else:
-		_play("walk", 0.25, clampf(gs / walk_nat, 0.5, 1.9))
+		_play("walk", 0.3 if _current == "idle" else 0.25, clampf(gs / walk_nat, 0.5, 1.9))
 	if backpedal:
 		_anim.speed_scale = -absf(_anim.speed_scale)
 

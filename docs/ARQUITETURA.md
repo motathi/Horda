@@ -240,6 +240,11 @@ Modelos riggados gerados pelo `tools/tripo_pipeline.py`.
   `ground_speed >= 0` (o herói preenche a velocidade real do quadro), `_animate_stride()` escolhe
   andar/correr e toca no ritmo exato do passo, sem o pé patinar; `backpedal` toca o passo ao contrário
   (arqueiro recuando enquanto mira, 72% da velocidade). Inimigos seguem com a razão de velocidade antiga.
+- As animações da Tripo não fechavam o ciclo (corrida do Cavaleiro: 56 cm de salto na mão a cada volta):
+  `CharacterModel._make_seamless()` desvia cada osso no último quarto de idle/walk/run até a pose final bater
+  com a inicial. A troca parado/andar/correr usa a intenção do jogador (`target_speed`, o que o direcional
+  pede) com folga, e ao parar a animação em andamento desacelera durante a mistura (`_idle_ease`). Medido:
+  tranco nas trocas 15,3 -> 6,3 cm por quadro.
 - `Hero`: aceleração/frenagem curtas (`MOVE_ACCEL`/`MOVE_DECEL`) e joystick analógico (`_input_strength()`:
   pouco desvio = andar).
 - Cavaleiro: o modelo da Tripo trazia antebraços, lâminas e cabeças soltos flutuando em volta do corpo

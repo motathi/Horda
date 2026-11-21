@@ -563,6 +563,7 @@ func _physics_step(delta: float) -> void:
 	var moved := Vector2(global_position.x - before.x, global_position.z - before.z).length() / maxf(delta, 0.0001)
 	# Suavizado: colisões e o passo da física deixam a velocidade medida "nervosa" quadro a quadro.
 	model.ground_speed = lerpf(maxf(model.ground_speed, 0.0), minf(planar, moved), 0.25)
+	model.target_speed = speed if dir != Vector3.ZERO else 0.0
 	model.animate(delta, planar / current_move_speed())
 	_footsteps(delta, planar)
 
