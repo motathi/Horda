@@ -190,11 +190,11 @@ func _announce_enemy(e: Enemy) -> void:
 		_next_enemy += 1
 	var id := int(e.get_meta(&"net_id"))
 	enemies[id] = e
-	var flags := (1 if e.is_elite else 0) | (2 if e.is_boss else 0) | (4 if e.is_horde else 0)
-	_enemy_spawn.rpc(id, e.def.resource_path, e.global_position, e.health.max_health, flags)
+	var flags := (1 if e.is_elite else 0) | (2 if e.is_boss else 0) | (4 if e.is_horde else 0) | (8 if e.is_guardian else 0)
+	_enemy_spawn.rpc(id, e.def.resource_path, e.global_position, e.health.max_health, flags, e.boss_title)
 
 @rpc("authority", "call_remote", "reliable")
-func _enemy_spawn(id: int, def_path: String, pos: Vector3, max_hp: float, flags: int) -> void:
+func _enemy_spawn(id: int, def_path: String, pos: Vector3, max_hp: float, flags: int, title: String) -> void:
 	if world == null or enemies.has(id):
 		return
 	var e := (load("res://scenes/enemies/zombie.tscn") as PackedScene).instantiate() as Enemy
@@ -203,8 +203,10 @@ func _enemy_spawn(id: int, def_path: String, pos: Vector3, max_hp: float, flags:
 	e.set_meta(&"net_id", id)
 	(world.get(&"enemies_root") as Node).add_child(e)
 	e.global_position = pos
-	if flags & 2:
-		e.make_boss()
+	if flags & 8:
+		e.make_guardian(title)
+	elif flags & 2:
+		e.make_boss(title)
 	elif flags & 1:
 		e.make_elite()
 	e.is_horde = (flags & 4) != 0

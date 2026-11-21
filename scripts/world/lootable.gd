@@ -9,6 +9,16 @@ extends StaticBody3D
 ## Dias até reabastecer (0 = nunca).
 @export var restock_days: int = 3
 
+## Baús: chance própria de equipamento (-1 = pelo tipo do contêiner), sorte e raridade mínima.
+@export var gear_chance: float = -1.0
+@export var gear_luck: float = 0.1
+@export var gear_rarity_min: int = 0
+## Baú do Guardião: trancado enquanto um guardião vivo estiver a até esta distância (0 = nunca).
+@export var guard_radius: float = 0.0
+## Baú (cor do brilho e tampa que abre ao saquear).
+var glow_color: Color = Color(1.0, 0.85, 0.4)
+var lid: Node3D
+
 var node_id: String = ""
 var looted: bool = false
 var restock_day: int = -1
@@ -22,7 +32,7 @@ func _ready() -> void:
 	collision_mask = 0
 	_rng.randomize()
 	_glow = OmniLight3D.new()
-	_glow.light_color = Color(1.0, 0.85, 0.4)
+	_glow.light_color = glow_color
 	_glow.light_energy = 0.8
 	_glow.omni_range = 2.5
 	_glow.position.y = 1.2
@@ -36,10 +46,23 @@ func display_name() -> String:
 	return display_label
 
 func info_text() -> String:
-	return "Saqueado" if looted else "Pressione E para saquear"
+	if looted:
+		return "Saqueado"
+	if is_guarded():
+		return "Trancado — derrote o guardião por perto"
+	return "Pressione E para saquear"
 
 func can_interact() -> bool:
-	return not looted
+	return not looted and not is_guarded()
+
+## Há um guardião vivo protegendo este baú?
+func is_guarded() -> bool:
+	if guard_radius <= 0.0:
+		return false
+	for e in Enemy.all:
+		if is_instance_valid(e) and e.is_guardian and not e.is_dead() and e.global_position.distance_to(global_position) < guard_radius:
+			return true
+	return false
 
 func interact_duration() -> float:
 	return duration
@@ -62,8 +85,9 @@ func interact(_hero: Hero) -> void:
 			y += 0.45
 		if got < amount:
 			EffectsHub.drop_item(global_position, id, amount - got)
-	if _rng.randf() < Gear.container_chance(display_label) + Tech.bonus("gear_chance"):
-		EffectsHub.drop_gear(global_position + Vector3.UP * 0.5, Gear.random_item(_rng, TimeManager.wave(), 0.1))
+	var gc := gear_chance if gear_chance >= 0.0 else Gear.container_chance(display_label)
+	if _rng.randf() < gc + Tech.bonus("gear_chance"):
+		EffectsHub.drop_gear(global_position + Vector3.UP * 0.5, Gear.random_item(_rng, TimeManager.wave(), gear_luck, gear_rarity_min))
 	AudioManager.play_3d(&"loot", global_position)
 	EventBus.container_looted.emit(self)
 	_set_looted(true)
@@ -74,6 +98,11 @@ func interact(_hero: Hero) -> void:
 func _set_looted(v: bool) -> void:
 	looted = v
 	_glow.visible = not v
+	if lid:
+		# Baú: a tampa abre (ou fecha ao reabastecer).
+		var tw := create_tween()
+		tw.tween_property(lid, "rotation:x", 1.75 if v else 0.0, 0.45 if v else 0.0).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		return
 	if _visual:
 		for c in _visual.get_children():
 			if c is MeshInstance3D:

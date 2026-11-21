@@ -1,0 +1,50 @@
+[gd_resource type="Resource" script_class="LootTable" load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/loot_table.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/enemies/loot_entry.gd" id="2"]
+
+[sub_resource type="Resource" id="E0"]
+script = ExtResource("2")
+item_id = &"meat"
+min_amount = 2
+max_amount = 4
+chance = 1.0
+
+[sub_resource type="Resource" id="E1"]
+script = ExtResource("2")
+item_id = &"bandage"
+min_amount = 1
+max_amount = 3
+chance = 0.8
+
+[sub_resource type="Resource" id="E2"]
+script = ExtResource("2")
+item_id = &"herbs"
+min_amount = 2
+max_amount = 4
+chance = 0.7
+
+[sub_resource type="Resource" id="E3"]
+script = ExtResource("2")
+item_id = &"potion"
+min_amount = 1
+max_amount = 1
+chance = 0.35
+
+[sub_resource type="Resource" id="E4"]
+script = ExtResource("2")
+item_id = &"cloth"
+min_amount = 2
+max_amount = 4
+chance = 0.6
+
+[sub_resource type="Resource" id="E5"]
+script = ExtResource("2")
+item_id = &"wood"
+min_amount = 3
+max_amount = 6
+chance = 0.4
+
+[resource]
+script = ExtResource("1")
+entries = Array[ExtResource("2")]([SubResource("E0"), SubResource("E1"), SubResource("E2"), SubResource("E3"), SubResource("E4"), SubResource("E5")])

@@ -270,8 +270,11 @@ mundo (zumbis, hordas, torres, tempo). Conexão WebRTC direta entre os navegador
 servidor público do PeerJS (sem servidor próprio); em redes móveis muito restritas a conexão pode falhar.
 Partidas coop não são salvas. No PC (sem navegador), o coop usa IP + porta 24680 (ENet).
 
+**Golpe corpo a corpo:** acerta em arco de 120°, mas só o alvo principal leva o dano cheio; até 3 outros
+levam metade (o resto da multidão não é atingido). Dano base 15.
+
 **Habilidades:** gastam **energia** (barra azul, regenera 6/s) e têm recarga. *Golpe Giratório* acerta
-tudo ao redor; *Investida* avança 8 m invulnerável atordoando quem estiver no caminho; *Grito de Guerra*
+tudo ao redor (3,6 m, 100% do dano, recarga 10 s); *Investida* avança 8 m invulnerável atordoando quem estiver no caminho; *Grito de Guerra*
 cura 30% da vida e dá +6 de armadura por 8 s; *Explosão Arcana* cai sobre o maior grupo de zumbis
 num raio de 14 m e atordoa os sobreviventes. Novas habilidades liberam ao subir de nível. Dados em
 `data/skills/*.tres`.
@@ -281,6 +284,13 @@ num raio de 14 m e atordoa os sobreviventes. Novas habilidades liberam ao subir 
 *Inteligência* +8 de energia, +6% poder das habilidades e -2% de recarga; *Engenharia* +6% vida das
 construções e +6% dano de torres e armadilhas. *Redistribuir* devolve os pontos por sucata. Valores em
 `data/config/attributes.tres`.
+
+**Pelo mapa:** cada região tem grupos de 2 a 4 zumbis (e os *Ermos* entre elas também), um **guardião**
+(chefe do mapa, aura roxa, marcador roxo no minimapa) e **baús**: *Baú de Mantimentos* (comida, curativos,
+poções), *Baú de Equipamentos* (sempre um equipamento) e o *Baú do Guardião*, trancado até o chefe cair
+(equipamento Incomum ou melhor). Guardiões voltam 3 dias depois; os baús reabastecem. Guardiões:
+*Lenhador Putrefato* (Floresta), *Colosso da Pedreira*, *Cavaleiro Ossudo* (Cidade), *Espantalho Faminto*
+(Fazenda) e *Abominação Tóxica* (Área Contaminada). No celular fraco há 40% menos zumbis espalhados.
 
 **Na preparação:** explore as regiões (Floresta, Pedreira, Cidade Abandonada, Fazenda, Área Contaminada),
 mate zumbis, colete madeira/pedra, saqueie e volte à base — a mochila (60 de peso) é guardada

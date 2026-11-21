@@ -233,6 +233,32 @@ Modelos riggados gerados pelo `tools/tripo_pipeline.py`.
   cada árvore vem do `PropFactory.style_rng` (não do gerador do mapa) e o das bordas vem da posição, para a
   geração e os saves seguirem iguais.
 
+## Movimento do herói
+
+- `CharacterModel._measure_stride()` mede, uma vez por modelo, quão rápido o pé de apoio (o mais baixo)
+  recua nas animações de andar/correr (`_stride_cache`, em m/s por metro de altura). Com
+  `ground_speed >= 0` (o herói preenche a velocidade real do quadro), `_animate_stride()` escolhe
+  andar/correr e toca no ritmo exato do passo, sem o pé patinar; `backpedal` toca o passo ao contrário
+  (arqueiro recuando enquanto mira, 72% da velocidade). Inimigos seguem com a razão de velocidade antiga.
+- `Hero`: aceleração/frenagem curtas (`MOVE_ACCEL`/`MOVE_DECEL`) e joystick analógico (`_input_strength()`:
+  pouco desvio = andar).
+- Cavaleiro: o modelo da Tripo trazia antebraços, lâminas e cabeças soltos flutuando em volta do corpo
+  (pedaços de malha sem osso): `tools/clean_floating_parts.py` separa a malha em partes conectadas e apaga as
+  que ficam longe do corpo. A espada (`CharacterModel.attach_sword()`) é um `BoneAttachment3D` no osso
+  `R_Hand`, encaixada na primeira pose de "parado" (`_fit_sword`), e acompanha o pulso nos golpes.
+
+## Mapa: densidade, guardiões e baús
+
+- `WorldSpawner` cria os inimigos das regiões em grupos (2–4) até `max` (×0,6 em `Platform.low_end`) e
+  repõe 1–3 por vez de dia; a região `Ermos` (`hidden`: o minimapa não escreve o nome) cobre o espaço entre
+  as outras. `guardians` vem do `WorldBuilder._place_lair()`: `Enemy.make_guardian()` (×7 vida, ×1,7 dano,
+  aura roxa, `is_boss` para o saque) com a vida total escolhida por covil; morto, volta após
+  `GUARDIAN_RESPAWN_DAYS` (longe do herói). No coop, o flag 8 e o título vão no `_enemy_spawn`.
+- Baús (`PropFactory._setup_chest`, modelos de `tools/blender_chests.py` com a tampa "Lid" separada, com a
+  origem na dobradiça): `Lootable.gear_chance/gear_luck/gear_rarity_min` e `guard_radius` (trancado enquanto
+  houver guardião vivo por perto, também nos clientes do coop, pois o teste usa `Enemy.all`). Tabelas em
+  `data/loot/chest_*.tres`.
+
 ## Áudio
 
 `AudioManager` (autoload) cria os canais `Music`, `SFX`, `Ambient` e `UI`; `play(id)`/`play_3d(id, pos, vol, pitch,

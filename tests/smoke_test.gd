@@ -36,6 +36,7 @@ func _ready() -> void:
 			return
 	print("Mundo pronto em %d ms" % (Time.get_ticks_msec() - t0))
 	await _test_world()
+	await _test_map_threats()
 	await _test_audio()
 	await _test_atmosphere()
 	await _test_settings_tutorial()
@@ -335,6 +336,51 @@ func _test_app_switch() -> void:
 	else:
 		check(false, "botões de ação do HUD encontrados")
 
+## Guardiões, baús, golpe em arco limitado e passo do herói casado com a velocidade.
+func _test_map_threats() -> void:
+	print("[mapa: guardiões, baús e golpe em arco]")
+	var hero := world.hero
+	var b := world.builder
+	var guardians := Enemy.all.filter(func(e: Enemy) -> bool: return is_instance_valid(e) and e.is_guardian and not e.is_dead())
+	check(b.guardians.size() == 5 and guardians.size() == 5, "5 guardiões pelo mapa (%d covis, %d vivos)" % [b.guardians.size(), guardians.size()])
+	var chests := b.lootables.values().filter(func(l: Lootable) -> bool: return l.lid != null)
+	check(chests.size() >= 15, "baús espalhados pelo mapa (%d)" % chests.size())
+	var locked := chests.filter(func(l: Lootable) -> bool: return l.guard_radius > 0.0)
+	check(locked.size() == 5 and (locked[0] as Lootable).is_guarded() and not (locked[0] as Lootable).can_interact(), "Baú do Guardião trancado enquanto o chefe vive")
+	var day_enemies := Enemy.all.filter(func(e: Enemy) -> bool: return is_instance_valid(e) and not e.is_horde and not e.is_guardian).size()
+	check(day_enemies >= 60, "mapa mais povoado (%d inimigos espalhados)" % day_enemies)
+	# Golpe corpo a corpo: no máximo 4 inimigos, só o principal com dano cheio.
+	await _clear_enemies()
+	world.spawner.set_process(false)
+	var was_ranged := hero.ranged
+	hero.ranged = false
+	hero.global_position = _clear_spot(Vector3(-40, 0, 40), 6.0)
+	var fwd := hero.facing()
+	var side := Vector3(-fwd.z, 0, fwd.x)
+	var pack: Array[Enemy] = []
+	for k in 6:
+		pack.append(_spawn_zombie(hero.global_position + fwd * 1.6 + side * (k - 2.5) * 0.45))
+	await wait(0.05)
+	hero._aim_point = hero.global_position + fwd * 3.0
+	hero._apply_hit()
+	var hit := pack.filter(func(e: Enemy) -> bool: return e.health.current < e.health.max_health)
+	var losses := hit.map(func(e: Enemy) -> float: return e.health.max_health - e.health.current)
+	losses.sort()
+	check(hit.size() == Hero.CLEAVE_MAX, "golpe em arco acerta no máximo %d de 6 zumbis (%d)" % [Hero.CLEAVE_MAX, hit.size()])
+	check(losses.size() >= 2 and losses[-1] > losses[0] * 1.5, "só o alvo principal leva o dano cheio")
+	hero.ranged = was_ranged
+	await _clear_enemies()
+	world.spawner.set_process(true)
+	# Passo do herói: cadência da corrida acompanha a velocidade real (sem patinar).
+	var m := hero.model
+	if m._stride.has("run"):
+		m.ground_speed = hero.current_move_speed()
+		m.animate(0.016, 1.0)
+		var expect: float = hero.current_move_speed() / float(m._stride["run"])
+		check(m._current == "run" and absf(m._anim.speed_scale - clampf(expect, 0.6, 2.0)) < 0.05, "corrida no ritmo do passo (x%.2f)" % m._anim.speed_scale)
+	else:
+		check(false, "passo medido nas animações do herói")
+
 ## Golpe lento e anunciado, mais dano no herói, esquiva com invulnerabilidade e contra-ataque.
 func _test_combat_challenge() -> void:
 	print("[combate desafiador: golpe lento, esquiva e contra-ataque]")
@@ -343,6 +389,9 @@ func _test_combat_challenge() -> void:
 	var start_yaw := hero.model.rotation.y
 	var zdef := load("res://data/enemies/zombie.tres") as EnemyDef
 	var bdef := load("res://data/enemies/zombie_brute.tres") as EnemyDef
+	# O mapa tem matilhas por toda parte: sem outros zumbis por perto durante o teste.
+	await _clear_enemies()
+	world.spawner.set_process(false)
 	check(Enemy.melee_windup(zdef) >= 0.8, "golpe do zumbi é lento (%.2f s de preparação)" % Enemy.melee_windup(zdef))
 	check(Enemy.melee_windup(bdef) > Enemy.melee_windup(zdef), "brutamontes demora ainda mais (%.2f s)" % Enemy.melee_windup(bdef))
 	hero.health.heal(9999)
@@ -377,6 +426,7 @@ func _test_combat_challenge() -> void:
 	hero.global_position = e.global_position - fwd * 1.6  # pelas costas
 	await wait(e._melee_total * 0.6)
 	check(hero.health.current >= hp1, "sair da frente no fim da preparação faz o golpe errar")
+	world.spawner.set_process(true)
 	# Esquiva: invulnerável por um instante; desviar de um golpe arma um contra-ataque crítico.
 	e.take_damage(DamageInfo.make(9999, hero))
 	await wait(0.3)
@@ -447,10 +497,27 @@ func _spawn_zombie(pos: Vector3) -> Enemy:
 	e.configure(load("res://data/enemies/zombie_brute.tres"))
 	return e
 
+## Ponto perto de `near` sem nada sólido (casas, carros, árvores, pedras) num raio `r` — o mapa muda com o sorteio.
+func _clear_spot(near: Vector3, r: float) -> Vector3:
+	var q := PhysicsShapeQueryParameters3D.new()
+	var sph := SphereShape3D.new()
+	sph.radius = r
+	q.shape = sph
+	q.collision_mask = Layers.WORLD | Layers.STRUCTURES
+	var space := world.get_world_3d().direct_space_state
+	for k in 64:
+		var p := near + Vector3(float(k % 8) * 7.0 - 24.0, 0, float(k / 8) * 7.0 - 24.0)
+		if p.length() < 35.0:
+			continue
+		q.transform = Transform3D(Basis(), p + Vector3.UP * (r + 0.3))
+		if space.intersect_shape(q, 1).is_empty():
+			return p
+	return near
+
 func _test_abilities() -> void:
 	print("[habilidades]")
 	var hero := world.hero
-	hero.global_position = Vector3(50, 0, 50)
+	hero.global_position = _clear_spot(Vector3(50, 0, 50), 9.0)
 	hero.health.invulnerable = true
 	hero.energy = hero.max_energy
 	check(hero.level < 5 and hero.ability_block_reason(3).contains("nível"), "Explosão Arcana bloqueada antes do nível 5 (herói nv. %d)" % hero.level)

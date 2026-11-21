@@ -42,6 +42,13 @@ var _anim_names: Dictionary = {}  # "walk" -> nome real da animação
 var _skinned: Array[MeshInstance3D] = []
 var _current: String = ""
 var _run_threshold: float = 0.7
+## Velocidade real no chão (m/s). Quando >= 0 (herói), a cadência das animações de andar/correr é ajustada
+## ao passo medido do esqueleto, sem "patinar"; -1 usa a razão de velocidade antiga (inimigos).
+var ground_speed: float = -1.0
+## Andando de costas (o arqueiro recua mirando): toca o passo ao contrário.
+var backpedal: bool = false
+var _stride: Dictionary = {}  # "walk"/"run" -> m/s do pé de apoio com a animação em velocidade 1
+static var _stride_cache: Dictionary = {}  # modelo -> {"walk": m/s por metro de altura, "run": ...}
 
 func build_hero(skin_id: String = "") -> void:
 	kind = Kind.HERO
@@ -173,6 +180,10 @@ func _build_rigged(model_name: String, height: float) -> void:
 				_anim_names[k] = n
 				if k in ["idle", "walk", "run"]:
 					_anim.get_animation(n).loop_mode = Animation.LOOP_LINEAR
+	if not _stride_cache.has(model_name):
+		_stride_cache[model_name] = _measure_stride(inst, height)
+	for k: String in _stride_cache[model_name]:
+		_stride[k] = float(_stride_cache[model_name][k]) * height
 	# Pausa a animação quando fora da tela (hordas grandes).
 	var vis := VisibleOnScreenNotifier3D.new()
 	vis.aabb = AABB(Vector3(-1, 0, -1), Vector3(2, height, 2))
@@ -180,6 +191,50 @@ func _build_rigged(model_name: String, height: float) -> void:
 	vis.screen_entered.connect(func() -> void: _anim.process_mode = Node.PROCESS_MODE_INHERIT)
 	vis.screen_exited.connect(func() -> void: _anim.process_mode = Node.PROCESS_MODE_DISABLED)
 	_play("idle", 0.0)
+
+## Mede quão rápido o pé de apoio (o mais baixo) recua em relação ao corpo em cada ciclo de andar/correr:
+## é a velocidade em que o personagem precisa se mover para o pé "grudar" no chão.
+func _measure_stride(inst: Node3D, height: float) -> Dictionary:
+	var out := {}
+	var sks := inst.find_children("*", "Skeleton3D", true, false)
+	if sks.is_empty() or _anim == null:
+		return out
+	var sk := sks[0] as Skeleton3D
+	var lf := sk.find_bone("L_Foot")
+	var rf := sk.find_bone("R_Foot")
+	if lf < 0 or rf < 0:
+		return out
+	# Transformação do esqueleto até o modelo (sem depender da árvore de cena).
+	var xf := Transform3D.IDENTITY
+	var n: Node = sk
+	while n != null and n != _rig:
+		if n is Node3D:
+			xf = (n as Node3D).transform * xf
+		n = n.get_parent()
+	for key: String in ["walk", "run"]:
+		if not _anim_names.has(key):
+			continue
+		var a := _anim.get_animation(_anim_names[key])
+		_anim.play(_anim_names[key])
+		_anim.speed_scale = 1.0
+		const N := 48
+		var prev: Array = []
+		var speeds: Array[float] = []
+		for k in N + 1:
+			_anim.seek(a.length * k / N, true)
+			var cur := [xf * sk.get_bone_global_pose(lf).origin, xf * sk.get_bone_global_pose(rf).origin]
+			if not prev.is_empty():
+				var i := 0 if (prev[0] as Vector3).y < (prev[1] as Vector3).y else 1
+				var d: Vector3 = cur[i] - prev[i]
+				speeds.append(Vector2(d.x, d.z).length() / (a.length / N))
+			prev = cur
+		speeds.sort()
+		var med: float = speeds[speeds.size() / 2]
+		if med > 0.05:
+			out[key] = med / height
+	_anim.stop()
+	_current = ""
+	return out
 
 ## As animações da Tripo deslocam o quadril para frente (root motion): o modelo
 ## "andava" para longe do personagem e voltava de repente a cada ciclo. Aqui a
@@ -224,7 +279,9 @@ func _animate_rigged(delta: float, speed_ratio: float) -> void:
 			_current = ""
 		else:
 			return
-	if speed_ratio > _run_threshold and _anim_names.has("run"):
+	if ground_speed >= 0.0 and _stride.has("walk"):
+		_animate_stride()
+	elif speed_ratio > _run_threshold and _anim_names.has("run"):
 		_play("run", 0.15, clampf(speed_ratio, 0.8, 1.4))
 	elif speed_ratio > 0.05:
 		_play("walk", 0.15, clampf(speed_ratio / maxf(0.1, _run_threshold), 0.6, 1.5))
@@ -234,6 +291,21 @@ func _animate_rigged(delta: float, speed_ratio: float) -> void:
 		_flash_t -= delta
 		if _flash_t <= 0.0:
 			_set_overlay(null)
+
+## Escolhe andar/correr pela velocidade real e toca a animação no ritmo do passo medido.
+func _animate_stride() -> void:
+	var walk_nat: float = _stride["walk"]
+	var run_nat: float = _stride.get("run", walk_nat * 2.6)
+	var gs := ground_speed
+	if gs < 0.2:
+		_play("idle", 0.25)
+		return
+	if gs > walk_nat * 1.7 and _anim_names.has("run"):
+		_play("run", 0.18, clampf(gs / run_nat, 0.6, 2.0))
+	else:
+		_play("walk", 0.18, clampf(gs / walk_nat, 0.5, 2.2))
+	if backpedal:
+		_anim.speed_scale = -absf(_anim.speed_scale)
 
 func _build_from_model(model_name: String, height: float, tint: Color) -> void:
 	_model_mode = true
@@ -444,6 +516,94 @@ func attach_bow() -> void:
 	add_child(_bow)
 	if _anim:
 		_anim.mixer_applied.connect(_after_anim)
+
+## Espada longa na mão direita (Cavaleiro): presa ao osso da mão, gira junto com o pulso nos golpes.
+var _sword: Node3D
+
+func attach_sword() -> void:
+	if not _rigged or _sword != null:
+		return
+	var sks := _rig.find_children("*", "Skeleton3D", true, false)
+	if sks.is_empty():
+		return
+	var sk := sks[0] as Skeleton3D
+	var hand := sk.find_bone("R_Hand")
+	if hand < 0:
+		return
+	var att := BoneAttachment3D.new()
+	att.bone_name = "R_Hand"
+	sk.add_child(att)
+	_sword = _make_sword()
+	_sword.visible = false
+	att.add_child(_sword)
+	# A pose de empunhadura é medida na primeira atualização da animação (a mão já na pose de "parado").
+	if _anim:
+		_anim.mixer_applied.connect(_fit_sword.bind(sk, hand), CONNECT_ONE_SHOT | CONNECT_DEFERRED)
+	else:
+		_fit_sword(sk, hand)
+
+func _fit_sword(sk: Skeleton3D, hand: int) -> void:
+	if not is_instance_valid(_sword):
+		return
+	# Empunhada à frente, lâmina para cima e um pouco para fora (pronta para o golpe).
+	var hand_g := sk.global_transform * sk.get_bone_global_pose(hand)
+	var fwd := -global_transform.basis.z.normalized()
+	var right := global_transform.basis.x.normalized()
+	var blade := (Vector3.UP * 0.8 + fwd * 0.5 + right * 0.2).normalized()
+	var side := blade.cross(fwd).normalized()
+	var want := Transform3D(Basis(side, blade, side.cross(blade).normalized()), hand_g.origin - blade * 0.02)
+	_sword.transform = hand_g.affine_inverse() * want
+	_sword.visible = true
+
+func _make_sword() -> Node3D:
+	var root := Node3D.new()
+	root.name = "Sword"
+	var steel := StandardMaterial3D.new()
+	steel.albedo_color = Color(0.72, 0.74, 0.78)
+	steel.metallic = 0.85
+	steel.roughness = 0.32
+	var gold := StandardMaterial3D.new()
+	gold.albedo_color = Color(0.85, 0.62, 0.24)
+	gold.metallic = 0.9
+	gold.roughness = 0.35
+	var leather := StandardMaterial3D.new()
+	leather.albedo_color = Color(0.16, 0.1, 0.07)
+	leather.roughness = 0.85
+	var parts := [
+		[_sw_box(Vector3(0.075, 0.95, 0.018)), Vector3(0, 0.6, 0), steel],
+		[_sw_box(Vector3(0.02, 0.9, 0.024)), Vector3(0, 0.6, 0), steel],
+		[_sw_box(Vector3(0.3, 0.045, 0.06)), Vector3(0, 0.1, 0), gold],
+		[_sw_box(Vector3(0.04, 0.2, 0.04)), Vector3(0, -0.02, 0), leather],
+		[_sw_ball(0.035), Vector3(0, -0.14, 0), gold],
+	]
+	for p: Array in parts:
+		var mi := MeshInstance3D.new()
+		mi.mesh = p[0]
+		mi.position = p[1]
+		mi.material_override = p[2]
+		root.add_child(mi)
+	# Ponta da lâmina.
+	var tip := MeshInstance3D.new()
+	var pm := PrismMesh.new()
+	pm.size = Vector3(0.075, 0.14, 0.018)
+	tip.mesh = pm
+	tip.position = Vector3(0, 1.145, 0)
+	tip.material_override = steel
+	root.add_child(tip)
+	return root
+
+static func _sw_box(sz: Vector3) -> BoxMesh:
+	var bm := BoxMesh.new()
+	bm.size = sz
+	return bm
+
+static func _sw_ball(r: float) -> SphereMesh:
+	var sm := SphereMesh.new()
+	sm.radius = r
+	sm.height = r * 2.0
+	sm.radial_segments = 10
+	sm.rings = 6
+	return sm
 
 func has_bow() -> bool:
 	return _bow != null

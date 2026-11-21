@@ -91,6 +91,8 @@ func _draw() -> void:
 	# Nomes das regiões (fonte serifada com contorno, cor da região).
 	var fs := int(clampf(10.0 * k, 10.0, 22.0))
 	for r in regions:
+		if r.get("hidden", false):
+			continue
 		var c: Color = REGION_COLORS.get(r.name, Color(0.9, 0.9, 0.9))
 		var name: String = r.name if large or r.name != "Cidade Abandonada" else "Cidade"
 		var w := font.get_string_size(name, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
@@ -105,7 +107,13 @@ func _draw() -> void:
 		var l := lootables[id] as Lootable
 		if is_instance_valid(l) and not l.looted:
 			var p := _to_map(l.global_position)
-			draw_colored_polygon(PackedVector2Array([p + Vector2(0, -ls), p + Vector2(ls, 0), p + Vector2(0, ls), p + Vector2(-ls, 0)]), Color(1.0, 0.82, 0.3))
+			# Baús maiores, na cor do brilho (mantimentos dourado, equipamentos azul, guardião roxo).
+			var chest := l.lid != null
+			var q := ls * (1.6 if chest else 1.0)
+			var col := l.glow_color if chest else Color(1.0, 0.82, 0.3)
+			if chest:
+				draw_colored_polygon(PackedVector2Array([p + Vector2(0, -q - 1), p + Vector2(q + 1, 0), p + Vector2(0, q + 1), p + Vector2(-q - 1, 0)]), Color(0, 0, 0, 0.8))
+			draw_colored_polygon(PackedVector2Array([p + Vector2(0, -q), p + Vector2(q, 0), p + Vector2(0, q), p + Vector2(-q, 0)]), col)
 	_draw_keep(_to_map(Vector3.ZERO), 6.5 * maxf(1.0, k * 0.75))
 	# Inimigos (Espreitadores escondidos não aparecem; na névoa densa só os próximos do herói).
 	var reveal_r := DayNightVisuals.map_reveal_radius()
@@ -116,6 +124,13 @@ func _draw() -> void:
 			if reveal_r < INF and me and e.global_position.distance_to(me.global_position) > reveal_r and not _stragglers.has(e):
 				continue
 			var p := _to_map(e.global_position)
+			if e.is_guardian:
+				# Guardião (chefe do mapa): marcador roxo grande com anel.
+				var gr := er * 2.0
+				draw_circle(p, gr + 1.5, Color(0, 0, 0, 0.85))
+				draw_circle(p, gr, Color(0.72, 0.3, 1.0))
+				draw_arc(p, gr + 2.5, 0, TAU, 20, Color(0.85, 0.55, 1.0, 0.9), 1.5)
+				continue
 			var rr := er * (1.3 if e.is_horde else 1.0) * (1.4 if e.def and e.def.model_scale > 1.4 else 1.0)
 			draw_circle(p, rr + 1.0, Color(0, 0, 0, 0.8))
 			draw_circle(p, rr, Color(1, 0.18, 0.12) if e.is_horde else Color(0.9, 0.38, 0.3))

@@ -177,6 +177,10 @@ static func make_lootable(kind: String, rng: RandomNumberGenerator) -> Lootable:
 	var l := Lootable.new()
 	var v := Node3D.new()
 	match kind:
+		"chest_supplies", "chest_gear", "chest_guardian":
+			_setup_chest(l, v, kind)
+			l.setup_visual(v)
+			return l
 		"cart":
 			l.display_label = "Carroça Abandonada"
 			l.loot = load(LOOT_DIR + "farm_crate.tres")
@@ -245,6 +249,51 @@ static func make_lootable(kind: String, rng: RandomNumberGenerator) -> Lootable:
 				_collision(l, sh3, Vector3(0, 0.45 * s, 0))
 	l.setup_visual(v)
 	return l
+
+## Baús espalhados pelo mapa (modelados no Blender: tools/blender_chests.py).
+##  - Mantimentos: comida, curativos e poções (às vezes um equipamento).
+##  - Equipamentos: sempre um equipamento, com mais sorte.
+##  - Guardião: trancado até o chefe da região morrer; equipamento Incomum ou melhor.
+static func _setup_chest(l: Lootable, v: Node3D, kind: String) -> void:
+	var model := "chest_wood"
+	match kind:
+		"chest_supplies":
+			l.display_label = "Baú de Mantimentos"
+			l.loot = load(LOOT_DIR + "chest_supplies.tres")
+			l.gear_chance = 0.15
+			l.restock_days = 3
+			l.glow_color = Color(1.0, 0.8, 0.4)
+		"chest_gear":
+			l.display_label = "Baú de Equipamentos"
+			l.loot = load(LOOT_DIR + "chest_gear.tres")
+			l.gear_chance = 1.0
+			l.gear_luck = 0.25
+			l.restock_days = 5
+			l.glow_color = Color(0.45, 0.75, 1.0)
+			model = "chest_iron"
+		_:
+			l.display_label = "Baú do Guardião"
+			l.loot = load(LOOT_DIR + "chest_guardian.tres")
+			l.gear_chance = 1.0
+			l.gear_luck = 0.5
+			l.gear_rarity_min = 1
+			l.guard_radius = 16.0
+			l.restock_days = 4
+			l.glow_color = Color(0.8, 0.4, 1.0)
+			model = "chest_iron"
+	l.duration = 1.6
+	var path := "res://assets/models/blender/%s.glb" % model
+	var scale := 1.25 if kind == "chest_guardian" else 1.0
+	if ResourceLoader.exists(path):
+		var m := (load(path) as PackedScene).instantiate() as Node3D
+		m.scale = Vector3.ONE * scale
+		v.add_child(m)
+		l.lid = m.find_child("Lid", true, false) as Node3D
+	else:
+		_mi(v, _box_mesh(Vector3(1.1, 0.8, 0.7) * scale), Vector3(0, 0.4 * scale, 0), MaterialLib.textured("planks", Color(0.8, 0.6, 0.4), 1.0))
+	var sh := BoxShape3D.new()
+	sh.size = Vector3(1.2, 0.9, 0.8) * scale
+	_collision(l, sh, Vector3(0, 0.45 * scale, 0))
 
 # --- Construções do cenário ----------------------------------------------------
 

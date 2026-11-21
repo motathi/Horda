@@ -8,6 +8,13 @@ const BASE_SAFE_RADIUS := 30.0
 
 ## Cada região: {name, center: Vector3, radius, max, enemies: Array[EnemyDef], weights: Array[float], hp_mult}
 var regions: Array[Dictionary] = []
+## Guardiões (chefes do mapa): {id, pos: Vector3, def: EnemyDef, title, hp_mult}. Renascem dias depois.
+var guardians: Array[Dictionary] = []
+const GUARDIAN_RESPAWN_DAYS := 3
+## Celular fraco: menos inimigos espalhados (o mapa continua cheio, mas leve).
+const LOW_END_DENSITY := 0.6
+var _guardian_alive: Dictionary = {}  # id -> Enemy
+var _guardian_dead_day: Dictionary = {}  # id -> dia em que morreu
 @export var enemies_parent: NodePath
 @export var check_interval: float = 4.0
 
@@ -23,9 +30,48 @@ func _ready() -> void:
 func populate_initial() -> void:
 	if Coop.is_client():
 		return  # inimigos vêm do anfitrião
+	# Os inimigos ficam em grupos de 2 a 4 (matilhas), não espalhados um a um.
 	for r in regions:
-		for i in int(r.max * 0.7):
-			_spawn_in(r, true)
+		var target := _region_cap(r, false)
+		var n := 0
+		var guard := 0
+		while n < target and guard < target * 3:
+			guard += 1
+			n += _spawn_in(r, true, mini(_rng.randi_range(2, 4), target - n))
+	for g in guardians:
+		_spawn_guardian(g)
+
+func _region_cap(r: Dictionary, grow: bool) -> int:
+	var k := LOW_END_DENSITY if Platform.low_end else 1.0
+	# Regiões ficam mais perigosas com o passar dos dias.
+	return int(round(float(r.max) * k)) + (mini(TimeManager.day - 1, 8) if grow else 0)
+
+func _spawn_guardian(g: Dictionary) -> void:
+	var e := ENEMY_SCENE.instantiate() as Enemy
+	_parent.add_child(e)
+	e.global_position = g.pos
+	e.configure(g.def, float(g.get("hp_mult", 1.0)) * (1.0 + 0.06 * (TimeManager.day - 1)), 1.0 + 0.03 * (TimeManager.day - 1))
+	e.make_guardian(String(g.title))
+	_guardian_alive[g.id] = e
+	_guardian_dead_day.erase(g.id)
+
+## Guardiões mortos voltam alguns dias depois (longe do herói, para não surgir na cara dele).
+func _check_guardians() -> void:
+	var hero := GameManager.hero
+	for g in guardians:
+		var e: Variant = _guardian_alive.get(g.id)
+		if e != null and is_instance_valid(e) and not (e as Enemy).is_dead():
+			continue
+		if not _guardian_dead_day.has(g.id):
+			_guardian_dead_day[g.id] = TimeManager.day
+			_guardian_alive.erase(g.id)
+			continue
+		if TimeManager.day >= int(_guardian_dead_day[g.id]) + GUARDIAN_RESPAWN_DAYS and (hero == null or hero.global_position.distance_to(g.pos) > 45.0):
+			_spawn_guardian(g)
+
+func guardian_alive(id: String) -> bool:
+	var e: Variant = _guardian_alive.get(id)
+	return e != null and is_instance_valid(e) and not (e as Enemy).is_dead()
 
 func _process(delta: float) -> void:
 	if Coop.is_client() or not GameManager.is_playing() or TimeManager.is_night():
@@ -34,34 +80,44 @@ func _process(delta: float) -> void:
 	if _t > 0.0:
 		return
 	_t = check_interval
+	_check_guardians()
 	for r in regions:
 		var list: Array = _alive.get(r.name, [])
 		list = list.filter(func(e) -> bool: return is_instance_valid(e) and not (e as Enemy).is_dead())
 		_alive[r.name] = list
-		# Regiões ficam mais perigosas com o passar dos dias.
-		var cap := int(r.max) + mini(TimeManager.day - 1, 8)
+		var cap := _region_cap(r, true)
 		if list.size() < cap:
-			_spawn_in(r, false)
+			_spawn_in(r, false, mini(_rng.randi_range(1, 3), cap - list.size()))
 
-func _spawn_in(r: Dictionary, ignore_hero: bool) -> void:
+## Cria um grupo de `count` inimigos ao redor de um ponto sorteado na região. Retorna quantos nasceram.
+func _spawn_in(r: Dictionary, ignore_hero: bool, count: int = 1) -> int:
 	var hero := GameManager.hero
 	for attempt in 8:
 		var ang := _rng.randf() * TAU
 		var dist := sqrt(_rng.randf()) * float(r.radius)
 		var pos: Vector3 = r.center + Vector3(cos(ang) * dist, 0, sin(ang) * dist)
-		if pos.length() < BASE_SAFE_RADIUS or absf(pos.x) > 112.0 or absf(pos.z) > 112.0:
+		if not _valid_spot(pos):
 			continue
 		if not ignore_hero and hero and hero.global_position.distance_to(pos) < MIN_HERO_DISTANCE:
 			continue
-		var def := _pick(r)
-		var e := ENEMY_SCENE.instantiate() as Enemy
-		_parent.add_child(e)
-		e.global_position = pos
-		e.configure(def, float(r.get("hp_mult", 1.0)) * (1.0 + 0.05 * (TimeManager.day - 1)), 1.0)
-		var list: Array = _alive.get(r.name, [])
-		list.append(e)
-		_alive[r.name] = list
-		return
+		var made := 0
+		for i in count:
+			var p := pos if i == 0 else pos + Vector3(_rng.randf_range(-3.5, 3.5), 0, _rng.randf_range(-3.5, 3.5))
+			if not _valid_spot(p):
+				continue
+			var e := ENEMY_SCENE.instantiate() as Enemy
+			_parent.add_child(e)
+			e.global_position = p
+			e.configure(_pick(r), float(r.get("hp_mult", 1.0)) * (1.0 + 0.05 * (TimeManager.day - 1)), 1.0)
+			var list: Array = _alive.get(r.name, [])
+			list.append(e)
+			_alive[r.name] = list
+			made += 1
+		return made
+	return 0
+
+func _valid_spot(p: Vector3) -> bool:
+	return p.length() >= BASE_SAFE_RADIUS and absf(p.x) <= 112.0 and absf(p.z) <= 112.0
 
 func _pick(r: Dictionary) -> EnemyDef:
 	var defs: Array = r.enemies

@@ -173,6 +173,27 @@ func make_boss(title: String = "") -> void:
 	aura.position.y = 2.5
 	add_child(aura)
 
+## Guardião de região (chefe do mapa): mais fraco que o chefe das hordas, protege um baú.
+var is_guardian: bool = false
+
+func make_guardian(title: String = "") -> void:
+	is_boss = true
+	is_guardian = true
+	is_elite = true
+	boss_title = title
+	health.setup(health.max_health * 7.0, health.armor + 4.0)
+	damage_value *= 1.7
+	speed_value *= 0.9
+	model.scale *= 1.5
+	($HealthBar as HealthBar3D).position.y *= 1.5
+	(($CollisionShape3D as CollisionShape3D).shape as CapsuleShape3D).radius *= 1.4
+	var aura := OmniLight3D.new()
+	aura.light_color = Color(0.75, 0.3, 1.0)
+	aura.light_energy = 2.4
+	aura.omni_range = 5.0
+	aura.position.y = 2.2
+	add_child(aura)
+
 func start_siege() -> void:
 	is_horde = true
 	state = State.SIEGE
@@ -590,12 +611,14 @@ func _on_died(info: DamageInfo) -> void:
 	AudioManager.play_3d(&"skeleton" if _is_skeleton() else &"zombie_death", global_position, -3.0, 1.0 / maxf(0.7, def.model_scale))
 	var burned := _burning >= 0.0
 	if not burned and def.loot:
-		var drops := def.loot.roll(_rng, 8.0 if is_boss else (2.5 if is_elite else 1.0))
+		var drops := def.loot.roll(_rng, (4.0 if is_guardian else 8.0) if is_boss else (2.5 if is_elite else 1.0))
 		for id: StringName in drops:
 			EffectsHub.drop_item(global_position, id, drops[id])
 		var gi := Gear.enemy_drop(_rng, is_boss, is_elite, def.special_radius > 0.0 or def.behavior >= EnemyDef.Behavior.EXPLODER)
 		if gi:
 			EffectsHub.drop_gear(global_position, gi)
+	if is_guardian and not puppet:
+		Coop.banner_all("GUARDIÃO DERROTADO", "%s caiu. O Baú do Guardião foi destrancado!" % (boss_title if boss_title != "" else def.display_name), Color(0.8, 0.5, 1.0))
 	EventBus.enemy_killed.emit(self, def, info.source if info else null)
 	get_tree().create_timer(3.0).timeout.connect(queue_free)
 

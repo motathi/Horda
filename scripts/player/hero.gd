@@ -14,7 +14,7 @@ signal dodge_success
 @export_group("Atributos")
 @export var max_health: float = 220.0
 @export var armor: float = 2.0
-@export var base_damage: float = 24.0
+@export var base_damage: float = 15.0
 @export var attacks_per_second: float = 1.15
 @export var crit_chance: float = 0.12
 @export var crit_multiplier: float = 1.8
@@ -36,6 +36,11 @@ var xp: int = 0
 # --- Habilidades ---------------------------------------------------------------
 const ABILITY_IDS: Array[StringName] = [&"whirlwind", &"dash", &"warcry", &"nova"]
 const DASH_SPEED := 34.0
+const CLEAVE_MAX := 4
+const CLEAVE_MULT := 0.5
+const MOVE_ACCEL := 42.0  # m/s²: ~0,16 s até a velocidade máxima
+const MOVE_DECEL := 55.0
+const BACKPEDAL_MULT := 0.72
 ## Esquiva (Shift / botão): corrida curta e rápida com invulnerabilidade. Desviar de um golpe no
 ## último instante deixa o próximo ataque garantidamente crítico (contra-ataque).
 const DODGE_DIST := 4.6
@@ -144,6 +149,8 @@ func _ready() -> void:
 	ranged = bool(HeroSkins.get_skin(skin_id()).get("ranged", false))
 	if ranged:
 		model.attach_bow()
+	elif String(HeroSkins.get_skin(skin_id()).get("model", "")) == "hero_paladin":
+		model.attach_sword()
 	($HealthBar as HealthBar3D).bind(health)
 	_home = global_position
 	if is_puppet:
@@ -199,6 +206,8 @@ func apply_class(id: String) -> void:
 	ranged = bool(HeroSkins.get_skin(skin_id()).get("ranged", false))
 	if ranged:
 		model.attach_bow()
+	elif String(HeroSkins.get_skin(skin_id()).get("model", "")) == "hero_paladin":
+		model.attach_sword()
 	abilities.clear()
 	for aid in HeroSkins.abilities(skin_id()):
 		abilities.append(load("res://data/skills/%s.tres" % aid) as AbilityDef)
@@ -428,6 +437,7 @@ func _physics_process(delta: float) -> void:
 		return
 	if not GameManager.is_playing():
 		velocity = Vector3.ZERO
+		model.ground_speed = 0.0
 		model.animate(delta, 0.0)
 		return
 	_tick_abilities(delta)
@@ -481,8 +491,21 @@ func _physics_process(delta: float) -> void:
 		dir = _follow_path()
 
 	var speed := current_move_speed() * (0.55 if _pending_hit >= 0.0 else 1.0)
-	velocity.x = dir.x * speed
-	velocity.z = dir.z * speed
+	# Joystick analógico: pouco desvio = andar. Recuar mirando (de costas) é mais lento.
+	if dir != Vector3.ZERO and not _has_move_target:
+		speed *= _input_strength()
+	var back := dir != Vector3.ZERO and want_attack and facing().dot(dir) < -0.35
+	if back:
+		speed *= BACKPEDAL_MULT
+	model.backpedal = back
+	# Aceleração e frenagem curtas (sem arrancar/parar no mesmo quadro).
+	var want := Vector2(dir.x, dir.z) * speed
+	var cur := Vector2(velocity.x, velocity.z)
+	if cur.length() > speed + 0.5:
+		cur = cur.limit_length(speed + 0.5)
+	cur = cur.move_toward(want, (MOVE_ACCEL if want.length() >= cur.length() else MOVE_DECEL) * delta)
+	velocity.x = cur.x
+	velocity.z = cur.y
 	velocity.y = 0.0 if is_on_floor() else velocity.y - 30.0 * delta
 	var before := global_position
 	move_and_slide()
@@ -507,8 +530,16 @@ func _physics_process(delta: float) -> void:
 	_process_interaction(delta)
 	_process_revive(delta)
 	var planar := Vector2(velocity.x, velocity.z).length()
+	# Velocidade real (o que o corpo de fato andou, já com colisões) para o passo casar com o chão.
+	var moved := Vector2(global_position.x - before.x, global_position.z - before.z).length() / maxf(delta, 0.0001)
+	model.ground_speed = minf(planar, moved)
 	model.animate(delta, planar / current_move_speed())
 	_footsteps(delta, planar)
+
+## Quanto o jogador empurra o direcional (teclado = 1; joystick do celular = 0,35..1).
+func _input_strength() -> float:
+	var v := Input.get_vector("move_left", "move_right", "move_up", "move_down", 0.12)
+	return clampf(remap(v.length(), 0.15, 0.85, 0.35, 1.0), 0.35, 1.0)
 
 func _input_direction() -> Vector3:
 	var v := Input.get_vector("move_left", "move_right", "move_up", "move_down", 0.12)
@@ -654,20 +685,29 @@ func _apply_hit() -> void:
 	var fwd := facing()
 	var half_arc := deg_to_rad(attack_arc_degrees * 0.5)
 	var hit_any := false
+	# Golpe em arco: o alvo principal (mais à frente e perto) leva o dano cheio; os demais, uma fração,
+	# e no máximo CLEAVE_MAX inimigos por golpe (antes um golpe limpava a horda inteira).
+	var targets: Array[Enemy] = []
 	for e: Node in get_tree().get_nodes_in_group("enemies"):
 		var en := e as Enemy
-		if en == null or en.is_dead():
-			continue
-		if _in_arc(en.global_position, fwd, half_arc, reach() + en.get_radius()):
-			var crit := _rng.randf() < crit() or _riposte > 0.0
-			var info := DamageInfo.make(damage() * (crit_multiplier if crit else 1.0), self, crit)
-			info.dodgeable = true
-			en.take_damage(info)
-			hit_any = true
-			var ls := gear(&"lifesteal_pct")
-			if ls > 0.0:
-				health.heal(info.amount * ls)
-			AudioManager.play_3d(&"hit", en.global_position, -2.0 if crit else -5.0, 0.85 if crit else 1.0)
+		if en and not en.is_dead() and _in_arc(en.global_position, fwd, half_arc, reach() + en.get_radius()):
+			targets.append(en)
+	var me := global_position
+	targets.sort_custom(func(a: Enemy, b: Enemy) -> bool:
+		var da := a.global_position - me
+		var db := b.global_position - me
+		return da.length() * (2.0 - fwd.dot(da.normalized())) < db.length() * (2.0 - fwd.dot(db.normalized())))
+	for i in mini(targets.size(), CLEAVE_MAX):
+		var en := targets[i]
+		var crit := _rng.randf() < crit() or (_riposte > 0.0 and i == 0)
+		var info := DamageInfo.make(damage() * (1.0 if i == 0 else CLEAVE_MULT) * (crit_multiplier if crit else 1.0), self, crit)
+		info.dodgeable = true
+		en.take_damage(info)
+		hit_any = true
+		var ls := gear(&"lifesteal_pct")
+		if ls > 0.0:
+			health.heal(info.amount * ls)
+		AudioManager.play_3d(&"hit", en.global_position, -2.0 if crit else -5.0, 0.85 if crit else 1.0)
 	for h: Node in get_tree().get_nodes_in_group("harvestable"):
 		var hv := h as Harvestable
 		if hv and _in_arc(hv.global_position, fwd, half_arc, attack_range + 0.8):
@@ -1124,6 +1164,8 @@ func _process_dodge(delta: float) -> void:
 	velocity.y = 0.0
 	move_and_slide()
 	global_position.y = maxf(global_position.y, 0.0)
+	model.ground_speed = speed
+	model.backpedal = false
 	model.animate(delta, 1.6)
 
 func _cast_dash(a: AbilityDef) -> void:
@@ -1406,6 +1448,7 @@ func _puppet_process(delta: float) -> void:
 		global_position = global_position.lerp(_net_target, clampf(delta * 12.0, 0.0, 1.0))
 	model.rotation.y = lerp_angle(model.rotation.y, _net_yaw, clampf(delta * 12.0, 0.0, 1.0))
 	if not health.dead:
+		model.ground_speed = _net_speed * current_move_speed()
 		model.animate(delta, _net_speed)
 
 # --- Destravar --------------------------------------------------------------

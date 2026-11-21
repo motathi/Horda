@@ -40,7 +40,10 @@ func _process(delta: float) -> void:
 	if _ally_dirty > 0.0:
 		_ally_dirty -= delta
 		if _ally_dirty <= 0.0:
-			bake_ally_nav()
+			if OS.has_feature("web") and TimeManager.is_night():
+				_ally_dirty = 3.0  # web: não trava o quadro no meio da horda (muros caindo); refaz depois
+			else:
+				bake_ally_nav()
 var _baking: bool = false
 
 const TIPS: Array[String] = [
@@ -85,6 +88,7 @@ func _ready() -> void:
 
 	horde.spawn_points = builder.spawn_points
 	spawner.regions = builder.regions
+	spawner.guardians = builder.guardians
 	objectives = DailyObjectives.new()
 	objectives.name = "DailyObjectives"
 	add_child(objectives)
@@ -134,8 +138,11 @@ func _on_phase_changed(phase: int, day: int) -> void:
 		h.try_respawn(day)
 	for l: Lootable in builder.lootables.values():
 		l.try_restock(day)
-	# Árvores derrubadas abrem caminho: atualiza a malha de navegação em segundo plano.
-	if _nav_dirty and not _baking:
+	# Árvores derrubadas abrem caminho: atualiza a malha de navegação em segundo plano. Na web (export sem
+	# threads) o "segundo plano" roda no próprio quadro e travava a página por segundos bem no fim da horda
+	# (no celular o navegador derrubava o jogo; no coop caía a conexão): lá a malha do início continua
+	# valendo (as árvores renascem nos mesmos lugares; os zumbis só contornam o espaço vazio).
+	if _nav_dirty and not _baking and not OS.has_feature("web"):
 		_nav_dirty = false
 		_baking = true
 		builder.nav_region.bake_navigation_mesh(true)

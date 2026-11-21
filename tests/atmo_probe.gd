@@ -88,6 +88,10 @@ func _ready() -> void:
 		await _find_shots(world, hero, OS.get_environment("ATMO_FIND"))
 		get_tree().quit()
 		return
+	if OS.get_environment("ATMO_LAIR") != "":
+		await _lair_shots(world, hero)
+		get_tree().quit()
+		return
 	if OS.get_environment("ATMO_PROP") != "":
 		await _prop_shots(world, hero, OS.get_environment("ATMO_PROP"))
 		get_tree().quit()
@@ -298,6 +302,73 @@ func _decor_shots(world: World, hero: Hero, model: String) -> void:
 	await _save("%s_noite" % model)
 
 ## Objetos de cenário do Blender (3 exemplos lado a lado), de dia e ao entardecer.
+## Covil de guardião (chefe + Baú do Guardião), um baú comum, e o baú aberto depois do chefe cair.
+func _lair_shots(world: World, hero: Hero) -> void:
+	world.hud.visible = false
+	hero.health.invulnerable = true
+	TimeManager.running = false
+	var idx := int(OS.get_environment("ATMO_INDEX")) if OS.get_environment("ATMO_INDEX") != "" else 0
+	var g: Dictionary = world.builder.guardians[idx % world.builder.guardians.size()]
+	var boss: Enemy = null
+	for e in Enemy.all:
+		if e.is_guardian and e.global_position.distance_to(g.pos) < 12.0:
+			boss = e
+	print("guardiões: ", world.builder.guardians.size(), " baús: ", world.builder.lootables.values().filter(func(l: Lootable) -> bool: return l.lid != null).size())
+	for zoom: float in [11.0]:
+		world.camera_rig.set(&"distance", zoom)
+		world.camera_rig.set(&"_zoom_target", zoom)
+	var chest: Lootable = null
+	for l: Lootable in world.builder.lootables.values():
+		if l.guard_radius > 0.0 and l.global_position.distance_to(g.pos) < 8.0:
+			chest = l
+	world.camera_rig.global_position = g.pos
+	hero.global_position = g.pos + Vector3(0, 0, 7)
+	TimeManager.set_state(TimeManager.Phase.DAY, 3, 20.0)
+	await _wait_frames(60)
+	print("baú trancado: ", chest.is_guarded() if chest else "sem baú", " chefe: ", boss.display_name() if boss else "nenhum")
+	await _save("lair_%d_dia" % idx)
+	if boss:
+		boss.take_damage(DamageInfo.make(999999, hero))
+	await _wait_frames(40)
+	if chest:
+		print("depois do chefe: trancado=", chest.is_guarded())
+		chest.interact(hero)
+	world.camera_rig.set(&"distance", 6.0)
+	world.camera_rig.set(&"_zoom_target", 6.0)
+	world.camera_rig.global_position = chest.global_position if chest else g.pos
+	await _wait_frames(5)
+	var cb := get_viewport().get_camera_3d().global_transform.basis
+	hero.global_position = world.camera_rig.global_position + Vector3(cb.z.x, 0, cb.z.z).normalized() * 2.2
+	await _wait_frames(60)
+	await _save("lair_%d_aberto" % idx)
+	# Os três baús lado a lado numa clareira; depois o do meio aberto.
+	var cp := Vector3(-26, 0, 22)
+	for h in get_tree().get_nodes_in_group("harvestable"):
+		if (h as Node3D).global_position.distance_to(cp) < 14.0:
+			h.queue_free()
+	world.camera_rig.set(&"distance", 9.0)
+	world.camera_rig.set(&"_zoom_target", 9.0)
+	world.camera_rig.global_position = cp
+	await _wait_frames(5)
+	var cb3 := get_viewport().get_camera_3d().global_transform.basis
+	var right := Vector3(cb3.x.x, 0, cb3.x.z).normalized()
+	hero.global_position = cp + Vector3(cb3.z.x, 0, cb3.z.z).normalized() * 3.0
+	var rng := RandomNumberGenerator.new()
+	var made: Array[Lootable] = []
+	for k in 3:
+		var l := PropFactory.make_lootable(["chest_supplies", "chest_gear", "chest_guardian"][k], rng)
+		world.add_child(l)
+		l.global_position = cp + right * ((k - 1) * 2.4)
+		l.rotation.y = atan2(cb3.z.x, cb3.z.z) + [0.5, 0.0, -0.5][k]
+		made.append(l)
+	TimeManager.set_state(TimeManager.Phase.DAY, 3, 20.0)
+	await _wait_frames(40)
+	await _save("baus_dia")
+	made[1].interact(hero)
+	TimeManager.set_state(TimeManager.Phase.DUSK, 3, 21.0)
+	await _wait_frames(60)
+	await _save("baus_entardecer_aberto")
+
 func _prop_shots(world: World, hero: Hero, kind: String) -> void:
 	var p := Vector3(-26, 0, 22)
 	for h in get_tree().get_nodes_in_group("harvestable"):

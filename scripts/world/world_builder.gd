@@ -31,6 +31,8 @@ var map_objects: Texture2D
 var map_noise: Texture2D
 var spawn_points: Array[Vector3] = []
 var regions: Array[Dictionary] = []
+## Covis dos guardiões (chefes do mapa), cada um com um Baú do Guardião ao lado.
+var guardians: Array[Dictionary] = []
 
 func build(world: Node3D, seed_value: int) -> void:
 	rng.seed = seed_value
@@ -376,6 +378,9 @@ func _add_decor(n: Node3D, p: Vector3, rot_y: float = 0.0) -> void:
 func _build_forest() -> void:
 	var c := Vector2(-25, -78)
 	var half := Vector2(85, 38)
+	# Covil do guardião e baús primeiro (o resto da região se acomoda em volta).
+	_place_lair(c, half * 0.6, "Lenhador Putrefato", "zombie_brute", 700.0)
+	_place_chests(c, half * 0.6, 1, 1)
 	for i in 230:
 		var p: Variant = _try_place(c, half, 1.3)
 		if p != null:
@@ -395,12 +400,15 @@ func _build_forest() -> void:
 		var p3: Variant = _try_place(c, half, 1.5)
 		if p3 != null:
 			_add_harvestable(PropFactory.make_rock(rng, false), p3)
-	regions.append({"name": "Floresta", "center": Vector3(c.x, 0, c.y), "radius": 50.0, "max": 10,
+	regions.append({"name": "Floresta", "center": Vector3(c.x, 0, c.y), "radius": 50.0, "max": 20,
 		"enemies": [_enemy("zombie")], "weights": [1.0], "hp_mult": 1.0})
 
 func _build_quarry() -> void:
 	var c := Vector2(-85, 15)
 	var half := Vector2(28, 32)
+	# Covil do guardião e baús primeiro (o resto da região se acomoda em volta).
+	_place_lair(c, half * 0.6, "Colosso da Pedreira", "zombie_brute", 900.0)
+	_place_chests(c, half * 0.6, 1, 0)
 	for i in 6:
 		_paint_circle(Vector2(c.x + rng.randf_range(-20, 20), c.y + rng.randf_range(-25, 25)), rng.randf_range(8, 14), 1, 0.7)
 	for i in 34:
@@ -415,12 +423,15 @@ func _build_quarry() -> void:
 		var p3: Variant = _try_place(c, half, 1.2)
 		if p3 != null:
 			_add_lootable(PropFactory.make_lootable("crate", rng), p3, rng.randf() * TAU)
-	regions.append({"name": "Pedreira", "center": Vector3(c.x, 0, c.y), "radius": 30.0, "max": 6,
+	regions.append({"name": "Pedreira", "center": Vector3(c.x, 0, c.y), "radius": 30.0, "max": 12,
 		"enemies": [_enemy("zombie")], "weights": [1.0], "hp_mult": 1.0})
 
 func _build_city() -> void:
 	var c := Vector2(80, 12)
 	_paint_rect(c, Vector2(62, 84), 1)
+	# Covil do guardião e baús primeiro (o resto da região se acomoda em volta).
+	_place_lair(c, Vector2(26, 36), "Cavaleiro Ossudo", "skeleton_warrior", 1000.0)
+	_place_chests(c, Vector2(26, 36), 1, 1)
 	# Quarteirões em grade, deixando ruas livres.
 	for gx in 3:
 		for gz in 4:
@@ -446,7 +457,7 @@ func _build_city() -> void:
 		var p2: Variant = _try_place(c, Vector2(30, 42), 1.3)
 		if p2 != null:
 			_add_harvestable(PropFactory.make_tree(rng, rng.randf() < 0.5), p2)
-	regions.append({"name": "Cidade Abandonada", "center": Vector3(c.x, 0, c.y), "radius": 38.0, "max": 12,
+	regions.append({"name": "Cidade Abandonada", "center": Vector3(c.x, 0, c.y), "radius": 38.0, "max": 22,
 		"enemies": [_enemy("zombie"), _enemy("zombie_fast"), _enemy("skeleton_minion")], "weights": [0.6, 0.25, 0.15], "hp_mult": 1.0})
 
 func _build_farm() -> void:
@@ -454,6 +465,9 @@ func _build_farm() -> void:
 	var barn_pos := Vector3(c.x + 22, 0, c.y - 8)
 	_reserve(barn_pos, 10.0)
 	_add_static(PropFactory.make_barn(rng), barn_pos, deg_to_rad(15))
+	# Covil do guardião e baús primeiro (o resto da região se acomoda em volta).
+	_place_lair(c, Vector2(30, 26), "Espantalho Faminto", "zombie", 600.0)
+	_place_chests(c, Vector2(30, 26), 1, 0)
 	# Campos de plantação
 	for f in 3:
 		var fc := Vector2(c.x - 22 + f * 16, c.y + 12)
@@ -482,11 +496,14 @@ func _build_farm() -> void:
 		var tp: Variant = _try_place(c, Vector2(40, 34), 1.3)
 		if tp != null:
 			_add_harvestable(PropFactory.make_tree(rng), tp)
-	regions.append({"name": "Fazenda", "center": Vector3(c.x, 0, c.y), "radius": 34.0, "max": 8,
+	regions.append({"name": "Fazenda", "center": Vector3(c.x, 0, c.y), "radius": 34.0, "max": 15,
 		"enemies": [_enemy("zombie")], "weights": [1.0], "hp_mult": 1.0})
 
 func _build_contaminated() -> void:
 	var c := Vector2(88, -88)
+	# Covil do guardião e baús primeiro (o resto da região se acomoda em volta).
+	_place_lair(c, Vector2(20, 20), "Abominação Tóxica", "zombie_brute", 1600.0)
+	_place_chests(c, Vector2(20, 20), 1, 1)
 	for i in 8:
 		_paint_circle(Vector2(c.x + rng.randf_range(-20, 20), c.y + rng.randf_range(-20, 20)), rng.randf_range(10, 18), 2, 1.0)
 	for i in 26:
@@ -501,7 +518,7 @@ func _build_contaminated() -> void:
 		var p3: Variant = _try_place(c, Vector2(26, 26), 2.0)
 		if p3 != null:
 			_add_harvestable(PropFactory.make_rock(rng, true), p3)
-	regions.append({"name": "Área Contaminada", "center": Vector3(c.x, 0, c.y), "radius": 26.0, "max": 9,
+	regions.append({"name": "Área Contaminada", "center": Vector3(c.x, 0, c.y), "radius": 26.0, "max": 16,
 		"enemies": [_enemy("zombie"), _enemy("zombie_fast"), _enemy("zombie_brute"), _enemy("zombie_exploder"), _enemy("zombie_spitter"), _enemy("skeleton_minion"), _enemy("skeleton_warrior"), _enemy("skeleton_mage")],
 		"weights": [0.24, 0.2, 0.14, 0.08, 0.08, 0.14, 0.06, 0.06], "hp_mult": 1.25})
 
@@ -514,6 +531,11 @@ func _scatter_wilds() -> void:
 				_add_harvestable(PropFactory.make_tree(rng), p)
 			else:
 				_add_harvestable(PropFactory.make_rock(rng, rng.randf() < 0.4), p)
+	# Baús isolados entre as regiões (mantimentos e, mais raros, equipamentos).
+	_place_chests(Vector2.ZERO, Vector2(105, 105), 6, 3, 40.0)
+	# Ermos: grupos de zumbis vagando entre as regiões (o caminho entre elas não é mais vazio).
+	regions.append({"name": "Ermos", "hidden": true, "center": Vector3.ZERO, "radius": 105.0, "max": 14,
+		"enemies": [_enemy("zombie"), _enemy("zombie_fast")], "weights": [0.8, 0.2], "hp_mult": 1.0})
 	# Caixas isoladas = recompensa por explorar
 	for i in 8:
 		var lp: Variant = _try_place(Vector2.ZERO, Vector2(105, 105), 1.2)
@@ -641,6 +663,25 @@ func _define_spawns() -> void:
 		p.x = clampf(p.x, -MAP_HALF + 8, MAP_HALF - 8)
 		p.z = clampf(p.z, -MAP_HALF + 8, MAP_HALF - 8)
 		spawn_points.append(p)
+
+## Covil de um guardião: clareira com um Baú do Guardião (trancado até o chefe cair).
+func _place_lair(center: Vector2, half: Vector2, title: String, enemy_id: String, hp: float) -> void:
+	var p: Variant = _try_place(center, half, 4.0, 4.0, 60)
+	if p == null:
+		return
+	var pos := p as Vector3
+	var def := _enemy(enemy_id)
+	var chest_pos := pos + Vector3(rng.randf_range(-1.5, 1.5), 0, -2.6)
+	_add_lootable(PropFactory.make_lootable("chest_guardian", rng), chest_pos, rng.randf_range(-0.4, 0.4))
+	guardians.append({"id": "g%d" % guardians.size(), "pos": pos + Vector3(0, 0, 2.0), "def": def, "title": title,
+		"hp_mult": hp / maxf(1.0, def.max_health * 7.0)})
+
+## Baús de mantimentos e de equipamentos espalhados numa área (longe da base).
+func _place_chests(center: Vector2, half: Vector2, supplies: int, gear: int, min_dist: float = 30.0) -> void:
+	for i in supplies + gear:
+		var p: Variant = _try_place(center, half, 1.3, 3.5, 16)
+		if p != null and (p as Vector3).length() > min_dist:
+			_add_lootable(PropFactory.make_lootable("chest_supplies" if i < supplies else "chest_gear", rng), p, rng.randf() * TAU)
 
 func _enemy(id: String) -> EnemyDef:
 	return load("res://data/enemies/%s.tres" % id) as EnemyDef
