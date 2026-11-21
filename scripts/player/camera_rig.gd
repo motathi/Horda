@@ -41,6 +41,8 @@ func set_target(t: Node3D) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventScreenTouch:
 		var t := event as InputEventScreenTouch
+		if t.pressed and _touches.has(t.index):
+			_touches.clear()  # toque antigo preso (o "soltou" se perdeu ao trocar de app)
 		if t.pressed:
 			_touches[t.index] = t.position
 		else:

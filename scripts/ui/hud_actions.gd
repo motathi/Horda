@@ -38,6 +38,18 @@ func _ready() -> void:
 		{"id": "build", "off": Vector2(-706, -50), "r": 34.0, "key": "G", "icon": UIStyle.hud_icon("build"), "touch": -99, "glow": 0.0},
 	]
 	_lock_icon = UIStyle.hud_icon("lock")
+	Platform.input_reset.connect(_reset_touches)
+
+## Esquece todos os toques (o "soltou" se perdeu ao trocar de app): joystick, botões e ataque.
+func _reset_touches() -> void:
+	_stick_touch = -1
+	for b in _buttons:
+		b.touch = -99
+	_stick_vec = Vector2.ZERO
+	for a: String in ["move_left", "move_right", "move_up", "move_down"]:
+		Input.action_release(a)
+	if hero:
+		hero.touch_attack_held = false
 
 func _center(b: Dictionary) -> Vector2:
 	return get_viewport_rect().size + (b.off as Vector2)
@@ -58,6 +70,8 @@ func _input(event: InputEvent) -> void:
 		_stick_center = _stick_home
 	if event is InputEventScreenTouch:
 		var t := event as InputEventScreenTouch
+		if t.pressed and (t.index == _stick_touch or _any_button_touch(t.index)):
+			_reset_touches()  # esse dedo "ainda estava" na tela: o fim do toque anterior se perdeu
 		if t.pressed:
 			if _try_press(t.position, t.index):
 				get_viewport().set_input_as_handled()

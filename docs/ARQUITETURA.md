@@ -146,6 +146,12 @@ preparação até o passo final.
   vários instantes até assentar (o Godot mede `innerWidth`/`innerHeight` a cada quadro). Se a tela cheia cair
   junto com a rotação, ela volta no primeiro toque já na horizontal (o navegador só permite pedir tela cheia
   dentro de um toque).
+- Trocar de app/aba: `Platform.set_portrait` guarda a pausa de antes do aviso "gire o celular" e volta a ela
+  (só continua pausado se o menu de pausa estava aberto — antes a tela inicial e o carregamento ficavam
+  pausados para sempre se o celular passasse pela vertical durante a troca de app). `Platform.reset_input()`
+  (sinal `input_reset`) solta movimento, ataque, joystick, botões do HUD e toques da câmera; roda ao perder e
+  ganhar foco, em `visibilitychange`/`pagehide`/`blur` do navegador e ao voltar para a horizontal. Um toque
+  novo num índice que ainda constava como apertado também zera o estado (o "soltou" anterior se perdeu).
 - `vercel.json`: `index.pck`/`index.wasm` com `max-age=0, must-revalidate` (sempre confere a versão; sem
   mudança o servidor responde 304). O service worker do PWA não chega a instalar no export sem threads
   (a lista dele inclui `index.worker.js`, que não existe), então não guarda versões antigas.

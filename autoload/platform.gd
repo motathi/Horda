@@ -8,6 +8,12 @@ var touch: bool = false
 var low_end: bool = false
 
 var _portrait_layer: CanvasLayer
+## Pausa que existia antes do aviso de "gire o celular" (para voltar exatamente ao estado anterior).
+var _paused_before: bool = false
+var _js_visibility_cb: JavaScriptObject
+
+## Toques/joystick/ataque presos foram zerados (o app saiu e voltou, a aba ficou escondida...).
+signal input_reset
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -22,6 +28,17 @@ func _ready() -> void:
 		# Profundidade de 24 bits: 16 bits causava "acne" (sombras piscando).
 		RenderingServer.directional_shadow_atlas_set_size(2048, false)
 	_build_portrait_warning()
+	# No navegador do celular, trocar de app/aba nem sempre entrega o "soltou" dos dedos: zera tudo ao
+	# esconder e ao voltar (além dos avisos de foco do próprio Godot, em _notification).
+	if OS.has_feature("web"):
+		_js_visibility_cb = JavaScriptBridge.create_callback(func(_args: Array) -> void: reset_input())
+		var doc: JavaScriptObject = JavaScriptBridge.get_interface("document")
+		if doc:
+			doc.addEventListener("visibilitychange", _js_visibility_cb)
+		var win: JavaScriptObject = JavaScriptBridge.get_interface("window")
+		if win:
+			win.addEventListener("pagehide", _js_visibility_cb)
+			win.addEventListener("blur", _js_visibility_cb)
 	if OS.has_feature("web") and str(JavaScriptBridge.eval("window.location.search", true)).contains("dbg=1"):
 		var t := Timer.new()
 		t.wait_time = 0.5
@@ -46,6 +63,18 @@ func _detect_touch() -> bool:
 			return false
 		return OS.has_feature("web_android") or OS.has_feature("web_ios") or DisplayServer.is_touchscreen_available()
 	return OS.has_feature("mobile") or "--touch" in OS.get_cmdline_user_args()
+
+func _notification(what: int) -> void:
+	if what in [NOTIFICATION_APPLICATION_FOCUS_OUT, NOTIFICATION_APPLICATION_FOCUS_IN, NOTIFICATION_WM_WINDOW_FOCUS_OUT,
+			NOTIFICATION_WM_WINDOW_FOCUS_IN, NOTIFICATION_APPLICATION_PAUSED, NOTIFICATION_APPLICATION_RESUMED]:
+		reset_input()
+
+## Solta tudo o que pode ter ficado "apertado": movimento, ataque, joystick, botões e toques da câmera.
+func reset_input() -> void:
+	for a: String in ["move_left", "move_right", "move_up", "move_down", "attack"]:
+		if InputMap.has_action(a):
+			Input.action_release(a)
+	input_reset.emit()
 
 func toggle_fullscreen() -> void:
 	var fs := DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN
@@ -73,14 +102,21 @@ func _process(_delta: float) -> void:
 	if not touch:
 		return
 	var s := get_window().size
-	var portrait := s.y > s.x
-	if portrait != _portrait_layer.visible:
-		_portrait_layer.visible = portrait
-		# Pausa enquanto estiver na vertical (sem tocar na pausa do jogador ao voltar).
-		if portrait:
-			get_tree().paused = true
-		elif GameManager.is_playing() and not _user_paused():
-			get_tree().paused = false
+	set_portrait(s.y > s.x)
+
+## Celular na vertical: mostra o aviso e pausa; de volta na horizontal, volta ao estado de antes.
+func set_portrait(portrait: bool) -> void:
+	if portrait == _portrait_layer.visible:
+		return
+	_portrait_layer.visible = portrait
+	if portrait:
+		_paused_before = get_tree().paused
+		get_tree().paused = true
+	else:
+		# Só continua pausado se o jogador tinha aberto o menu de pausa (no menu e no carregamento, despausa;
+		# antes só despausava durante a partida e a tela inicial ficava congelada depois de trocar de app).
+		get_tree().paused = _paused_before and _user_paused()
+		reset_input()
 
 func _user_paused() -> bool:
 	var hud := get_tree().get_first_node_in_group("hud")

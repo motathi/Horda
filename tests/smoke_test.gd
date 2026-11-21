@@ -41,6 +41,7 @@ func _ready() -> void:
 	await _test_settings_tutorial()
 	await _test_combat()
 	await _test_combat_challenge()
+	await _test_app_switch()
 	await _test_abilities()
 	await _test_attributes()
 	await _test_equipment()
@@ -303,6 +304,36 @@ func _test_combat() -> void:
 	check(hero.health.current < hp0, "zumbi causa dano ao herói (%.0f -> %.0f)" % [hp0, hero.health.current])
 	e2.take_damage(DamageInfo.make(9999, hero))
 	hero.health.heal(9999)
+
+## Celular: trocar de app/girar a tela não pode deixar o jogo pausado nem toques presos.
+func _test_app_switch() -> void:
+	print("[celular: trocar de app e voltar]")
+	var hud := world.hud
+	get_tree().paused = false
+	Platform.set_portrait(true)
+	check(get_tree().paused, "na vertical o jogo pausa")
+	Platform.set_portrait(false)
+	check(not get_tree().paused, "de volta na horizontal o jogo despausa")
+	hud.call("_toggle_pause")
+	check(get_tree().paused, "menu de pausa aberto")
+	Platform.set_portrait(true)
+	Platform.set_portrait(false)
+	check(get_tree().paused, "com o menu de pausa aberto, continua pausado depois de girar")
+	hud.call("_toggle_pause")
+	check(not get_tree().paused, "fechar o menu de pausa despausa")
+	# Toque preso (o "soltou" se perdeu): botão de ataque e joystick ficam livres depois do reset.
+	var acts := hud.find_children("*", "HudActions", true, false)
+	if not acts.is_empty():
+		var ha := acts[0] as HudActions
+		ha._buttons[0].touch = 0
+		ha._stick_touch = 1
+		world.hero.touch_attack_held = true
+		Input.action_press("move_left", 1.0)
+		Platform.reset_input()
+		check(ha._buttons[0].touch == -99 and ha._stick_touch == -1 and not world.hero.touch_attack_held and not Input.is_action_pressed("move_left"),
+			"ao voltar ao jogo, toques e joystick presos são liberados")
+	else:
+		check(false, "botões de ação do HUD encontrados")
 
 ## Golpe lento e anunciado, mais dano no herói, esquiva com invulnerabilidade e contra-ataque.
 func _test_combat_challenge() -> void:
