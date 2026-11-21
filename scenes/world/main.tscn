@@ -10,7 +10,7 @@
 [ext_resource type="Script" path="res://scripts/economy/base_services.gd" id="8"]
 [ext_resource type="Resource" path="res://data/config/base_services.tres" id="9"]
 [ext_resource type="Script" path="res://scripts/ui/hud.gd" id="10"]
-[ext_resource type="Texture2D" path="res://assets/ui/menu_background.jpg" id="11"]
+[ext_resource type="Texture2D" path="res://assets/ui/loading_screen.jpg" id="11"]
 
 [sub_resource type="ProceduralSkyMaterial" id="Sky_mat"]
 sky_top_color = Color(0.32, 0.55, 0.9, 1)
@@ -116,7 +116,7 @@ expand_mode = 1
 stretch_mode = 6
 
 [node name="Shade" type="Panel" parent="Loading"]
-modulate = Color(1, 1, 1, 0.55)
+modulate = Color(1, 1, 1, 0.12)
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
