@@ -141,7 +141,10 @@ func _build_army() -> void:
 		var q := army.queue[0]
 		_rows.add_child(UIStyle.label("Treinando: %s (%ds)%s" % [(q["def"] as SoldierDef).display_name, ceili(float(q["t"])), "  +%d na fila" % (army.queue.size() - 1) if army.queue.size() > 1 else ""], 14, Color(0.6, 0.85, 1.0)))
 	if army.barracks().is_empty():
-		_rows.add_child(UIStyle.label("Construa um Quartel (menu Construir, G) para recrutar soldados.", 14, UIStyle.RED))
+		_rows.add_child(UIStyle.label("Construa um Quartel (menu Construir, G): ele forma Guardas sozinho.", 14, UIStyle.RED))
+	else:
+		var left := army.auto_seconds_left()
+		_rows.add_child(UIStyle.label("Quartéis formam um Guarda grátis a cada %ds (mais quartéis, mais rápido)%s" % [int(Army.AUTO_TRAIN_TIME), ("  •  próximo em %ds" % ceili(left)) if left >= 0.0 else ("  •  exército completo" if army.alive_count() >= army.capacity() else "")], 14, Color(0.6, 0.85, 1.0)))
 	for d in army.defs:
 		var why := army.block_reason(d)
 		var sub := "%s\n%s  •  treino %ds" % [d.description, d.stats_text(), int(d.train_time)]

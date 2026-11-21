@@ -1109,6 +1109,7 @@ func _test_army() -> void:
 	await _clear_enemies()
 	var day0 := TimeManager.day
 	TimeManager.day = 6
+	army.auto_train = false  # o treino automático tem verificação própria no fim
 	check(army.defs.size() == 4, "4 tipos de soldado (%d)" % army.defs.size())
 	var guard := army.get_def(&"guard")
 	check(army.block_reason(guard).contains("Quartel"), "sem Quartel não recruta")
@@ -1180,6 +1181,16 @@ func _test_army() -> void:
 		so.queue_free()
 	army.soldiers.clear()
 	army.queue.clear()
+	# Treino automático: fila vazia e vagas sobrando -> o Quartel forma um Guarda sozinho.
+	army.auto_train = true
+	await wait(0.1)
+	check(army.auto_seconds_left() > 0.0, "Quartel conta o tempo do próximo Guarda (%.0fs)" % army.auto_seconds_left())
+	army._auto_t = Army.AUTO_TRAIN_TIME - 0.05
+	await wait(0.3)
+	check(army.alive_count() == 1 and army.soldiers[0].def.id == &"guard", "Quartel forma um Guarda de graça sozinho")
+	for so in army.soldiers.duplicate():
+		so.queue_free()
+	army.soldiers.clear()
 	bar.queue_free()
 	TimeManager.day = day0
 	await wait(0.1)

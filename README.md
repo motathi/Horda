@@ -110,7 +110,7 @@ pontas de aço, recarga, lunetas, munição pesada, muralhas de ferro, pedreiros
 
 **Exército:** construa um **Quartel** (horda 2; 4 vagas, +2 por nível, até 12 — 8 no celular) e recrute na
 aba *Exército* do menu da base: **Guarda** (tanque), **Arqueiro** (à distância, horda 3), **Bárbaro** (dano
-alto, horda 4) e **Mago de Batalha** (magia em área, horda 6). Cada soldado treina alguns segundos no Quartel.
+alto, horda 4) e **Mago de Batalha** (magia em área, horda 6). Cada soldado treina alguns segundos no Quartel. Sem fila de recrutamento, cada Quartel forma sozinho um **Guarda grátis a cada 25 s** (dois quartéis, metade do tempo) até lotar as vagas.
 Três ordens para todo o exército — **Defender a base** (postos dentro da paliçada), **Seguir o herói** e
 **Caçar zumbis** (até 65 m da base) — trocadas na aba, na pílula do topo da tela ou com **V**. Soldados usam
 uma malha de navegação própria (contornam paliçada e construções e passam pelos portões); zumbis revidam e

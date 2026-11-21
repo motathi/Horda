@@ -114,10 +114,34 @@ func set_order(o: int, who: Node3D = null) -> String:
 func cycle_order() -> String:
 	return set_order((order + 1) % 3)
 
+## Treino automático: com a fila vazia e vagas sobrando, cada Quartel forma um Guarda de graça a cada
+## AUTO_TRAIN_TIME segundos (dois quartéis = metade do tempo). Os tipos especiais são recrutados no menu da base.
+const AUTO_TRAIN_TIME := 25.0
+var auto_train: bool = true
+var _auto_t: float = 0.0
+
+## Segundos até o próximo Guarda automático (-1 = parado: sem quartel, exército cheio ou fila ocupada).
+func auto_seconds_left() -> float:
+	var bs := barracks().size()
+	if bs == 0 or not auto_train or not queue.is_empty() or alive_count() >= capacity():
+		return -1.0
+	return maxf(0.0, (AUTO_TRAIN_TIME - _auto_t) / bs)
+
 func _process(delta: float) -> void:
-	if Coop.is_client() or not GameManager.is_playing() or queue.is_empty():
+	if Coop.is_client() or not GameManager.is_playing():
 		return
-	if barracks().is_empty():
+	var bs := barracks()
+	if bs.is_empty():
+		return
+	if queue.is_empty():
+		if auto_train and alive_count() < capacity() and not defs.is_empty():
+			_auto_t += delta * bs.size()
+			if _auto_t >= AUTO_TRAIN_TIME:
+				_auto_t = 0.0
+				spawn(defs[0])
+				changed.emit()
+		else:
+			_auto_t = 0.0
 		return
 	var q: Dictionary = queue[0]
 	q["t"] = float(q["t"]) - delta
