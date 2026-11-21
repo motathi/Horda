@@ -247,6 +247,23 @@ Modelos riggados gerados pelo `tools/tripo_pipeline.py`.
   que ficam longe do corpo. A espada (`CharacterModel.attach_sword()`) é um `BoneAttachment3D` no osso
   `R_Hand`, encaixada na primeira pose de "parado" (`_fit_sword`), e acompanha o pulso nos golpes.
 
+## Efeitos das habilidades
+
+- `tools/blender_skill_fx.py` modela as formas (rastro de lâmina, rachaduras, coroa de choque, coluna de luz,
+  círculo rúnico, mira, cúpula, linhas de velocidade, escudo de vento, flecha de energia e rastro, pena, cristal,
+  estrela de faíscas) num só `skill_fx.glb`; U = ao longo, V = de lado a lado. `SkillFx` (scripts/combat) pega as
+  malhas pelo nome e usa um único shader aditivo (`skill_fx.gdshader`: núcleo claro/borda colorida, rastro que
+  corre com `head`/`tail`, ruído `fx_noise.png` que dissolve, `fade`). Uma função por habilidade
+  (`whirlwind`, `dash`, `warcry`, `nova_telegraph`/`nova_burst`, `multishot` + `arrow_glow` no `Projectile`,
+  `arrow_rain_marker`/`falling_arrow`, `trap_armed`/`trap_snap`, `eagle_trail`/`eagle_strike`); as do Cavaleiro
+  também vão aos outros jogadores pelo `Coop.fx_all`. Revisão visual: `ATMO_SKILLS=1 HORDA_SKIN=<classe>` no
+  `tests/atmo_probe.tscn`.
+- Andar do herói: o corpo anda no passo da física e o modelo é desenhado interpolado entre as duas últimas
+  posições (`Hero._process` + `Engine.get_physics_interpolation_fraction()`); a câmera segue
+  `Hero.visual_position()`. Sem isso o herói tremia em relação à câmera no celular.
+- Construção: `CameraRig.set_overview()` sobe a câmera (72°, 54 m) centrada na base; o direcional arrasta a vista
+  (`pan_overview`) e a neblina de distância afina enquanto dura.
+
 ## Memória no celular (web)
 
 - O navegador do celular mata a aba quando a soma de WebAssembly + JS + memória de vídeo passa do limite

@@ -32,7 +32,7 @@ func _ready() -> void:
 			if j:
 				_jaws.append(j)
 	# Marca no chão para o jogador achar a armadilha.
-	EffectsHub.spawn_ring(global_position + Vector3.UP * 0.05, radius, Color(1.0, 0.75, 0.3, 0.6), 0.6)
+	(func() -> void: SkillFx.trap_armed(global_position, radius)).call_deferred()
 	# Limite por herói: a mais antiga some.
 	var mine := active.filter(func(t: BearTrap) -> bool: return is_instance_valid(t) and t.owner_hero == owner_hero and t._armed)
 	while mine.size() > MAX_PER_HERO:
@@ -73,6 +73,7 @@ func _snap(e: Enemy) -> void:
 	AudioManager.play_3d(&"upgrade", global_position, 3.0, 1.5)
 	AudioManager.play_3d(&"hit", global_position, 0.0, 0.8)
 	EffectsHub.spawn_debris(global_position + Vector3.UP * 0.3, true)
+	SkillFx.trap_snap(global_position)
 	if visual_only:
 		return
 	EffectsHub.spawn_blood(e.global_position + Vector3.UP * 0.5, true)

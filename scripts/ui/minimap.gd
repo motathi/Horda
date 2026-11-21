@@ -50,8 +50,9 @@ func copy_layers_from(other: Minimap) -> void:
 
 func _gui_input(event: InputEvent) -> void:
 	if (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT) or (event is InputEventScreenTouch and event.pressed):
-		pressed.emit()
 		accept_event()
+		if Platform.accept_tap("minimap"):
+			pressed.emit()
 
 func _process(delta: float) -> void:
 	_t += delta

@@ -377,7 +377,7 @@ func _test_map_threats() -> void:
 		m.ground_speed = hero.current_move_speed()
 		m.animate(0.016, 1.0)
 		var expect: float = hero.current_move_speed() / float(m._stride["run"])
-		check(m._current == "run" and absf(m._anim.speed_scale - clampf(expect, 0.6, 2.0)) < 0.05, "corrida no ritmo do passo (x%.2f)" % m._anim.speed_scale)
+		check(m._current == "run" and absf(m._anim.speed_scale - clampf(expect, 0.6, CharacterModel.RUN_MAX_SCALE)) < 0.05, "corrida no ritmo do passo (x%.2f)" % m._anim.speed_scale)
 	else:
 		check(false, "passo medido nas animações do herói")
 

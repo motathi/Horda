@@ -393,7 +393,7 @@ func _build_map_overlay() -> Control:
 	dim.color = Color(0, 0, 0, 0.72)
 	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
 	dim.gui_input.connect(func(e: InputEvent) -> void:
-		if (e is InputEventMouseButton and e.pressed) or (e is InputEventScreenTouch and e.pressed):
+		if ((e is InputEventMouseButton and e.pressed) or (e is InputEventScreenTouch and e.pressed)) and Platform.accept_tap("minimap"):
 			_toggle_map())
 	ov.add_child(dim)
 	var center := CenterContainer.new()

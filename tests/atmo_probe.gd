@@ -88,6 +88,24 @@ func _ready() -> void:
 		await _find_shots(world, hero, OS.get_environment("ATMO_FIND"))
 		get_tree().quit()
 		return
+	if OS.get_environment("ATMO_SKILLS") != "":
+		await _skill_shots(world, hero)
+		get_tree().quit()
+		return
+	if OS.get_environment("ATMO_BUILD") != "":
+		# Vista de construção (city builder) com uma torre em prévia.
+		TimeManager.set_state(TimeManager.Phase.DAY, 1, 25.0)
+		hero.global_position = Vector3(6, 0, 10)
+		await _wait_frames(30)
+		await _save("build_antes")
+		world.build_manager.start(Building.load_def(&"archer_tower"))
+		await _wait_frames(90)
+		await _save("build_vista")
+		world.build_manager.cancel()
+		await _wait_frames(90)
+		await _save("build_depois")
+		get_tree().quit()
+		return
 	if OS.get_environment("ATMO_LAIR") != "":
 		await _lair_shots(world, hero)
 		get_tree().quit()
@@ -302,6 +320,66 @@ func _decor_shots(world: World, hero: Hero, model: String) -> void:
 	await _save("%s_noite" % model)
 
 ## Objetos de cenário do Blender (3 exemplos lado a lado), de dia e ao entardecer.
+## Cada habilidade da classe (HORDA_SKIN) em três momentos depois de lançar, numa clareira com zumbis parados.
+func _skill_shots(world: World, hero: Hero) -> void:
+	world.hud.visible = OS.get_environment("ATMO_HUD") != ""
+	hero.health.invulnerable = true
+	TimeManager.running = false
+	TimeManager.set_state(TimeManager.Phase.DUSK, 3, 24.0)
+	while hero.level < 5:
+		hero.add_xp(hero.xp_to_next())
+	var cp := Vector3(-26, 0, 22)
+	for h in get_tree().get_nodes_in_group("harvestable"):
+		if (h as Node3D).global_position.distance_to(cp) < 16.0:
+			h.queue_free()
+	for e in Enemy.all.duplicate():
+		if is_instance_valid(e) and e.global_position.distance_to(cp) < 40.0:
+			e.queue_free()
+	world.spawner.set_process(false)
+	world.camera_rig.set(&"distance", 13.0)
+	world.camera_rig.set(&"_zoom_target", 13.0)
+	hero.global_position = cp
+	world.camera_rig.global_position = cp
+	var only := OS.get_environment("ATMO_SKILLS")
+	var skin := GameManager.hero_skin
+	for i in 4:
+		if only != "1" and not only.contains(str(i)):
+			continue
+		# Zumbis em volta (parados) para as habilidades terem alvo.
+		var ring: Array[Enemy] = []
+		for k in 7:
+			var a := k * TAU / 7.0
+			var z := (load("res://scenes/enemies/zombie.tscn") as PackedScene).instantiate() as Enemy
+			world.enemies_root.add_child(z)
+			z.global_position = cp + Vector3(cos(a), 0, sin(a)) * (3.0 if k % 2 == 0 else 6.5) + Vector3(0, 0, -3.0)
+			z.configure(load("res://data/enemies/zombie.tres"))
+			z.health.setup(99999.0)
+			ring.append(z)
+		await _wait_frames(10)
+		for z in ring:
+			z.stun(60.0)
+		hero.global_position = cp
+		hero.model.rotation.y = 0.0
+		hero._aim_point = cp + Vector3(0, 0, -6)
+		hero.energy = hero.max_energy
+		hero._cd = [0.0, 0.0, 0.0, 0.0]
+		var why := hero.cast_ability(i)
+		print("habilidade %d: %s" % [i, why if why != "" else "ok"])
+		var t := 0.0
+		var shots: Array = [0.12, 0.32, 0.7] if not (skin == "hunter" and i == 3) else [0.8, 2.0, 4.0]
+		if skin == "hunter" and i == 2:
+			shots = [0.3, 1.2, 2.5]
+		for k in shots.size():
+			await get_tree().create_timer(float(shots[k]) - t).timeout
+			t = float(shots[k])
+			await RenderingServer.frame_post_draw
+			await _save("skill_%s_%d_%d" % [skin, i, k])
+		await get_tree().create_timer(1.0).timeout
+		for z in ring:
+			if is_instance_valid(z):
+				z.queue_free()
+		await _wait_frames(5)
+
 ## Covil de guardião (chefe + Baú do Guardião), um baú comum, e o baú aberto depois do chefe cair.
 func _lair_shots(world: World, hero: Hero) -> void:
 	world.hud.visible = false

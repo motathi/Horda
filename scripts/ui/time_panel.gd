@@ -64,8 +64,9 @@ func set_compact() -> void:
 
 func _gui_input(event: InputEvent) -> void:
 	if (event is InputEventMouseButton and (event as InputEventMouseButton).pressed) or (event is InputEventScreenTouch and (event as InputEventScreenTouch).pressed):
-		pressed.emit()
 		accept_event()
+		if Platform.accept_tap("time_panel"):
+			pressed.emit()
 
 func _process(_delta: float) -> void:
 	var night := TimeManager.is_night()

@@ -24,8 +24,16 @@ func _ready() -> void:
 	var col := VBoxContainer.new()
 	col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(col)
+	var head := HBoxContainer.new()
+	col.add_child(head)
 	_name = UIStyle.label("", 18, UIStyle.GOLD)
-	col.add_child(_name)
+	_name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	head.add_child(_name)
+	# Fechar (no celular não há "clicar fora" com o mouse).
+	var close := UIStyle.button("×", 18)
+	close.custom_minimum_size = Vector2(34, 30)
+	close.pressed.connect(func() -> void: select(null))
+	head.add_child(close)
 	var st := Control.new()
 	st.custom_minimum_size = Vector2(0, 16)
 	_hp = UIStyle.bar(UIStyle.RED, 16)
@@ -59,10 +67,15 @@ func _ready() -> void:
 	visible = false
 	EventBus.object_selected.connect(select)
 
+## Distância do herói a partir da qual o card fecha sozinho (construções, recursos, saqueáveis).
+const AUTO_CLOSE_DISTANCE := 28.0
+
 func select(n: Node) -> void:
 	_target = n
-	visible = true
-	_refresh()
+	_sig = ""
+	visible = n != null
+	if n != null:
+		_refresh()
 
 func _process(_delta: float) -> void:
 	if visible:
@@ -71,6 +84,10 @@ func _process(_delta: float) -> void:
 func _refresh() -> void:
 	if _target == null or not is_instance_valid(_target):
 		visible = false
+		return
+	var hero := GameManager.hero
+	if hero and _target is Node3D and not (_target is Enemy) and (_target as Node3D).global_position.distance_to(hero.global_position) > AUTO_CLOSE_DISTANCE:
+		select(null)
 		return
 	var health: HealthComponent = null
 	if _target is Enemy:

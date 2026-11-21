@@ -37,6 +37,8 @@ var xp: int = 0
 const ABILITY_IDS: Array[StringName] = [&"whirlwind", &"dash", &"warcry", &"nova"]
 const DASH_SPEED := 34.0
 const CLEAVE_MAX := 4
+## Dano especial dos zumbis (ácido, explosão) no herói.
+const SPECIAL_DAMAGE_TAKEN := 1.5
 const CLEAVE_MULT := 0.5
 const MOVE_ACCEL := 42.0  # m/s²: ~0,16 s até a velocidade máxima
 const MOVE_DECEL := 55.0
@@ -428,7 +430,34 @@ func _on_enemy_killed(_e: Node3D, def: EnemyDef, killer: Node) -> void:
 func is_dead() -> bool:
 	return health.dead
 
+# --- Suavização visual entre passos da física ---------------------------------------
+# O corpo anda no passo fixo da física (60 Hz); no celular a tela desenha num ritmo irregular e o herói
+# "tremia" em relação à câmera (parecia pouco FPS). O modelo é desenhado interpolado entre as duas últimas
+# posições da física, e a câmera segue essa posição visual.
+var _phys_prev: Vector3
+var _phys_curr: Vector3
+var _phys_ready: bool = false
+
 func _physics_process(delta: float) -> void:
+	_phys_prev = global_position if not _phys_ready else _phys_curr
+	_physics_step(delta)
+	_phys_curr = global_position
+	if not _phys_ready or _phys_prev.distance_to(_phys_curr) > 3.0:
+		_phys_prev = _phys_curr  # teleporte (renascer, destravar): sem rastro
+		_phys_ready = true
+
+func _process(_delta: float) -> void:
+	if not _phys_ready or model == null or is_puppet:
+		return
+	var f := Engine.get_physics_interpolation_fraction()
+	var vis := _phys_prev.lerp(_phys_curr, f)
+	model.position = Vector3(vis.x - global_position.x, model.position.y, vis.z - global_position.z)
+
+## Onde o herói aparece na tela (a câmera segue isto).
+func visual_position() -> Vector3:
+	return model.global_position if model else global_position
+
+func _physics_step(delta: float) -> void:
 	if is_puppet:
 		_puppet_process(delta)
 		return
@@ -454,6 +483,13 @@ func _physics_process(delta: float) -> void:
 	_attack_timer = maxf(0.0, _attack_timer - delta)
 	attack_cooldown_changed.emit(_attack_timer * attack_speed())
 	var dir := _input_direction()
+	if build_mode:
+		# Construindo: o direcional arrasta a vista de cima (o herói fica parado esperando).
+		var rig := _camera.get_parent() as CameraRig if _camera else null
+		if rig and rig.is_overview():
+			rig.pan_overview(Input.get_vector("move_left", "move_right", "move_up", "move_down", 0.12), delta)
+			dir = Vector3.ZERO
+			_has_move_target = false
 	if dir != Vector3.ZERO:
 		_has_move_target = false
 		_target_enemy = null
@@ -532,7 +568,8 @@ func _physics_process(delta: float) -> void:
 	var planar := Vector2(velocity.x, velocity.z).length()
 	# Velocidade real (o que o corpo de fato andou, já com colisões) para o passo casar com o chão.
 	var moved := Vector2(global_position.x - before.x, global_position.z - before.z).length() / maxf(delta, 0.0001)
-	model.ground_speed = minf(planar, moved)
+	# Suavizado: colisões e o passo da física deixam a velocidade medida "nervosa" quadro a quadro.
+	model.ground_speed = lerpf(maxf(model.ground_speed, 0.0), minf(planar, moved), 0.25)
 	model.animate(delta, planar / current_move_speed())
 	_footsteps(delta, planar)
 
@@ -562,8 +599,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		_on_command_click()
 	elif event.is_action_pressed("attack"):
 		var hit := _raycast_mouse(Layers.ENEMIES | Layers.STRUCTURES | Layers.INTERACTABLES | Layers.WORLD)
-		if hit and _selectable(hit):
-			EventBus.object_selected.emit(hit)
+		# Clicar no chão (ou em algo sem card) fecha o card aberto.
+		EventBus.object_selected.emit(hit if hit and _selectable(hit) else null)
 	elif event.is_action_pressed("interact"):
 		_try_interact()
 	elif event.is_action_pressed("use_slot_1"):
@@ -595,6 +632,8 @@ func _on_command_click() -> void:
 			_set_move_target((hit as Node3D).global_position)
 			_interact_target = hit as Lootable
 			return
+	if not (hit and _selectable(hit)):
+		EventBus.object_selected.emit(null)
 	var p: Variant = _mouse_ground_point()
 	if p != null:
 		_target_enemy = null
@@ -803,6 +842,10 @@ func take_damage(info: DamageInfo) -> void:
 		if not health.dead:
 			Coop.forward_hero_hit(net_peer, info)
 		return
+	# Ácido, poças e explosões dos zumbis também doem mais no herói (o golpe corpo a corpo já vem
+	# multiplicado por Enemy.HERO_DAMAGE_MULT).
+	if not info.from_melee and (info.source is Enemy or info.source == null) and info.type != DamageInfo.Type.TRUE:
+		info.amount *= SPECIAL_DAMAGE_TAKEN
 	health.take_damage(info)
 
 func get_radius() -> float:
@@ -1049,13 +1092,14 @@ func _cast_multishot(a: AbilityDef) -> void:
 	for i in n:
 		if i < cands.size():
 			var crit := _rng.randf() < crit()
-			EffectsHub.spawn_arrow(from, cands[i], DamageInfo.make(dmg * (crit_multiplier if crit else 1.0), self, crit), ARROW_SPEED)
-			Coop.fx_all("arrow", from, cands[i].global_position + Vector3.UP)
+			EffectsHub.spawn_arrow(from, cands[i], DamageInfo.make(dmg * (crit_multiplier if crit else 1.0), self, crit), ARROW_SPEED, true)
+			Coop.fx_all("arrow", from, cands[i].global_position + Vector3.UP, 1.0)
 		else:
 			var ang := lerpf(-half, half, float(i) / maxf(1.0, n - 1.0))
 			var to := global_position + dir.rotated(Vector3.UP, ang) * a.distance + Vector3.UP * 0.8
-			EffectsHub.spawn_bolt(from, to, ARROW_SPEED)
-			Coop.fx_all("arrow", from, to)
+			EffectsHub.spawn_bolt(from, to, ARROW_SPEED, true)
+			Coop.fx_all("arrow", from, to, 1.0)
+	SkillFx.multishot(from, dir, half)
 	_face(global_position + dir, 1.0, 100.0)
 	model.aim_bow(global_position + dir * 8.0 + Vector3.UP * 1.2, 0.5)
 	AudioManager.play_3d(&"arrow", global_position, 0.0, 0.9)
@@ -1127,7 +1171,8 @@ func _enemies_in_radius(center: Vector3, r: float) -> Array[Enemy]:
 func _cast_whirlwind(a: AbilityDef) -> void:
 	model.play_spin(0.4)
 	AudioManager.play_3d(&"ab_whirl", global_position, 0.0)
-	EffectsHub.spawn_ring(global_position + Vector3.UP * 0.9, a.radius, Color(1.0, 0.6, 0.2), 0.35)
+	SkillFx.whirlwind(global_position, a.radius, model.rotation.y)
+	Coop.fx_all("whirlwind", global_position, Vector3(model.rotation.y, 0, 0), a.radius)
 	for e in _enemies_in_radius(global_position, a.radius):
 		var crit := _rng.randf() < crit()
 		e.take_damage(DamageInfo.make(damage() * a.power * ability_power() * (crit_multiplier if crit else 1.0), self, crit))
@@ -1181,6 +1226,7 @@ func _cast_dash(a: AbilityDef) -> void:
 	health.invulnerable = true
 	_face(global_position + dir, 1.0, 100.0)
 	model.play_attack(0.3)
+	SkillFx.dash(self, dir, _dash_left)
 	AudioManager.play_3d(&"ab_dash", global_position, 0.0)
 
 func _process_dash(delta: float) -> void:
@@ -1206,7 +1252,8 @@ func _cast_warcry(a: AbilityDef) -> void:
 		_armor_buff = 6.0
 		health.armor = total_armor()
 	_armor_buff_left = a.duration
-	EffectsHub.spawn_ring(global_position + Vector3.UP * 0.2, 3.5, Color(1.0, 0.85, 0.3), 0.6)
+	SkillFx.warcry(global_position)
+	Coop.fx_all("warcry", global_position)
 	EffectsHub.spawn_heal(global_position)
 	AudioManager.play_3d(&"ab_warcry", global_position, 0.0, 1.15)
 	stats_changed.emit()
@@ -1222,13 +1269,15 @@ func _cast_nova(a: AbilityDef) -> void:
 			best = e
 	var center := best.global_position if best else global_position + facing() * 6.0
 	center.y = 0.0
-	EffectsHub.spawn_ring(center + Vector3.UP * 0.1, a.radius, Color(0.75, 0.35, 1.0), 0.55)
+	SkillFx.nova_telegraph(center, a.radius, 0.55)
+	Coop.fx_all("nova_t", center, Vector3(0.55, 0, 0), a.radius)
 	model.play_attack(0.5)
 	var timer := get_tree().create_timer(0.55)
 	timer.timeout.connect(func() -> void:
 		if not is_instance_valid(self):
 			return
-		EffectsHub.spawn_explosion(center, a.radius)
+		SkillFx.nova_burst(center, a.radius)
+		Coop.fx_all("nova", center, Vector3.ZERO, a.radius)
 		AudioManager.play_3d(&"explosion", center, 2.0, 1.2)
 		for e in _enemies_in_radius(center, a.radius):
 			e.take_damage(DamageInfo.make(damage() * a.power * ability_power(), self, true))

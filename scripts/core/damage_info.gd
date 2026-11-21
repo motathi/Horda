@@ -12,6 +12,8 @@ var is_crit: bool = false
 var structure_multiplier: float = 1.0
 ## Ataque básico do herói (golpe/flecha): o zumbi pode desviar com um passo rápido. Habilidades não.
 var dodgeable: bool = false
+## Golpe corpo a corpo de inimigo (já vem com o multiplicador contra o herói).
+var from_melee: bool = false
 
 static func make(amt: float, src: Node, crit: bool = false) -> DamageInfo:
 	var d := DamageInfo.new()

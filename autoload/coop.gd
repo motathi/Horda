@@ -151,14 +151,15 @@ func _hero_state(pos: Vector3, yaw: float, speed: float, hp: float, max_hp: floa
 func forward_hero_hit(pid: int, info: DamageInfo) -> void:
 	if pid == Net.my_id():
 		return
-	_hero_hit.rpc_id(pid, info.amount, info.type == DamageInfo.Type.TRUE)
+	_hero_hit.rpc_id(pid, info.amount, info.type == DamageInfo.Type.TRUE, info.from_melee)
 
 @rpc("authority", "call_remote", "reliable")
-func _hero_hit(amount: float, true_damage: bool) -> void:
+func _hero_hit(amount: float, true_damage: bool, melee: bool) -> void:
 	var h := local_hero()
 	if h == null:
 		return
 	var info := DamageInfo.make(amount, null)
+	info.from_melee = melee
 	if true_damage:
 		info.type = DamageInfo.Type.TRUE
 	h.take_damage(info)
@@ -321,7 +322,11 @@ func _fx(kind: String, a: Vector3, b: Vector3, f: float, c: Color) -> void:
 			p.puddle_radius = f
 			world.add_child(p)
 			p.setup(a, b)
-		"arrow": EffectsHub.spawn_bolt(a, b, 40.0)
+		"arrow": EffectsHub.spawn_bolt(a, b, 40.0, f > 0.5)
+		"whirlwind": SkillFx.whirlwind(a, f, b.x)
+		"warcry": SkillFx.warcry(a)
+		"nova_t": SkillFx.nova_telegraph(a, f, b.x)
+		"nova": SkillFx.nova_burst(a, f)
 		"trap":
 			var trap := BearTrap.new()
 			trap.visual_only = true

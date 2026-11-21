@@ -38,6 +38,52 @@ func set_target(t: Node3D) -> void:
 	_target = t
 	global_position = t.global_position
 
+# --- Vista de construção (estilo city builder) ------------------------------------
+const OVERVIEW_PITCH := 72.0
+const OVERVIEW_DISTANCE := 54.0
+const OVERVIEW_MAX := 70.0
+var _overview: bool = false
+var _overview_anchor: Node3D
+var _saved := {}
+var _pitch_target: float = -1.0
+
+## Modo construção: câmera bem mais alta e quase de cima, centrada na base (onde se constrói).
+func set_overview(on: bool, center: Vector3 = Vector3.ZERO) -> void:
+	if on == _overview:
+		return
+	_overview = on
+	if on:
+		_saved = {"target": _target, "zoom": _zoom_target, "pitch": pitch_degrees, "max": max_distance}
+		if _overview_anchor == null:
+			_overview_anchor = Node3D.new()
+			_overview_anchor.name = "OverviewAnchor"
+			get_parent().add_child(_overview_anchor)
+		_overview_anchor.global_position = center
+		_target = _overview_anchor
+		max_distance = OVERVIEW_MAX
+		_zoom_target = OVERVIEW_DISTANCE
+		_pitch_target = OVERVIEW_PITCH
+	else:
+		var t: Variant = _saved.get("target")
+		_target = t if t != null and is_instance_valid(t) else _target
+		max_distance = float(_saved.get("max", max_distance))
+		_zoom_target = float(_saved.get("zoom", 18.0))
+		_pitch_target = float(_saved.get("pitch", 56.0))
+
+func is_overview() -> bool:
+	return _overview
+
+## Arrasta a vista de construção (teclas/joystick), sem sair de perto da base.
+func pan_overview(v: Vector2, delta: float) -> void:
+	if not _overview or _overview_anchor == null or v == Vector2.ZERO:
+		return
+	var b := Basis(Vector3.UP, _yaw)
+	var move := (b.x * v.x + b.z * v.y) * delta * 30.0
+	var p := _overview_anchor.global_position + Vector3(move.x, 0, move.z)
+	var c := GameManager.base_core.global_position if GameManager.base_core else Vector3.ZERO
+	var off := Vector2(p.x - c.x, p.z - c.z).limit_length(30.0)
+	_overview_anchor.global_position = Vector3(c.x + off.x, 0, c.z + off.y)
+
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventScreenTouch:
 		var t := event as InputEventScreenTouch
@@ -83,9 +129,15 @@ func _process(delta: float) -> void:
 		_yaw += rotate_speed * delta
 	if Input.is_action_pressed("camera_rotate_right"):
 		_yaw -= rotate_speed * delta
-	distance = lerpf(distance, _zoom_target, clampf(delta * 10.0, 0.0, 1.0))
+	distance = lerpf(distance, _zoom_target, clampf(delta * (4.0 if _pitch_target >= 0.0 else 10.0), 0.0, 1.0))
+	if _pitch_target >= 0.0:
+		pitch_degrees = lerpf(pitch_degrees, _pitch_target, clampf(delta * 4.0, 0.0, 1.0))
+		if absf(pitch_degrees - _pitch_target) < 0.05:
+			pitch_degrees = _pitch_target
+			_pitch_target = -1.0
 	if _target and is_instance_valid(_target):
-		global_position = global_position.lerp(_target.global_position, clampf(delta * follow_speed, 0.0, 1.0))
+		var tp: Vector3 = _target.call(&"visual_position") if _target.has_method(&"visual_position") else _target.global_position
+		global_position = global_position.lerp(tp, clampf(delta * follow_speed, 0.0, 1.0))
 	_apply()
 
 func _apply() -> void:

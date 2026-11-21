@@ -44,6 +44,7 @@ func _ready() -> void:
 			for n in _ap.get_animation_list():
 				_ap.get_animation(n).loop_mode = Animation.LOOP_NONE if n == "dive" else Animation.LOOP_LINEAR
 	_play("fly")
+	SkillFx.eagle_trail(self)
 	_angle = randf() * TAU
 	if is_instance_valid(owner_hero):
 		global_position = owner_hero.global_position + Vector3(0, ORBIT_HEIGHT + 4.0, 0)
@@ -133,6 +134,7 @@ func _pick_target() -> Enemy:
 func _strike() -> void:
 	_attack_cd = ATTACK_EVERY
 	EffectsHub.spawn_blood(_target.global_position + Vector3.UP * 1.2, false)
+	SkillFx.eagle_strike(_target.global_position)
 	AudioManager.play_3d(&"hit", global_position, -2.0, 1.3)
 	if not visual_only:
 		var src: Node = owner_hero if is_instance_valid(owner_hero) else null

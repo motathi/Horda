@@ -47,6 +47,7 @@ var _run_threshold: float = 0.7
 var ground_speed: float = -1.0
 ## Andando de costas (o arqueiro recua mirando): toca o passo ao contrário.
 var backpedal: bool = false
+const RUN_MAX_SCALE := 1.5
 var _stride: Dictionary = {}  # "walk"/"run" -> m/s do pé de apoio com a animação em velocidade 1
 static var _stride_cache: Dictionary = {}  # modelo -> {"walk": m/s por metro de altura, "run": ...}
 
@@ -300,10 +301,13 @@ func _animate_stride() -> void:
 	if gs < 0.2:
 		_play("idle", 0.25)
 		return
-	if gs > walk_nat * 1.7 and _anim_names.has("run"):
-		_play("run", 0.18, clampf(gs / run_nat, 0.6, 2.0))
+	# Histerese: perto do limite não fica trocando andar/correr a cada quadro. Corrida até 1,5x (acima disso
+	# a cadência fica frenética; o pé desliza um pouco só na velocidade máxima).
+	var run_from := walk_nat * (1.45 if _current == "run" else 1.7)
+	if gs > run_from and _anim_names.has("run"):
+		_play("run", 0.25, clampf(gs / run_nat, 0.6, RUN_MAX_SCALE))
 	else:
-		_play("walk", 0.18, clampf(gs / walk_nat, 0.5, 2.2))
+		_play("walk", 0.25, clampf(gs / walk_nat, 0.5, 1.9))
 	if backpedal:
 		_anim.speed_scale = -absf(_anim.speed_scale)
 

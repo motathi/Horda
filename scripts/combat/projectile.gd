@@ -38,7 +38,21 @@ func _ready() -> void:
 	trail.material_override = MaterialLib.unshaded(Color(1.0, 0.9, 0.6, 0.35))
 	add_child(trail)
 
-func activate(from: Vector3, target: Enemy, info: DamageInfo, speed: float) -> void:
+var _glow: Node3D
+var _plain: Array[Node3D] = []
+
+func activate(from: Vector3, target: Enemy, info: DamageInfo, speed: float, glow: bool = false) -> void:
+	# Flecha de energia (Tiro Múltiplo): troca a flecha de madeira pela forma brilhante do Blender.
+	if _plain.is_empty():
+		for c in get_children():
+			if c is MeshInstance3D:
+				_plain.append(c)
+	if glow and _glow == null:
+		_glow = SkillFx.arrow_glow(self, SkillFx.HUNTER)
+	if _glow:
+		_glow.visible = glow
+	for c in _plain:
+		c.visible = not glow or _glow == null
 	global_position = from
 	_target = target
 	_info = info

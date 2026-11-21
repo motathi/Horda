@@ -138,9 +138,9 @@ static func drop_gear(pos: Vector3, item: GearItem) -> void:
 static func spawn_gear_local(pos: Vector3, item: GearItem) -> GearPickup:
 	return GearPickup.spawn(_inst, pos, item) if _inst else null
 
-static func spawn_arrow(from: Vector3, target: Enemy, info: DamageInfo, speed: float) -> void:
+static func spawn_arrow(from: Vector3, target: Enemy, info: DamageInfo, speed: float, glow: bool = false) -> void:
 	if _inst:
-		(_inst._arrows.acquire() as Projectile).activate(from, target, info, speed)
+		(_inst._arrows.acquire() as Projectile).activate(from, target, info, speed, glow)
 
 static func spawn_marker(pos: Vector3) -> void:
 	if _inst:
@@ -227,8 +227,19 @@ static func spawn_explosion(pos: Vector3, radius: float, color: Color = Color(0.
 		spawn_debris(pos + Vector3(randf_range(-radius, radius) * 0.5, 0.6, randf_range(-radius, radius) * 0.5), true)
 
 ## Virote da balista: voa em linha reta (efeito visual; o dano é aplicado pela torre).
-static func spawn_bolt(from: Vector3, to: Vector3, speed: float) -> void:
+static func spawn_bolt(from: Vector3, to: Vector3, speed: float, glow: bool = false) -> void:
 	if _inst == null:
+		return
+	if glow and SkillFx.mesh("ArrowGlow") != null:
+		# Flecha de energia do Tiro Múltiplo (sem alvo): voa reto e some.
+		var g := Node3D.new()
+		_inst.add_child(g)
+		g.global_position = from
+		g.look_at(to, Vector3.UP)
+		SkillFx.arrow_glow(g, SkillFx.HUNTER)
+		var tg := g.create_tween()
+		tg.tween_property(g, "global_position", to, from.distance_to(to) / maxf(1.0, speed))
+		tg.tween_callback(g.queue_free)
 		return
 	var bolt := MeshInstance3D.new()
 	var c := CylinderMesh.new()

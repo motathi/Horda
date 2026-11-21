@@ -15,6 +15,17 @@ var _js_visibility_cb: JavaScriptObject
 ## Toques/joystick/ataque presos foram zerados (o app saiu e voltou, a aba ficou escondida...).
 signal input_reset
 
+## No celular o mesmo toque chega duas vezes nos controles (o toque e o clique emulado a partir dele):
+## quem alterna algo (abrir/fechar painel) usa isto para aceitar só o primeiro.
+var _last_tap: Dictionary = {}
+
+func accept_tap(key: String) -> bool:
+	var now := Time.get_ticks_msec()
+	if now - int(_last_tap.get(key, -100000)) < 350:
+		return false
+	_last_tap[key] = now
+	return true
+
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	touch = _detect_touch()

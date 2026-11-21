@@ -98,7 +98,10 @@ func _ready() -> void:
 	visible = false
 	visibility_changed.connect(func() -> void:
 		_feedback.text = ""
-		_gear_dirty = true)
+		_gear_dirty = true
+		# Abre direto nos equipamentos (onde aparece o que veio dos baús), a não ser que haja pontos para gastar.
+		if visible and GameManager.hero:
+			_set_tab(0 if (GameManager.hero as Hero).attr_points > 0 else 1))
 
 func _set_tab(i: int) -> void:
 	_tab = i

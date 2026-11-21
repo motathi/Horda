@@ -32,6 +32,7 @@ var storm: bool = false
 ## Névoa densa nesta noite: torres enxergam menos e o mapa mostra só os zumbis próximos.
 var fog: bool = false
 var _fog_k: float = 0.0
+var _overview_k: float = 0.0
 ## Raio em que a lanterna de um herói revela Espreitadores.
 const LANTERN_REVEAL := 9.0
 ## Alcance das torres durante a névoa densa.
@@ -177,7 +178,10 @@ func _process(delta: float) -> void:
 	var want_fog := 1.0 if fog and (phase == TimeManager.Phase.NIGHT or phase == TimeManager.Phase.DUSK) else 0.0
 	_fog_k = move_toward(_fog_k, want_fog * night, delta * 0.3)
 	_env.fog_light_color = _env.fog_light_color.lerp(Color(0.36, 0.39, 0.44), _fog_k * 0.9)
-	_env.fog_density = lerpf(0.0085, 0.0055, dl) + storm_fog + _fog_k * 0.032
+	# Vista de construção (câmera bem alta): a neblina de distância cobriria a base inteira; afina enquanto dura.
+	var rig := get_viewport().get_camera_3d().get_parent() as CameraRig if get_viewport().get_camera_3d() else null
+	_overview_k = move_toward(_overview_k, 1.0 if rig and rig.is_overview() else 0.0, delta * 2.0)
+	_env.fog_density = (lerpf(0.0085, 0.0055, dl) + storm_fog + _fog_k * 0.032) * (1.0 - 0.6 * _overview_k)
 	_env.adjustment_saturation = lerpf(0.6, 0.84, dl)
 	_env.adjustment_contrast = lerpf(1.04, 1.1, dl)
 	# Tochas e lanternas acendem ao entardecer.

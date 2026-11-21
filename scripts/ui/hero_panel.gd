@@ -60,8 +60,9 @@ func _gui_input(event: InputEvent) -> void:
 	var pressed := (event is InputEventMouseButton and (event as InputEventMouseButton).pressed and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT) \
 		or (event is InputEventScreenTouch and (event as InputEventScreenTouch).pressed)
 	if pressed and event.position.x < PORTRAIT + 16:
-		portrait_pressed.emit()
 		accept_event()
+		if Platform.accept_tap("portrait"):
+			portrait_pressed.emit()
 
 func _process(_delta: float) -> void:
 	if hero == null:

@@ -18,7 +18,8 @@ static var _arrow_mesh: Mesh
 static var _arrow_mat: Material
 
 func _ready() -> void:
-	EffectsHub.spawn_ring(global_position + Vector3.UP * 0.05, radius, Color(1.0, 0.55, 0.15, 0.18), duration)
+	# Diferido: quem cria a chuva só define a posição depois de adicioná-la à cena.
+	(func() -> void: SkillFx.arrow_rain_marker(global_position, radius, duration)).call_deferred()
 	AudioManager.play_3d(&"arrow", global_position, 2.0, 0.8)
 
 func _process(delta: float) -> void:
@@ -48,6 +49,11 @@ func _process(delta: float) -> void:
 			AudioManager.play_3d(&"hit", global_position, -8.0, 1.2, 120)
 
 func _spawn_falling_arrow() -> void:
+	if SkillFx.mesh("ArrowGlow") != null:
+		var ang := randf() * TAU
+		var rr := sqrt(randf()) * radius
+		SkillFx.falling_arrow(self, global_position + Vector3(cos(ang) * rr, 0.25, sin(ang) * rr))
+		return
 	if _arrow_mesh == null:
 		var c := CylinderMesh.new()
 		c.top_radius = 0.02

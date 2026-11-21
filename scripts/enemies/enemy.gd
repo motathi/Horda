@@ -31,7 +31,7 @@ var _attack_cd: float = 0.0
 var _windup: float = -1.0
 ## Golpe corpo a corpo: preparação longa e anunciada (aviso vermelho no chão); a mira trava no fim
 ## para o jogador poder sair da frente ou esquivar. Contra heróis o golpe dói bem mais.
-const HERO_DAMAGE_MULT := 1.9
+const HERO_DAMAGE_MULT := 2.6
 const HIT_HALF_ANGLE := 1.0   # ~57° para cada lado da frente
 const AIM_LOCK_AT := 0.45     # depois de 45% da preparação, para de girar
 var _melee_total: float = 0.0
@@ -476,6 +476,7 @@ func _resolve_attack() -> void:
 	# Espreitador: o primeiro golpe depois de sair da escuridão é uma emboscada.
 	var info := DamageInfo.make(damage_value * (1.8 if _ambush else 1.0) * (HERO_DAMAGE_MULT if _target is Hero else 1.0), self)
 	_ambush = false
+	info.from_melee = true
 	info.structure_multiplier = def.structure_damage_mult
 	_target.call(&"take_damage", info)
 	AudioManager.play_3d(&"zombie_hit", global_position, -6.0)
