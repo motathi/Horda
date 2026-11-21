@@ -181,11 +181,12 @@ func confirm() -> bool:
 	return b != null
 
 ## Constrói diretamente (também usado pelo carregamento do save e pelos testes).
-func place(d: BuildingDef, pos: Vector3, rot: float, pay: bool = true, lvl: int = 1) -> Building:
+func place(d: BuildingDef, pos: Vector3, rot: float, pay: bool = true, lvl: int = 1, br: String = "") -> Building:
 	if pay and not ResourceManager.spend(d.cost):
 		return null
 	var b := Building.new()
 	b.setup(d, lvl)
+	b.branch = br
 	b.name = "B_%s_%d" % [d.id, Time.get_ticks_usec()]
 	parent_root.add_child(b)
 	b.global_position = _snapped(pos)

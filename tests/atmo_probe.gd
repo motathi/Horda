@@ -88,6 +88,10 @@ func _ready() -> void:
 		await _find_shots(world, hero, OS.get_environment("ATMO_FIND"))
 		get_tree().quit()
 		return
+	if OS.get_environment("ATMO_TOWERS") != "":
+		await _tower_shots(world, hero)
+		get_tree().quit()
+		return
 	if OS.get_environment("ATMO_SKILLS") != "":
 		await _skill_shots(world, hero)
 		get_tree().quit()
@@ -320,6 +324,59 @@ func _decor_shots(world: World, hero: Hero, model: String) -> void:
 	await _save("%s_noite" % model)
 
 ## Objetos de cenário do Blender (3 exemplos lado a lado), de dia e ao entardecer.
+## Árvore das torres: para cada torre, nível 3 e as especializações (4a, 5a, 4b, 5b) lado a lado; depois o card
+## de escolha da especialização no nível 3.
+func _tower_shots(world: World, hero: Hero) -> void:
+	TimeManager.running = false
+	TimeManager.set_state(TimeManager.Phase.DAY, 9, 30.0)
+	world.spawner.set_process(false)
+	for e in Enemy.all.duplicate():
+		if is_instance_valid(e):
+			e.queue_free()
+	var cp := Vector3(-30, 0, 30)
+	for h in get_tree().get_nodes_in_group("harvestable"):
+		if (h as Node3D).global_position.distance_to(cp) < 22.0:
+			h.queue_free()
+	for l: Lootable in world.builder.lootables.values():
+		if l.global_position.distance_to(cp) < 22.0:
+			l.queue_free()
+	var only := OS.get_environment("ATMO_TOWERS")
+	for tid: StringName in [&"archer_tower", &"ballista", &"cannon", &"tesla"]:
+		if only != "1" and not only.contains(String(tid)):
+			continue
+		var made: Array[Building] = []
+		var variants := [[3, ""], [4, "a"], [5, "a"], [4, "b"], [5, "b"]]
+		world.hud.visible = false
+		world.camera_rig.set(&"distance", 24.0)
+		world.camera_rig.set(&"_zoom_target", 24.0)
+		world.camera_rig.global_position = cp
+		await _wait_frames(5)
+		var cb := get_viewport().get_camera_3d().global_transform.basis
+		var right := Vector3(cb.x.x, 0, cb.x.z).normalized()
+		for i in variants.size():
+			var b := world.build_manager.place(Building.load_def(tid), cp + right * ((i - 2) * 4.6), 0.0, false, int(variants[i][0]), String(variants[i][1]))
+			b.rotation.y = atan2(cb.z.x, cb.z.z) + 0.5
+			made.append(b)
+		hero.global_position = cp + Vector3(cb.z.x, 0, cb.z.z).normalized() * 3.5
+		await _wait_frames(60)
+		await _save("torres_%s" % tid)
+		# Card de escolha no nível 3.
+		if tid == &"archer_tower":
+			world.hud.visible = true
+			for id: StringName in [&"wood", &"stone", &"scrap"]:
+				ResourceManager.storage.add(id, 999)
+			EventBus.object_selected.emit(made[0])
+			hero.global_position = made[0].global_position + Vector3(0, 0, 6)
+			await _wait_frames(30)
+			await _save("torres_card_escolha")
+			EventBus.object_selected.emit(made[2])
+			await _wait_frames(20)
+			await _save("torres_card_nv5")
+			EventBus.object_selected.emit(null)
+		for b in made:
+			b.queue_free()
+		await _wait_frames(5)
+
 ## Cada habilidade da classe (HORDA_SKIN) em três momentos depois de lançar, numa clareira com zumbis parados.
 func _skill_shots(world: World, hero: Hero) -> void:
 	world.hud.visible = OS.get_environment("ATMO_HUD") != ""

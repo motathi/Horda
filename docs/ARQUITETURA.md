@@ -247,6 +247,22 @@ Modelos riggados gerados pelo `tools/tripo_pipeline.py`.
   que ficam longe do corpo. A espada (`CharacterModel.attach_sword()`) é um `BoneAttachment3D` no osso
   `R_Hand`, encaixada na primeira pose de "parado" (`_fit_sword`), e acompanha o pulso nos golpes.
 
+## Evolução das torres
+
+- `TowerPaths.PATHS` (scripts/building/tower_paths.gd): por torre, dois caminhos `a`/`b` com dois níveis (4 e 5),
+  cada um com nome, descrição e modificadores (`dmg`, `range`, `rate`, `splash` multiplicam; `multi`, `burn`,
+  `execute`, `harpoon`, `pull`, `knockback`, `fire_pool`, `cluster`, `chain_add`, `storm`, `pulse`... ligam
+  mecânicas em `Building`). `TowerPaths.mods()` acumula os níveis. `Building.branch` guarda o caminho (save,
+  coop `_building_changed`, pedido `tower_branch`); o crescimento linear para no nível 3 (`_lin()`).
+- Modelos: `tools/blender_defenses.py` marca as peças com `"4a"`, `"5b"`... (fixas) e `"Ta4"`, `"Tb5"`... (arma
+  giratória). `join_levels` gera `Lv4a`, `Turret_a4`...; `Building._blender_levels` mostra Lv1-3, as peças do
+  caminho até o nível e troca a `Turret` comum pela `Turret_<caminho><nível>`. `_tier_extras` acrescenta fogo e
+  brilhos (o atlas não tem emissão). Prévia: `render_paths` (nível 3, 4a, 5a, 4b, 5b lado a lado); no jogo,
+  `ATMO_TOWERS=1` no `tests/atmo_probe.tscn`.
+- Card de seleção: `SelectionPanel._update_extra` refaz os botões extras (reparar, especializar, recrutar) só
+  quando a assinatura muda. `Structure.repair_cost()`/`repair_with_materials()`: muros por madeira, Núcleo por
+  pedra+sucata, construções por 40% do investido proporcional ao dano; conserta parcialmente se faltar material.
+
 ## Efeitos das habilidades
 
 - `tools/blender_skill_fx.py` modela as formas (rastro de lâmina, rachaduras, coroa de choque, coluna de luz,

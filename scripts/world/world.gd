@@ -207,7 +207,7 @@ func apply_save(d: Dictionary) -> void:
 	for bd: Dictionary in d.get("buildings", []):
 		var def := Building.load_def(StringName(bd.get("id", "barricade")))
 		var p: Array = bd.get("pos", [0, 0])
-		var b := build_manager.place(def, Vector3(p[0], 0, p[1]), float(bd.get("rot", 0.0)), false, int(bd.get("level", 1)))
+		var b := build_manager.place(def, Vector3(p[0], 0, p[1]), float(bd.get("rot", 0.0)), false, int(bd.get("level", 1)), str(bd.get("branch", "")))
 		b.from_save(bd)
 	army.from_save(d.get("army", {}))
 	camera_rig.set_target(hero)

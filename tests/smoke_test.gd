@@ -52,6 +52,7 @@ func _ready() -> void:
 	await _test_hunter()
 	await _test_fixes()
 	await _test_army()
+	await _test_tower_paths()
 	await _test_harvest_and_loot()
 	await _test_base_services()
 	await _test_building()
@@ -1101,6 +1102,64 @@ func _test_fixes() -> void:
 	check(not hero._overlaps_at(hero.global_position) and hero.global_position.distance_to(Vector3(6, 0, 18)) > 0.5, "herói preso dentro de uma construção é destravado (%s)" % hero.global_position)
 	trap.queue_free()
 	await wait(0.05)
+
+## Árvore das torres: nível 3 -> escolhe especialização -> nível 5, com a mecânica de cada caminho agindo.
+func _test_tower_paths() -> void:
+	print("[torres: especializações]")
+	var hero := world.hero
+	await _clear_enemies()
+	world.spawner.set_process(false)
+	var day0 := TimeManager.day
+	var was_running := TimeManager.running
+	TimeManager.running = false  # não gasta a preparação (o teste da noite conta com ela)
+	TimeManager.day = 9
+	for id: StringName in [&"wood", &"stone", &"scrap", &"cloth", &"herbs"]:
+		ResourceManager.storage.add(id, 5000)
+	var spot := _clear_spot(Vector3(-30, 0, 30), 12.0)
+	hero.global_position = spot + Vector3(0, 0, 10)
+	for tid: StringName in [&"archer_tower", &"ballista", &"cannon", &"tesla"]:
+		for br: String in ["a", "b"]:
+			var t := world.build_manager.place(Building.load_def(tid), spot, 0.0, false)
+			await wait(0.05)
+			t.upgrade()
+			t.upgrade()
+			var blocked := t.upgrade()
+			check(t.level == 3 and t.needs_branch() and blocked.contains("especialização"), "%s nv 3 pede especialização" % tid)
+			var msg := t.choose_branch(br)
+			var dmg4 := t.tower_damage()
+			var up5 := t.upgrade()
+			var tier: Dictionary = TowerPaths.tier(tid, br, 5)
+			check(t.level == 5 and t.branch == br and t.display_name().begins_with(tier["name"]), "%s/%s -> %s (%s | %s)" % [tid, br, t.display_name(), msg, up5])
+			check(t.invested().get(&"scrap", 0) > 0 and not t.can_upgrade(), "%s/%s nível máximo e custo investido" % [tid, br])
+			# Visual: peças da especialização visíveis e as do outro caminho escondidas.
+			await wait(0.05)  # o modelo do nível anterior sai no fim do quadro
+			var other := "b" if br == "a" else "a"
+			var vis_ok := true
+			var found := false
+			for n in t.find_children("Lv*", "", true, false):
+				var nm := String(n.name)
+				if nm.length() > 3 and nm.substr(2, 1).is_valid_int():
+					found = true
+					vis_ok = vis_ok and ((n as Node3D).visible == (nm.substr(3, 1) == br))
+			var gun := t.find_child("Turret", true, false) as Node3D
+			var expect_gun := tid in [&"ballista", &"cannon"] or (tid == &"archer_tower" and br == "a")
+			var special_gun := not expect_gun or (gun != null and gun.visible and (tid == &"archer_tower" or t.find_child("TurretOff", true, false) != null))
+			check(found and vis_ok, "%s/%s mostra as peças do caminho (%s) e esconde as do %s" % [tid, br, br, other])
+			check(special_gun, "%s/%s troca a arma pela da especialização" % [tid, br])
+			# Combate: um zumbi forte na frente leva dano.
+			var z := _spawn_def("zombie_brute", spot + Vector3(0, 0, -6))
+			z.set_physics_process(false)
+			z.health.setup(99999.0)
+			var hp0 := z.health.current
+			t._cooldown = 0.0
+			await wait(1.6)
+			check(z.health.current < hp0, "%s/%s atira e fere (%d de dano, nv4 dano base %.0f)" % [tid, br, int(hp0 - z.health.current), dmg4])
+			z.queue_free()
+			t.queue_free()
+			await wait(0.1)
+	TimeManager.day = day0
+	TimeManager.running = was_running
+	world.spawner.set_process(true)
 
 func _test_army() -> void:
 	print("[exército]")

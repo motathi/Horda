@@ -105,8 +105,11 @@ func _draw() -> void:
 	# Baús/saqueáveis ainda fechados: losangos dourados.
 	var ls := 1.8 * maxf(1.0, k * 0.8)
 	for id: String in lootables:
-		var l := lootables[id] as Lootable
-		if is_instance_valid(l) and not l.looted:
+		var lo: Variant = lootables[id]
+		if not is_instance_valid(lo):
+			continue
+		var l := lo as Lootable
+		if not l.looted:
 			var p := _to_map(l.global_position)
 			# Baús maiores, na cor do brilho (mantimentos dourado, equipamentos azul, guardião roxo).
 			var chest := l.lid != null

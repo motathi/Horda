@@ -345,3 +345,53 @@ static func eagle_strike(pos: Vector3) -> void:
 		tw.parallel().tween_property(f, "rotation", f.rotation + Vector3(2, 4, 1), 1.2)
 		tw.tween_property(f, "global_position", to, 0.9).set_trans(Tween.TRANS_SINE)
 		_vanish(f, fm, 0.4, 0.8)
+
+# --- Torres -------------------------------------------------------------------------
+
+## Pulso eletromagnético da Tesla: coroa de choque azul rente ao chão e círculo rúnico.
+static func tower_pulse(pos: Vector3, radius: float, height: float = 4.0) -> void:
+	var wm := material(SKY, 2.4, 1, {"noise_scroll": Vector2(-2.0, 0.0), "flicker": 0.6})
+	var wave := spawn("Shockwave", wm, pos + Vector3.UP * 0.1)
+	if wave == null:
+		EffectsHub.spawn_ring(pos + Vector3.UP * 0.3, radius, Color(0.45, 0.8, 1.0), 0.4)
+		return
+	wave.scale = Vector3(0.8, 0.6, 0.8)
+	wave.create_tween().tween_property(wave, "scale", Vector3(radius, 0.25, radius), 0.35).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	_vanish(wave, wm, 0.25, 0.2)
+	var rm := material(SKY, 1.8, 0)
+	var rune := spawn("RuneCircle", rm, pos + Vector3.UP * 0.05)
+	rune.scale = Vector3.ONE * radius
+	rune.rotation.y = randf() * TAU
+	_vanish(rune, rm, 0.4, 0.1)
+	var pm := material(SKY, 1.6, 1, {"noise_scroll": Vector2(0.0, -3.0)})
+	var pillar := spawn("LightPillar", pm, pos + Vector3.UP * height * 0.6)
+	pillar.scale = Vector3(0.9, 0.2, 0.9)
+	pillar.create_tween().tween_property(pillar, "scale", Vector3(0.4, 3.0, 0.4), 0.2)
+	_vanish(pillar, pm, 0.2, 0.1)
+
+## Chão em chamas da Bombarda Incendiária: rachaduras em brasa que somem no fim.
+static func fire_ground(pos: Vector3, radius: float, duration: float) -> void:
+	var m := material(KNIGHT_FIRE, 1.6, 0, {"tail": 1.0, "flicker": 0.8, "noise_scroll": Vector2(-0.5, 0.0)})
+	var c := spawn("GroundCrack", m, pos + Vector3.UP * 0.04)
+	if c == null:
+		return
+	c.scale = Vector3.ONE * radius * 1.1
+	c.rotation.y = randf() * TAU
+	_vanish(c, m, 0.6, maxf(0.1, duration - 0.6))
+
+## Torre especializada (nível 4/5): coluna dourada e runas ao evoluir.
+static func tower_upgrade(pos: Vector3, height: float) -> void:
+	var rm := material(KNIGHT_GOLD, 2.0, 0)
+	var rune := spawn("RuneCircle", rm, pos + Vector3.UP * 0.06)
+	if rune == null:
+		return
+	rune.scale = Vector3.ONE * 0.6
+	var tw := rune.create_tween()
+	tw.tween_property(rune, "scale", Vector3.ONE * 3.0, 0.35).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.parallel().tween_property(rune, "rotation:y", PI, 1.4)
+	_vanish(rune, rm, 0.6, 0.8)
+	var pm := material(KNIGHT_GOLD, 2.0, 1, {"noise_scroll": Vector2(0.0, -2.0)})
+	var pillar := spawn("LightPillar", pm, pos)
+	pillar.scale = Vector3(1.6, 0.2, 1.6)
+	pillar.create_tween().tween_property(pillar, "scale", Vector3(1.4, height + 4.0, 1.4), 0.4).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	_vanish(pillar, pm, 0.7, 0.4)

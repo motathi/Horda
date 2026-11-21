@@ -12,6 +12,8 @@ var _actions: HBoxContainer
 var _upgrade_btn: Button
 var _demolish_btn: Button
 var _sig: String = ""
+var _extra: HFlowContainer
+var _extra_sig: String = ""
 
 func _ready() -> void:
 	add_theme_stylebox_override("panel", UIStyle.panel_style())
@@ -64,6 +66,11 @@ func _ready() -> void:
 	_actions.add_child(_demolish_btn)
 	col.add_child(_actions)
 	_actions.visible = false
+	# Ações extras (reparar, recrutar no Quartel, escolher especialização da torre): refeitas quando mudam.
+	_extra = HFlowContainer.new()
+	_extra.add_theme_constant_override("h_separation", 6)
+	_extra.add_theme_constant_override("v_separation", 6)
+	col.add_child(_extra)
 	visible = false
 	EventBus.object_selected.connect(select)
 
@@ -104,7 +111,7 @@ func _refresh() -> void:
 		_portrait.texture = b.def.icon()
 		_name.text = b.display_name()
 		health = b.health
-		var extra := "Destruída — repare no menu da base." if b.is_dead() else b.def.stats_text(b.level)
+		var extra := "Destruída — repare para voltar a funcionar." if b.is_dead() else (b.info_text() if b.has_paths() else b.def.stats_text(b.level))
 		_info.text = extra
 		_update_actions(b)
 	elif _target is Structure:
@@ -128,6 +135,7 @@ func _refresh() -> void:
 		return
 	if not (_target is Building):
 		_actions.visible = false
+	_update_extra()
 	_hp.get_parent().visible = health != null
 	if health:
 		_hp.max_value = health.max_health
@@ -136,18 +144,104 @@ func _refresh() -> void:
 
 func _update_actions(b: Building) -> void:
 	_actions.visible = true
-	var sig := "%d|%s|%d" % [b.level, b.is_dead(), ResourceManager.storage.to_dict().hash() + ResourceManager.hero_inventory.to_dict().hash()]
+	var sig := "%d|%s|%s|%d|%d" % [b.level, b.branch, b.is_dead(), TimeManager.wave(), ResourceManager.storage.to_dict().hash() + ResourceManager.hero_inventory.to_dict().hash()]
 	if sig == _sig:
 		return
 	_sig = sig
+	_upgrade_btn.visible = not b.needs_branch()
 	if b.can_upgrade():
 		var cost := b.next_upgrade_cost()
-		_upgrade_btn.text = "Melhorar: " + ResourceManager.cost_to_string(cost)
+		var nxt := TowerPaths.tier(b.def.id, b.branch, b.level + 1)
+		_upgrade_btn.text = ("%s: " % nxt["name"] if not nxt.is_empty() else "Melhorar: ") + ResourceManager.cost_to_string(cost)
+		_upgrade_btn.tooltip_text = String(nxt.get("desc", ""))
 		_upgrade_btn.disabled = not ResourceManager.can_afford(cost)
+	elif b.has_paths() and b.level == 4 and not b.is_dead():
+		_upgrade_btn.text = "Nível 5 na horda %d" % TowerPaths.unlock_wave(5)
+		_upgrade_btn.disabled = true
 	else:
-		_upgrade_btn.text = "Nível máximo" if b.level >= b.def.max_level else "Repare antes"
+		_upgrade_btn.text = "Nível máximo" if b.level >= b.max_level() else "Repare antes"
 		_upgrade_btn.disabled = true
 	_demolish_btn.text = "Demolir (devolve %d%%)" % int(b.def.refund * 100)
+
+func _update_extra() -> void:
+	var st := _target as Structure
+	var army: Army = GameManager.world.get(&"army") if GameManager.world else null
+	var barracks := _target is Building and (_target as Building).def.category == BuildingDef.Category.BARRACKS
+	var sig := ""
+	if st:
+		sig = "%s|%d|%d|%s" % [st.name, int(st.missing_health() / 5.0), int(st.health.dead), ResourceManager.storage.to_dict().hash() + ResourceManager.hero_inventory.to_dict().hash()]
+		if barracks and army:
+			sig += "|%d|%d|%d" % [army.alive_count(), army.queue.size(), TimeManager.wave()]
+		if _target is Building:
+			sig += "|%d%s" % [(_target as Building).level, (_target as Building).branch]
+	if sig == _extra_sig:
+		return
+	_extra_sig = sig
+	for c in _extra.get_children():
+		c.queue_free()
+	if st == null:
+		_extra.visible = false
+		return
+	var cost := st.repair_cost()
+	if not cost.is_empty():
+		var rb := UIStyle.button("Reparar: " + ResourceManager.cost_to_string(cost), 14)
+		rb.icon = UIStyle.hud_icon("upgrade")
+		rb.expand_icon = true
+		rb.custom_minimum_size = Vector2(0, 40)
+		rb.pressed.connect(func() -> void:
+			EventBus.notify(st.repair_with_materials(), UIStyle.GOLD)
+			_extra_sig = "")
+		_extra.add_child(rb)
+	if _target is Building:
+		_add_branch_buttons(_target as Building)
+	if barracks and army:
+		for d in army.defs:
+			var why := army.block_reason(d)
+			if why != "" and not why.begins_with("Faltam") and not why.begins_with("Exército"):
+				continue  # ainda bloqueado pela horda: não polui o card
+			var b := UIStyle.button("Recrutar %s: %s" % [d.display_name, ResourceManager.cost_to_string(d.cost)], 13)
+			b.custom_minimum_size = Vector2(0, 38)
+			b.disabled = why != ""
+			b.tooltip_text = why if why != "" else d.description
+			b.pressed.connect(func() -> void:
+				EventBus.notify(army.recruit(d), Color(0.55, 0.85, 1.0))
+				_extra_sig = "")
+			_extra.add_child(b)
+		var left := army.auto_seconds_left()
+		if left >= 0.0:
+			_extra.add_child(UIStyle.label("Guarda grátis em %ds" % ceili(left), 12, Color(0.6, 0.85, 1.0)))
+	_extra.visible = _extra.get_child_count() > 0
+
+## Torre no nível 3: escolha da especialização (preenchido pelas trilhas de evolução).
+func _add_branch_buttons(b: Building) -> void:
+	if not b.needs_branch():
+		return
+	var why := b.branch_block_reason()
+	var cost := TowerPaths.cost(b.def, 4)
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 4)
+	box.add_child(UIStyle.label("Escolha a especialização (%s):" % ResourceManager.cost_to_string(cost), 13, UIStyle.GOLD))
+	for br: String in ["a", "b"]:
+		var data := TowerPaths.branch(b.def.id, br)
+		var t4 := TowerPaths.tier(b.def.id, br, 4)
+		var row := VBoxContainer.new()
+		var bt := UIStyle.button("%s %s" % ["⚔" if br == "a" else "✦", data["name"]], 15)
+		bt.custom_minimum_size = Vector2(300, 40)
+		bt.disabled = why != ""
+		bt.tooltip_text = t4["desc"]
+		bt.pressed.connect(func() -> void:
+			EventBus.notify(b.choose_branch(br), UIStyle.GOLD)
+			_sig = ""
+			_extra_sig = "")
+		row.add_child(bt)
+		var d := UIStyle.label("%s • depois: %s" % [data["short"], TowerPaths.tier(b.def.id, br, 5)["name"]], 12, UIStyle.TEXT_DIM)
+		d.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		d.custom_minimum_size = Vector2(300, 0)
+		row.add_child(d)
+		box.add_child(row)
+	if why != "":
+		box.add_child(UIStyle.label(why, 12, UIStyle.RED))
+	_extra.add_child(box)
 
 func _on_upgrade() -> void:
 	if _target is Building:

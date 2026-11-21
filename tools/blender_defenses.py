@@ -805,7 +805,7 @@ def ladder(name, h, mat, rng, lv, w=0.42):
     return objs
 
 
-def build_archer_tower():
+def build_archer_tower(paths=True):
     rng = random.Random(111)
     bark = mat_bark()
     wood = mat_old_wood()
@@ -891,6 +891,8 @@ def build_archer_tower():
     for sx, sy in ((-1, -1), (1, -1)):
         place(skull("skull", bone, dark, 3), (sx * (S + 0.2), sy * (S + 0.2), H + 2.2), (0, 0, rng.uniform(-30, 30)))
     place(barbed_wire("legwire", 2.6, 0.12, iron, rng, 3, loops=10), (0, -B - 0.05, 0.5), (0, 0, 0))
+    if paths:
+        archer_paths()
 
 
 # --- Base comum: berço de dormentes (toras empilhadas em cruz) ---------------------------
@@ -972,6 +974,7 @@ def build_ballista():
     place(barbed_wire("wire", 2.4, 0.11, iron, rng, 3, loops=9), (0, -(half + 0.1), top + 0.15))
     place(barbed_wire("wire", 2.4, 0.11, iron, rng, 3, loops=9), (-(half + 0.1), 0, top + 0.15), (0, 0, 90))
     place(skull("skull", bone, dark, 3), (half + 0.05, -(half + 0.05), top + 0.1), (0, 0, 40))
+    ballista_paths()
 
 
 # --- Torre de canhão --------------------------------------------------------------------
@@ -1067,6 +1070,7 @@ def build_cannon():
     place(barbed_wire("wire", 2.6, 0.11, iron, rng, 3, loops=10), (0, -(R + 0.15), 1.25))
     for a in (2.2, 4.0):
         place(skull("skull", bone, dark, 3), (math.cos(a) * (R - 0.15), math.sin(a) * (R - 0.15), z + 0.35), (0, 0, math.degrees(a)))
+    cannon_paths()
 
 
 # --- Torre elétrica (gambiarra de sucata) ------------------------------------------------
@@ -1143,6 +1147,149 @@ def build_tesla():
     for f in feet[:2]:
         p = f.lerp(apex, 0.75)
         place(skull("skull", bone, dark, 3), (p.x * 1.4, p.y * 1.4, p.z), (0, 0, 0))
+    tesla_paths()
+
+
+# --- Especializações das torres (níveis 4 e 5, dois caminhos) ----------------------------
+# Marcas: "4a"/"5a"/"4b"/"5b" = peças fixas; "Ta4"/"Ta5"/"Tb4"/"Tb5" = arma giratória que troca a comum.
+
+def cyl(name, r1, r2, depth, mat, lv, segs=12, loc=(0, 0, 0), rot=(0, 0, 0)):
+    bm = bmesh.new()
+    bmesh.ops.create_cone(bm, cap_ends=True, segments=segs, radius1=r1, radius2=r2, depth=depth)
+    return place(obj_from_bm(name, bm, mat, lv), loc, rot)
+
+
+def ball(name, r, mat, lv, loc=(0, 0, 0), segs=10):
+    bm = bmesh.new()
+    bmesh.ops.create_uvsphere(bm, u_segments=segs, v_segments=max(4, segs // 2 + 1), radius=r)
+    return place(obj_from_bm(name, bm, mat, lv), loc)
+
+
+def bowl(name, r, depth, mat, lv, loc=(0, 0, 0), segs=14, up=True):
+    """Tigela/prato (braseiro, antena parabólica): meia esfera achatada com espessura."""
+    bm = bmesh.new()
+    rings = 5
+    outer, inner = [], []
+    for j in range(rings + 1):
+        t = j / rings
+        ro = r * math.sin(t * math.pi / 2)
+        zo = -depth * math.cos(t * math.pi / 2) if up else depth * math.cos(t * math.pi / 2)
+        outer.append([bm.verts.new((math.cos(a) * ro, math.sin(a) * ro, zo)) for a in [k * math.tau / segs for k in range(segs)]])
+        inner.append([bm.verts.new((v.co.x * 0.9, v.co.y * 0.9, v.co.z * 0.85 + (0.03 if up else -0.03))) for v in outer[-1]])
+    for g in (outer, inner):
+        for j in range(rings):
+            for k in range(segs):
+                q = (g[j][k], g[j][(k + 1) % segs], g[j + 1][(k + 1) % segs], g[j + 1][k])
+                bm.faces.new(q if g is outer else tuple(reversed(q)))
+    for k in range(segs):
+        bm.faces.new((outer[rings][k], inner[rings][k], inner[rings][(k + 1) % segs], outer[rings][(k + 1) % segs]))
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    return place(obj_from_bm(name, bm, mat, lv), loc)
+
+
+def crossbow(tag, wood, iron, rope, rng, z, scale=1.0, y0=0.0):
+    """Besta pesada apontando para +Y (coronha, arcos, corda e virote)."""
+    k = scale
+    place(box("xb_stock", (0.14 * k, 1.5 * k, 0.12 * k), wood, tag), (0, y0, z))
+    place(box("xb_rail", (0.05 * k, 1.3 * k, 0.03 * k), iron, tag), (0, y0 + 0.05 * k, z + 0.075 * k))
+    for sx in (-1, 1):
+        pts = [Vector((sx * 0.05 * k, y0 + 0.7 * k, z)), Vector((sx * 0.4 * k, y0 + 0.62 * k, z)), Vector((sx * 0.72 * k, y0 + 0.42 * k, z))]
+        bm = bmesh.new()
+        tube(bm, pts, [0.05 * k, 0.04 * k, 0.03 * k], 6, 0.0, None)
+        obj_from_bm("xb_arm", bm, iron, tag)
+        bm = bmesh.new()
+        tube(bm, [pts[-1], Vector((0, y0 - 0.25 * k, z + 0.06 * k))], [0.008, 0.008], 4, 0.0, None)
+        obj_from_bm("xb_string", bm, rope, tag)
+    place(stake("xb_bolt", 1.25 * k, 0.022 * k, wood, iron, rng, tag, tip=0.16 * k), (0, y0 - 0.25 * k, z + 0.1 * k), (-90, 0, 0))
+
+
+def archer_paths():
+    rng = random.Random(1111)
+    bark = mat_bark()
+    wood = mat_old_wood("old_wood", blood=False)
+    iron = mat_flat("iron", (0.16, 0.15, 0.15))
+    rope = mat_flat("rope", (0.4, 0.33, 0.22))
+    brass = mat_flat("brass", (0.62, 0.45, 0.18))
+    camo = mat_flat("camo_net", (0.2, 0.24, 0.12))
+    red = mat_flat("banner_red", (0.45, 0.06, 0.05))
+    bone = mat_flat("bone", (0.66, 0.6, 0.48))
+    dark = mat_flat("socket", (0.03, 0.02, 0.02))
+    painted = mat_painted_metal()
+    burlap = mat_burlap()
+    H, S = 4.3, 1.05
+    # ---- Caminho A: Ninho de Atiradores (4) / Olho da Morte (5) ----
+    # Fixo: mastro central atravessando o telhado e cordas de amarração.
+    place(log("mast", 4.3, 0.09, bark, rng, "4a", bend=0.0), (0, 0, H + 2.2))
+    for sx, sy in ((-1, -1), (1, -1), (-1, 1), (1, 1)):
+        bm = bmesh.new()
+        tube(bm, [Vector((0, 0, H + 3.9)), Vector((sx * (S + 0.2), sy * (S + 0.2), H + 1.0))], [0.012, 0.012], 4, 0.0, None)
+        obj_from_bm("guy", bm, rope, "4a")
+    # Arma giratória do nível 4: cesto de vigia no alto do mastro + besta de precisão.
+    for tag, zz in (("Ta4", H + 3.55), ("Ta5", H + 3.55)):
+        for i in range(7):
+            y = -0.55 + i * 0.18
+            place(plank("nest_floor", 1.25, 0.17, 0.04, wood, rng, tag), (0, y, zz), (90, 0, rng.uniform(-2, 2)))
+        for side in range(4):
+            for k in range(5):
+                t = -1 + 2 * (k + 0.5) / 5
+                pos = (t * 0.55, 0.62 * (1 if side == 0 else -1), zz + 0.3) if side < 2 else (0.62 * (1 if side == 2 else -1), t * 0.55, zz + 0.3)
+                place(plank("nest_wall", 0.55, 0.2, 0.03, wood if tag == "Ta4" else painted, rng, tag), pos, (0, 90, 0 if side < 2 else 90))
+        # Rede de camuflagem por cima da parede de trás.
+        place(tin_sheet("camo", 1.3, 0.5, camo, rng, tag, corrugate=0.05), (0, -0.66, zz + 0.62), (75, 0, 0))
+        crossbow(tag, wood, iron, rope, rng, zz + 0.62, 1.15 if tag == "Ta4" else 1.25, 0.25)
+    # Nível 5 (arma): luneta de latão sobre a besta, chapas de ferro e lampião.
+    zz = H + 3.55
+    cyl("scope", 0.06, 0.05, 0.9, brass, "Ta5", 10, (0, 0.35, zz + 0.85), (90, 0, 0))
+    cyl("scope_lens", 0.085, 0.085, 0.06, brass, "Ta5", 12, (0, 0.82, zz + 0.85), (90, 0, 0))
+    for sx in (-1, 1):
+        place(box("scope_mount", (0.03, 0.04, 0.16), iron, "Ta5"), (sx * 0.05, 0.35, zz + 0.76))
+    place(plate("nest_armor", 1.2, 0.45, 0.03, iron, iron, rng, "Ta5"), (0, 0.66, zz + 0.32))
+    # Fixo do nível 5: estandarte vermelho com crânio, alvo de treino e corvo de ferro.
+    place(log("banner_pole", 2.0, 0.025, bark, rng, "5a", bend=0.0), (-(S + 0.2), S + 0.2, H + 2.9))
+    place(plank("banner", 0.9, 0.5, 0.01, red, rng, "5a", broken=True), (-(S + 0.2), S + 0.55, H + 3.4), (90, 0, 90))
+    place(skull("banner_skull", bone, dark, "5a"), (-(S + 0.25), S + 0.45, H + 3.4), (0, 0, 90))
+    for k, r in enumerate((0.42, 0.3, 0.17, 0.06)):
+        cyl("target_ring", r, r, 0.04 + k * 0.01, (wood, red, wood, red)[k], "5a", 16, (S + 0.42, -0.2, 1.6 + 0.0), (0, 90, 0))
+    place(box("target_stand", (0.06, 0.06, 1.6), wood, "5a"), (S + 0.45, -0.2, 0.8))
+    # ---- Caminho B: Saraivada (4) / Flechas Flamejantes (5) ----
+    # Fixo nível 4: sacadas laterais com parapeito, telhado extra na frente, feixes de flechas.
+    for sx in (-1, 1):
+        x0 = sx * (S + 0.6)
+        for i in range(6):
+            y = -0.8 + i * 0.32
+            place(plank("balcony", 0.95, 0.3, 0.05, wood, rng, "4b"), (x0, y, H - 0.02), (90, 0, 90 + rng.uniform(-2, 2)))
+        bm = bmesh.new()
+        tube(bm, [Vector((sx * (S + 0.05), -0.85, H - 0.1)), Vector((sx * (S + 1.0), -0.85, H - 0.1)), Vector((sx * (S + 0.4), -0.85, H - 1.4))], [0.05, 0.05, 0.05], 6, 0.03, rng)
+        obj_from_bm("balcony_brace", bm, bark, "4b")
+        bm = bmesh.new()
+        tube(bm, [Vector((sx * (S + 0.05), 0.85, H - 0.1)), Vector((sx * (S + 1.0), 0.85, H - 0.1)), Vector((sx * (S + 0.4), 0.85, H - 1.4))], [0.05, 0.05, 0.05], 6, 0.03, rng)
+        obj_from_bm("balcony_brace", bm, bark, "4b")
+        for k in range(5):
+            place(plank("balcony_rail", 0.7, 0.24, 0.035, wood, rng, "4b", broken=rng.random() < 0.3), (sx * (S + 1.05), -0.8 + k * 0.4, H + 0.35), (0, 90, 90))
+        # Feixes de flechas em barris.
+        cyl("arrow_barrel", 0.16, 0.18, 0.45, wood, "4b", 10, (x0, 0.5, H + 0.22))
+        for k in range(9):
+            a = k * math.tau / 9
+            place(stake("arrow", 0.75, 0.012, wood, iron, rng, "4b", tip=0.07), (x0 + math.cos(a) * 0.08, 0.5 + math.sin(a) * 0.08, H + 0.3), (rng.uniform(-8, 8), rng.uniform(-8, 8), 0))
+        # Arqueiro de palha (espantalho com arco) na sacada.
+        cyl("dummy_body", 0.13, 0.11, 0.6, burlap, "4b", 8, (x0, -0.3, H + 0.55))
+        ball("dummy_head", 0.11, burlap, "4b", (x0, -0.3, H + 0.95))
+        pts = [Vector((x0 + sx * 0.1, -0.15 + dz * 0.0, H + 0.4 + dz)) for dz in (0.0, 0.35, 0.7)]
+        pts[1] = pts[1] + Vector((sx * 0.18, 0, 0))
+        bm = bmesh.new()
+        tube(bm, pts, [0.015, 0.02, 0.015], 5, 0.0, None)
+        obj_from_bm("dummy_bow", bm, wood, "4b")
+    place(tin_sheet("front_roof", 2.6, 1.0, mat_rust(), rng, "4b", corrugate=0.03), (0, -0.75, H + 1.9), (90 + 28, 0, 0))
+    # Fixo nível 5: braseiros de ferro (o jogo põe o fogo), barris de óleo e estandartes laranja.
+    for sx in (-1, 1):
+        x0 = sx * (S + 0.6)
+        cyl("brazier_leg", 0.04, 0.04, 0.55, iron, "5b", 6, (x0, -0.55, H + 0.27))
+        bowl("brazier", 0.24, 0.16, iron, "5b", (x0, -0.55, H + 0.7))
+        cyl("oil_barrel", 0.2, 0.2, 0.55, red, "5b", 12, (x0 * 0.6, 1.3, 0.28))
+        for z in (0.1, 0.45):
+            place(torus("oil_band", 0.205, 0.015, iron, "5b"), (x0 * 0.6, 1.3, z))
+        place(log("flag_pole", 1.4, 0.022, bark, rng, "5b", bend=0.0), (sx * (S + 1.05), 0.8, H + 1.0))
+        place(plank("flag_orange", 0.6, 0.4, 0.01, mat_flat("banner_orange", (0.7, 0.32, 0.06)), rng, "5b", broken=True), (sx * (S + 1.05), 1.1, H + 1.45), (90, 0, 0))
 
 
 BUILDERS = {"archer_tower": build_archer_tower, "ballista": build_ballista, "cannon": build_cannon, "tesla": build_tesla, "barricade": build_barricade, "stone_wall": build_stone_wall, "iron_wall": build_iron_wall,
@@ -1155,7 +1302,7 @@ def join_levels():
     groups = {}
     for o in list(bpy.context.scene.objects):
         if o.type == "MESH":
-            groups.setdefault(int(o.get("lv", 1)), []).append(o)
+            groups.setdefault(str(o.get("lv", 1)), []).append(o)
     out = []
     for lv in sorted(groups):
         bpy.ops.object.select_all(action="DESELECT")
@@ -1166,7 +1313,8 @@ def join_levels():
         bpy.ops.object.join()
         j = bpy.context.view_layer.objects.active
         # lv 0 = peça giratória (arma da torre), sempre visível; o jogo a gira para o alvo.
-        j.name = "Turret" if lv == 0 else "Lv%d" % lv
+        # "Ta4" = arma da especialização a no nível 4 (troca a Turret comum); "4a" = peças fixas.
+        j.name = "Turret" if lv == "0" else ("Turret_" + lv[1:] if lv.startswith("T") else "Lv" + lv)
         out.append(j)
     # Mesma origem (0,0,0) para todos os níveis.
     for o in out:
@@ -1243,6 +1391,7 @@ def render_levels(objs, out_png):
     width = max(o.dimensions.x for o in objs)
     height = max(o.dimensions.z for o in objs)
     gap = width + 0.7
+    objs = [o for o in objs if o.name == "Turret" or (o.name.startswith("Lv") and len(o.name) == 3)]
     for i, n in enumerate((1, 2, 3)):
         for o in objs:
             lv = 0 if o.name == "Turret" else int(o.name[2:])
@@ -1285,6 +1434,373 @@ def render_levels(objs, out_png):
     print("prévia:", out_png)
 
 
+def ballista_paths():
+    rng = random.Random(2222)
+    bark = mat_bark()
+    wood = mat_old_wood("old_wood", blood=False)
+    iron = mat_flat("iron", (0.16, 0.15, 0.15))
+    steel = mat_flat("steel", (0.32, 0.33, 0.35))
+    rope = mat_flat("rope", (0.42, 0.35, 0.23))
+    stone = mat_stone()
+    painted = mat_painted_metal()
+    rust = mat_rust()
+    half = 1.15
+    top = 0.1 + 4 * (2 * 0.1 * 0.9) + 0.1
+    z = top + 0.03
+
+    def heavy_bow(tag, k, ram):
+        """Balista pesada (caminho A): coronha longa, arcos de aço com cintas e virote com ponta de aríete."""
+        place(log("hb_pivot", 0.9, 0.15, bark, rng, tag, bend=0.0), (0, 0, z + 0.45))
+        place(torus("hb_collar", 0.17, 0.035, iron, tag), (0, 0, z + 0.85))
+        place(box("hb_stock", (0.26, 3.0 * k, 0.22), wood, tag), (0, 0.2, z + 1.02))
+        place(box("hb_track", (0.12, 2.7 * k, 0.05), steel, tag), (0, 0.25, z + 1.15))
+        for y in (-0.6, 0.2, 0.9):
+            place(box("hb_band", (0.3, 0.06, 0.26), iron, tag), (0, y, z + 1.02))
+        for sx in (-1, 1):
+            pts = [Vector((sx * 0.1, 1.45 * k, z + 1.05)), Vector((sx * 0.7, 1.3 * k, z + 1.06)), Vector((sx * 1.2, 1.0 * k, z + 1.07)), Vector((sx * 1.5, 0.6 * k, z + 1.08))]
+            bm = bmesh.new()
+            tube(bm, pts, [0.1, 0.085, 0.07, 0.055], 8, 0.0, None)
+            obj_from_bm("hb_arm", bm, steel, tag)
+            for t in (0.3, 0.6):
+                pp = pts[1].lerp(pts[2], t)
+                place(torus("hb_arm_band", 0.1, 0.02, iron, tag), pp.to_tuple(), (0, 90, 0))
+            bm = bmesh.new()
+            tube(bm, [pts[-1], Vector((0, -0.85 * k, z + 1.14))], [0.018, 0.018], 4, 0.0, None)
+            obj_from_bm("hb_string", bm, rope, tag)
+        # Virote: haste grossa e ponta (no nível 5 vira cabeça de aríete).
+        cyl("hb_bolt", 0.05, 0.05, 2.6 * k, wood, tag, 8, (0, -0.1, z + 1.24), (90, 0, 0))
+        if ram:
+            cyl("ram_head", 0.18, 0.05, 0.45, iron, tag, 10, (0, 1.35 * k, z + 1.24), (-90, 0, 0))
+            for i in range(4):
+                a = i * math.tau / 4
+                place(box("ram_fin", (0.03, 0.3, 0.14), steel, tag), (math.cos(a) * 0.12, 1.1 * k, z + 1.24 + math.sin(a) * 0.12), (0, math.degrees(a), 0))
+        else:
+            cyl("hb_tip", 0.1, 0.0, 0.35, steel, tag, 6, (0, 1.4 * k, z + 1.24), (-90, 0, 0))
+        # Manivelas duplas e contrapeso.
+        for sx in (-1, 1):
+            place(torus("hb_wheel", 0.26, 0.035, iron, tag), (sx * 0.24, -1.05 * k, z + 1.0), (0, 90, 0))
+        place(box("hb_counter", (0.5, 0.4, 0.35), stone, tag), (0, -1.35 * k, z + 0.85))
+        place(plate("hb_shield", 1.3, 0.6, 0.04, painted if not ram else rust, iron, rng, tag), (0, 1.55 * k, z + 0.65))
+
+    heavy_bow("Ta4", 1.0, False)
+    heavy_bow("Ta5", 1.1, True)
+    # Fixo A4: anel de pedras reforçando o berço e cintas de ferro.
+    for i in range(12):
+        a = i * math.tau / 12
+        place(rough_stone("ring_stone", (0.45, 0.35, 0.35), stone, rng, "4a", 0.16), (math.cos(a) * 1.6, math.sin(a) * 1.6, 0.17), (0, 0, math.degrees(a)))
+    for side in range(4):
+        rot = 0 if side < 2 else 90
+        pos = (0, (half + 0.12) * (1 if side == 0 else -1), top * 0.5) if side < 2 else ((half + 0.12) * (1 if side == 2 else -1), 0, top * 0.5)
+        place(plate("crib_plate", 2.2, 0.5, 0.03, iron, iron, rng, "4a"), pos, (0, 0, rot))
+    # Fixo A5: virotes-aríete de reserva num cavalete e espigões de aço no anel.
+    for i in range(3):
+        cyl("spare_ram", 0.05, 0.05, 2.0, wood, "5a", 8, (-1.55 + i * 0.12, 0.0, 0.5 + i * 0.03), (90, 0, 0))
+        cyl("spare_head", 0.14, 0.04, 0.3, iron, "5a", 8, (-1.55 + i * 0.12, 1.1, 0.5 + i * 0.03), (-90, 0, 0))
+    place(box("rack", (0.5, 0.08, 0.6), wood, "5a"), (-1.5, -0.6, 0.3))
+    place(box("rack", (0.5, 0.08, 0.6), wood, "5a"), (-1.5, 0.6, 0.3))
+    for i in range(10):
+        a = i * math.tau / 10 + 0.15
+        cyl("steel_spike", 0.06, 0.0, 0.8, steel, "5a", 6, (math.cos(a) * 1.95, math.sin(a) * 1.95, 0.35), (math.degrees(math.sin(a)) * 0.5, -math.degrees(math.cos(a)) * 0.5, 0))
+
+    def harpoon(tag, twin):
+        """Lança-arpões (caminho B): tubo(s) com arpão farpado, tambor de corrente e guincho."""
+        place(log("hp_pivot", 0.9, 0.14, bark, rng, tag, bend=0.0), (0, 0, z + 0.45))
+        place(box("hp_base", (0.9, 0.9, 0.12), iron, tag), (0, 0, z + 0.9))
+        xs = (-0.24, 0.24) if twin else (0.0,)
+        for x in xs:
+            cyl("hp_tube", 0.12, 0.12, 2.0, steel, tag, 12, (x, 0.35, z + 1.15), (90, 0, 0))
+            for y in (-0.4, 0.3, 1.0):
+                place(torus("hp_ring", 0.13, 0.025, iron, tag), (x, y, z + 1.15), (90, 0, 0))
+            # Arpão: haste + ponta com farpas para trás.
+            cyl("hp_shaft", 0.03, 0.03, 0.6, iron, tag, 6, (x, 1.55, z + 1.15), (90, 0, 0))
+            cyl("hp_head", 0.09, 0.0, 0.3, steel, tag, 6, (x, 2.0, z + 1.15), (-90, 0, 0))
+            for i in range(3):
+                a = i * math.tau / 3
+                place(box("hp_barb", (0.025, 0.2, 0.025), steel, tag), (x + math.cos(a) * 0.08, 1.82, z + 1.15 + math.sin(a) * 0.08), (math.degrees(math.sin(a)) * 35, 0, -math.degrees(math.cos(a)) * 35))
+        # Tambor com a corrente enrolada e guincho.
+        cyl("hp_drum", 0.3, 0.3, 0.55 if not twin else 0.8, wood, tag, 14, (0, -0.85, z + 1.1), (0, 90, 0))
+        for k in range(5 if not twin else 7):
+            place(torus("hp_chain_coil", 0.31, 0.03, iron, tag), (-0.25 + k * 0.1 - (0.1 if twin else 0.0), -0.85, z + 1.1), (0, 90, 0))
+        for sx in (-1, 1):
+            place(torus("hp_crank", 0.2, 0.03, iron, tag), (sx * (0.42 if twin else 0.32), -0.85, z + 1.1), (0, 90, 0))
+        bm = bmesh.new()
+        tube(bm, [Vector((0, -0.6, z + 1.25)), Vector((0, 0.2, z + 1.35)), Vector((xs[0], 1.25, z + 1.18))], [0.02, 0.02, 0.02], 5, 0.0, None)
+        obj_from_bm("hp_chain", bm, iron, tag)
+        place(plate("hp_shield", 1.1, 0.5, 0.03, rust, iron, rng, tag), (0, 1.0, z + 0.62))
+
+    harpoon("Tb4", False)
+    harpoon("Tb5", True)
+    # Fixo B4: correntes e ganchos pendurados nos cantos, rolo de corda.
+    for sx, sy in ((-1, -1), (1, 1)):
+        place(log("hook_post", 1.6, 0.05, bark, rng, "4b", bend=0.0), (sx * (half + 0.3), sy * (half + 0.3), 0.8))
+        place(chain("hang_chain", 1.0, iron, "4b"), (sx * (half + 0.3), sy * (half + 0.45), 1.0))
+        place(torus("hook", 0.1, 0.02, steel, "4b"), (sx * (half + 0.3), sy * (half + 0.45), 0.45), (90, 0, 0))
+    for k in range(4):
+        place(torus("rope_coil", 0.28 - k * 0.02, 0.04, rope, "4b"), (1.5, -1.0, 0.05 + k * 0.08))
+    # Fixo B5: rede de ganchos (arame) esticada num cavalete e ganchos de abordagem.
+    place(box("net_frame", (1.6, 0.08, 0.08), bark, "5b"), (0, -(half + 0.6), 1.4))
+    for sx in (-1, 1):
+        place(box("net_leg", (0.08, 0.08, 1.4), bark, "5b"), (sx * 0.8, -(half + 0.6), 0.7))
+    for i in range(5):
+        place(barbed_wire("net_wire", 1.5, 0.06, iron, rng, "5b", loops=7), (0, -(half + 0.6), 0.35 + i * 0.22))
+    for i in range(3):
+        a = 2.2 + i * 0.5
+        place(torus("grapple", 0.14, 0.025, steel, "5b"), (math.cos(a) * 1.7, math.sin(a) * 1.7, 0.05))
+
+
+def barrel_mesh(name, length, r0, r1, mat, lv, segs=12, muzzle=1.18):
+    """Cano de canhão oco ao longo de +Y, com boca reforçada."""
+    prof = [(-length * 0.5, r0 * 1.1), (-length * 0.45, r0), (length * 0.4, r1), (length * 0.45, r1 * muzzle), (length * 0.5, r1 * muzzle)]
+    bm = bmesh.new()
+    rings = [[bm.verts.new((math.cos(a) * r, y, math.sin(a) * r)) for a in [k * math.tau / segs for k in range(segs)]] for y, r in prof]
+    for ra, rb in zip(rings, rings[1:]):
+        for k in range(segs):
+            bm.faces.new((ra[k], ra[(k + 1) % segs], rb[(k + 1) % segs], rb[k]))
+    bm.faces.new(list(reversed(rings[0])))
+    inner = [bm.verts.new((v.co.x * 0.62, v.co.y - 0.02, v.co.z * 0.62)) for v in rings[-1]]
+    for k in range(segs):
+        bm.faces.new((rings[-1][k], rings[-1][(k + 1) % segs], inner[(k + 1) % segs], inner[k]))
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    return obj_from_bm(name, bm, mat, lv)
+
+
+def cannon_paths():
+    rng = random.Random(3333)
+    wood = mat_old_wood("old_wood", blood=False)
+    iron = mat_flat("iron", (0.13, 0.12, 0.12))
+    bronze = mat_flat("bronze", (0.45, 0.3, 0.14))
+    steel = mat_flat("steel", (0.3, 0.31, 0.33))
+    stone = mat_stone()
+    burlap = mat_burlap()
+    rust = mat_rust()
+    red = mat_flat("oil_red", (0.42, 0.07, 0.05))
+    yellow = mat_flat("hazard", (0.55, 0.42, 0.08))
+    R = 1.35
+    z = 1.31
+
+    def mortar(tag, big):
+        """Morteiro: base de ferro, cano curto e grosso apontado para o céu (frente +Y)."""
+        k = 1.25 if big else 1.0
+        cyl("mt_plate", 0.75 * k, 0.8 * k, 0.15, iron, tag, 14, (0, 0, z + 0.08))
+        cyl("mt_turntable", 0.5 * k, 0.55 * k, 0.15, steel, tag, 14, (0, 0, z + 0.22))
+        for sx in (-1, 1):
+            place(box("mt_cheek", (0.1, 0.7 * k, 0.55 * k), iron, tag), (sx * 0.38 * k, 0, z + 0.55 * k))
+            cyl("mt_trunnion", 0.08, 0.08, 0.2, steel, tag, 8, (sx * 0.3 * k, 0, z + 0.62 * k), (0, 90, 0))
+        b = barrel_mesh("mt_barrel", 1.0 * k, 0.32 * k, 0.28 * k, bronze if big else iron, tag, 14, 1.25)
+        place(b, (0, 0.18 * k, z + 0.85 * k), (55, 0, 0))
+        for t in (-0.25, 0.1, 0.4):
+            place(torus("mt_band", 0.33 * k - t * 0.05, 0.03, rust if not big else iron, tag), (0, 0.18 * k + t * 0.57 * k, z + 0.85 * k + t * 0.82 * k), (-35, 0, 0))
+        if big:
+            # Boca em forma de goela (bombarda) e tanque de óleo nas costas.
+            place(torus("mt_jaw", 0.42, 0.07, iron, tag), (0, 0.18 * k + 0.5 * 0.57 * k, z + 0.85 * k + 0.5 * 0.82 * k), (-35, 0, 0))
+            cyl("mt_tank", 0.2, 0.2, 0.7, red, tag, 12, (0, -0.65, z + 0.55), (0, 90, 0))
+            bm = bmesh.new()
+            tube(bm, [Vector((0.2, -0.65, z + 0.6)), Vector((0.3, -0.2, z + 0.9)), Vector((0.1, 0.1, z + 1.1))], [0.03, 0.03, 0.03], 5, 0.0, None)
+            obj_from_bm("mt_hose", bm, iron, tag)
+
+    mortar("Ta4", False)
+    mortar("Ta5", True)
+    # Fixo A4: anel alto de sacos de areia, caixotes de bombas e pás.
+    for layer in range(2):
+        for i in range(18):
+            a = i * math.tau / 18 + layer * 0.17
+            place(sandbag("mt_bag", burlap, rng, "4a", (0.42, 0.24, 0.15)), (math.cos(a) * (R + 0.15), math.sin(a) * (R + 0.15), z + 0.16 + layer * 0.17 + 0.17), (0, 0, math.degrees(a) + 90))
+    for i in range(3):
+        place(box("shell_crate", (0.5, 0.35, 0.3), wood, "4a"), (-1.9 + i * 0.05, -0.6 + i * 0.45, 0.15 + (i % 2) * 0.3))
+        for j in range(3):
+            ball("mt_bomb", 0.09, iron, "4a", (-1.9 + i * 0.05 + (j - 1) * 0.13, -0.6 + i * 0.45, 0.42 + (i % 2) * 0.3))
+    # Fixo A5: barris de óleo vermelhos com faixa de perigo e mangueiras.
+    for i, (x, y) in enumerate(((1.8, -0.8), (2.0, 0.0), (1.8, 0.8), (2.25, -0.4))):
+        cyl("oil", 0.22, 0.22, 0.6, red, "5a", 12, (x, y, 0.3 + (0.6 if i == 3 else 0.0)))
+        place(torus("oil_stripe", 0.225, 0.04, yellow, "5a"), (x, y, 0.35 + (0.6 if i == 3 else 0.0)))
+    bm = bmesh.new()
+    tube(bm, [Vector((1.7, 0.0, 0.5)), Vector((1.3, 0.1, 0.9)), Vector((0.9, 0.0, z + 0.1))], [0.035, 0.035, 0.035], 5, 0.0, None)
+    obj_from_bm("fuel_hose", bm, iron, "5a")
+
+    def twin(tag, quad):
+        """Canhão duplo (nível 4) / metralha de quatro canos giratórios (nível 5)."""
+        for sx in (-1, 1):
+            place(box("tw_cheek", (0.1, 1.2, 0.5), wood, tag), (sx * 0.45, 0, z + 0.3))
+            for y in (-0.4, 0.35):
+                place(torus("tw_wheel", 0.24, 0.05, iron, tag), (sx * 0.58, y, z + 0.24), (0, 90, 0))
+        if quad:
+            cyl("gat_hub", 0.22, 0.22, 0.3, steel, tag, 12, (0, -0.55, z + 0.65), (90, 0, 0))
+            for i in range(4):
+                a = i * math.tau / 4 + math.pi / 4
+                b = barrel_mesh("gat_barrel", 1.6, 0.09, 0.08, iron, tag, 10, 1.15)
+                place(b, (math.cos(a) * 0.15, 0.25, z + 0.65 + math.sin(a) * 0.15))
+            for y in (-0.2, 0.5, 0.95):
+                place(torus("gat_ring", 0.27, 0.035, steel, tag), (0, y, z + 0.65), (90, 0, 0))
+            cyl("gat_drum", 0.28, 0.28, 0.25, painted_metal, tag, 14, (0.45, -0.3, z + 0.95), (0, 90, 0))
+            place(torus("gat_crank", 0.15, 0.025, iron, tag), (-0.35, -0.65, z + 0.65), (0, 90, 0))
+        else:
+            for sx in (-1, 1):
+                b = barrel_mesh("tw_barrel", 1.9, 0.17, 0.14, iron, tag, 12)
+                place(b, (sx * 0.2, 0.1, z + 0.62), (6, 0, 0))
+                for y in (-0.4, 0.25, 0.8):
+                    place(torus("tw_band", 0.17, 0.022, rust, tag), (sx * 0.2, 0.1 + y, z + 0.62 + y * 0.1), (84, 0, 0))
+        place(plate("tw_mantlet", 1.2, 0.5, 0.035, steel if quad else rust, iron, rng, tag), (0, 0.85, z + 0.42))
+
+    painted_metal = mat_painted_metal()
+    twin("Tb4", False)
+    twin("Tb5", True)
+    # Fixo B4: estantes de balas e barril de pólvora extra.
+    for sx in (-1, 1):
+        place(box("ammo_rack", (0.25, 0.9, 0.5), wood, "4b"), (sx * 1.85, 0.5, 0.25))
+        for j in range(4):
+            cyl("shell", 0.07, 0.05, 0.3, bronze, "4b", 8, (sx * 1.85, 0.15 + j * 0.23, 0.65))
+    # Fixo B5: chapas blindadas altas em volta do bastião e cintos de munição.
+    for i in range(8):
+        a = i * math.tau / 8 + 0.2
+        if -0.7 < a - math.pi * 0.5 < 0.7:
+            continue
+        place(plate("armor_high", 0.8, 1.1, 0.04, steel, iron, rng, "5b"), (math.cos(a) * (R + 0.25), math.sin(a) * (R + 0.25), z + 0.4), (0, 0, math.degrees(a) + 90))
+    for k in range(6):
+        place(torus("ammo_belt", 0.2, 0.03, bronze, "5b"), (-1.8, -1.0, 0.04 + k * 0.06))
+
+
+def tesla_paths():
+    rng = random.Random(4444)
+    rust = mat_rust()
+    copper = mat_copper()
+    iron = mat_flat("iron", (0.15, 0.14, 0.14))
+    steel = mat_flat("steel", (0.32, 0.33, 0.35))
+    glass = mat_flat("glass_insulator", (0.25, 0.42, 0.38))
+    cable = mat_flat("cable", (0.04, 0.04, 0.04))
+    bat = mat_flat("battery", (0.08, 0.08, 0.09))
+    yellow = mat_flat("hazard", (0.55, 0.42, 0.08))
+    painted = mat_painted_metal()
+    Htop = 4.4
+    # ---- Caminho A: Bobina de Tempestade (4) / Senhor dos Raios (5) ----
+    # Mastro mais alto com três toroides grandes (bobina de Tesla clássica) e para-raios.
+    place(log("ext_mast", 1.8, 0.06, iron, rng, "4a", bend=0.0), (0, 0, Htop + 1.6))
+    for k, (r, zz) in enumerate(((0.55, Htop + 1.0), (0.45, Htop + 1.6), (0.36, Htop + 2.15))):
+        place(torus("big_toroid", r, 0.09 - k * 0.012, copper, "4a"), (0, 0, zz))
+        for i in range(6):
+            a = i * math.tau / 6
+            cyl("toroid_spoke", 0.015, 0.015, r, iron, "4a", 4, (math.cos(a) * r * 0.5, math.sin(a) * r * 0.5, zz), (0, 90, math.degrees(a)))
+    cyl("rod", 0.025, 0.004, 0.9, steel, "4a", 6, (0, 0, Htop + 2.95))
+    for f in range(3):
+        a = math.pi / 2 + f * math.tau / 3
+        cyl("insulator", 0.07, 0.05, 0.25, glass, "4a", 8, (math.cos(a) * 0.5, math.sin(a) * 0.5, 2.0))
+    # Nível 5: três bobinas menores em volta (tripés baixos) ligadas por cabos e anel-gaiola no topo.
+    for f in range(3):
+        a = math.pi / 6 + f * math.tau / 3
+        cx, cy = math.cos(a) * 1.55, math.sin(a) * 1.55
+        for g in range(3):
+            b = a + g * math.tau / 3
+            bm = bmesh.new()
+            tube(bm, [Vector((cx + math.cos(b) * 0.3, cy + math.sin(b) * 0.3, 0.0)), Vector((cx, cy, 1.4))], [0.035, 0.03], 6, 0.0, None)
+            obj_from_bm("sub_leg", bm, rust, "5a")
+        for k in range(4):
+            place(torus("sub_coil", 0.18, 0.025, copper, "5a"), (cx, cy, 1.2 + k * 0.07))
+        ball("sub_ball", 0.12, steel, "5a", (cx, cy, 1.6))
+        bm = bmesh.new()
+        tube(bm, [Vector((cx, cy, 1.5)), Vector((cx * 0.5, cy * 0.5, 0.9)), Vector((0, 0, 1.8))], [0.02, 0.02, 0.02], 4, 0.0, None)
+        obj_from_bm("sub_cable", bm, cable, "5a")
+    for k in range(8):
+        a = k * math.tau / 8
+        bm = bmesh.new()
+        tube(bm, [Vector((math.cos(a) * 0.62, math.sin(a) * 0.62, Htop + 0.9)), Vector((math.cos(a) * 0.4, math.sin(a) * 0.4, Htop + 2.5))], [0.018, 0.018], 4, 0.0, None)
+        obj_from_bm("cage_bar", bm, steel, "5a")
+    # ---- Caminho B: Pulso Eletromagnético (4) / Gerador de Campo (5) ----
+    # Antena parabólica virada para cima no topo e anéis emissores em volta do mastro.
+    bowl("dish", 0.75, 0.3, steel, "4b", (0, 0, Htop + 1.15))
+    cyl("dish_feed", 0.03, 0.03, 0.6, iron, "4b", 6, (0, 0, Htop + 1.35))
+    ball("dish_emitter", 0.09, copper, "4b", (0, 0, Htop + 1.66))
+    for i in range(3):
+        a = i * math.tau / 3
+        bm = bmesh.new()
+        tube(bm, [Vector((math.cos(a) * 0.62, math.sin(a) * 0.62, Htop + 1.05)), Vector((0, 0, Htop + 1.6))], [0.015, 0.015], 4, 0.0, None)
+        obj_from_bm("dish_strut", bm, iron, "4b")
+    for k, zz in enumerate((1.5, 2.3, 3.1)):
+        place(torus("emit_ring", 0.85 - k * 0.15, 0.04, copper, "4b"), (0, 0, zz))
+    place(plate("emp_sign", 0.45, 0.3, 0.02, yellow, iron, rng, "4b", rivets=False), (0.0, -0.5, 1.1))
+    # Nível 5: gaiola em domo sobre a base, bancos de capacitores e gerador grande.
+    for k in range(10):
+        a = k * math.tau / 10
+        pts = []
+        for t in range(7):
+            el = t / 6 * math.pi / 2
+            pts.append(Vector((math.cos(a) * 1.75 * math.cos(el), math.sin(a) * 1.75 * math.cos(el), 0.3 + 2.2 * math.sin(el))))
+        bm = bmesh.new()
+        tube(bm, pts, [0.025] * len(pts), 5, 0.0, None)
+        obj_from_bm("dome_bar", bm, steel, "5b")
+    for zz, rr in ((0.35, 1.75), (1.4, 1.5), (2.2, 0.95)):
+        place(torus("dome_ring", rr, 0.03, copper, "5b"), (0, 0, zz))
+    for i in range(4):
+        a = i * math.tau / 4 + math.pi / 4
+        x, y = math.cos(a) * 1.2, math.sin(a) * 1.2
+        cyl("capacitor", 0.14, 0.14, 0.7, painted, "5b", 10, (x, y, 0.65))
+        cyl("cap_top", 0.07, 0.07, 0.12, copper, "5b", 8, (x, y, 1.05))
+    place(box("big_generator", (0.8, 0.55, 0.6), bat, "5b"), (-0.9, -0.95, 0.6), (0, 0, -20))
+
+
+def variant_parts(objs, lvl, br):
+    """Objetos visíveis num nível/especialização (mesma regra do jogo em Building._blender_levels)."""
+    names = {o.name: o for o in objs}
+    out = []
+    for o in objs:
+        n = o.name
+        if n.startswith("Lv"):
+            want = int(n[2])
+            tag = n[3:] if len(n) > 3 else ""
+            if want <= lvl and (tag == "" or (tag == br and lvl >= 4)):
+                out.append(o)
+    special = None
+    if br and lvl >= 4:
+        special = names.get("Turret_%s%d" % (br, lvl)) or names.get("Turret_" + br)
+    if special:
+        out.append(special)
+    elif "Turret" in names:
+        out.append(names["Turret"])
+    return out
+
+
+def render_paths(objs, out_png):
+    """Prévia da árvore: nível 3 e as duas especializações (4 e 5) lado a lado."""
+    sc = bpy.context.scene
+    variants = [(3, ""), (4, "a"), (5, "a"), (4, "b"), (5, "b")]
+    width = max(o.dimensions.x for o in objs) + 1.2
+    height = max(o.dimensions.z for o in objs)
+    for o in objs:
+        o.hide_render = True
+    for i, (lv, br) in enumerate(variants):
+        for o in variant_parts(objs, lv, br):
+            c = o.copy()
+            c.data = o.data
+            c.location = ((i - 2) * width, 0, 0)
+            c.hide_render = False
+            sc.collection.objects.link(c)
+    ground = bpy.data.meshes.new("ground")
+    bm = bmesh.new()
+    bmesh.ops.create_grid(bm, x_segments=1, y_segments=1, size=40)
+    bm.to_mesh(ground)
+    g = bpy.data.objects.new("ground", ground)
+    ground.materials.append(mat_flat("dirt2", (0.2, 0.16, 0.12)))
+    sc.collection.objects.link(g)
+    cam = bpy.data.objects.new("cam", bpy.data.cameras.new("cam"))
+    cam.data.lens = 38
+    sc.collection.objects.link(cam)
+    span = width * 5
+    cam.location = (0, -span * 0.95, height * 0.75 + span * 0.42)
+    cam.rotation_euler = Euler((math.radians(66), 0, 0))
+    sc.camera = cam
+    sun = bpy.data.objects.new("sun2", bpy.data.lights.new("sun2", "SUN"))
+    sun.data.energy = 3.2
+    sun.rotation_euler = Euler((math.radians(50), math.radians(10), math.radians(-35)))
+    sc.collection.objects.link(sun)
+    sc.world = bpy.data.worlds.new("w2")
+    sc.world.use_nodes = True
+    sc.world.node_tree.nodes["Background"].inputs[0].default_value = (*srgb((0.45, 0.47, 0.5)), 1)
+    sc.world.node_tree.nodes["Background"].inputs[1].default_value = 0.6
+    sc.render.resolution_x, sc.render.resolution_y = 2000, 700
+    sc.cycles.samples = 40
+    sc.render.filepath = out_png
+    bpy.ops.render.render(write_still=True)
+    print("prévia:", out_png)
+
+
 def main():
     a = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else sys.argv[1:]
     render_dir = None
@@ -1303,7 +1819,10 @@ def main():
         export(os.path.join(out, n + ".glb"))
         if render_dir:
             os.makedirs(render_dir, exist_ok=True)
-            render_levels(objs, os.path.join(render_dir, n + "_niveis.png"))
+            if any(o.name.startswith("Lv4") or o.name.startswith("Turret_") for o in objs):
+                render_paths(objs, os.path.join(render_dir, n + "_caminhos.png"))
+            else:
+                render_levels(objs, os.path.join(render_dir, n + "_niveis.png"))
 
 
 if __name__ == "__main__":

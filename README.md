@@ -108,6 +108,21 @@ pontas de aço, recarga, lunetas, munição pesada, muralhas de ferro, pedreiros
 **Economia** (ferramentas, mochilas, saqueadores, coletores que produzem recursos, oficina avançada) e
 **Herói** (treinamento, medicina, foco arcano, veterano). Dados em `data/tech/*.tres`.
 
+**Evolução das torres:** níveis 1 a 3 em linha; no nível 3 (a partir da horda 4) cada torre escolhe uma de
+duas especializações, com mais dois níveis (o 5 libera na horda 8), mecânica e visual próprios (modelados no
+Blender):
+- *Torre de Arqueiros*: **Ninho de Atiradores → Olho da Morte** (alcance longo, mira o mais forte, críticos, abate
+  instantâneo) ou **Saraivada → Flechas Flamejantes** (3 e depois 5 flechas por disparo, que incendeiam).
+- *Balista*: **Perfuradora Pesada → Aríete de Ferro** (virote gigante, linha larga, empurrão) ou **Arpão de
+  Correntes → Rede de Ganchos** (prende, deixa lento e puxa os zumbis próximos).
+- *Canhão*: **Morteiro → Bombarda Incendiária** (artilharia de longe, explosão maior, chão em chamas) ou **Canhão
+  Duplo → Metralha** (2,2x mais rápido e bombas de fragmentação).
+- *Torre Elétrica*: **Bobina de Tempestade → Senhor dos Raios** (mais saltos, raios do céu) ou **Pulso
+  Eletromagnético → Gerador de Campo** (choque em área, lentidão e atordoamento).
+
+Tocar numa construção abre o card: **Reparar** (gasta materiais na proporção do dano), melhorar, escolher a
+especialização e, no Quartel, **Recrutar** cada tipo de soldado.
+
 **Exército:** construa um **Quartel** (horda 2; 4 vagas, +2 por nível, até 12 — 8 no celular) e recrute na
 aba *Exército* do menu da base: **Guarda** (tanque), **Arqueiro** (à distância, horda 3), **Bárbaro** (dano
 alto, horda 4) e **Mago de Batalha** (magia em área, horda 6). Cada soldado treina alguns segundos no Quartel. Sem fila de recrutamento, cada Quartel forma sozinho um **Guarda grátis a cada 25 s** (dois quartéis, metade do tempo) até lotar as vagas.

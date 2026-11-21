@@ -288,7 +288,8 @@ static func spawn_lob(from: Vector3, to: Vector3, duration: float, arc: float, o
 		ball.global_position = p, 0.0, 1.0, duration)
 	tw.tween_callback(func() -> void:
 		ball.queue_free()
-		on_land.call())
+		if on_land.is_valid():  # quem disparou pode ter sido demolido no meio do voo
+			on_land.call())
 
 ## Raio elétrico entre os pontos (segmentos brilhantes que somem rápido).
 static func spawn_lightning(points: PackedVector3Array, color: Color = Color(0.55, 0.8, 1.0)) -> void:

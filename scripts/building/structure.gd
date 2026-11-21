@@ -88,6 +88,39 @@ func closest_point(p: Vector3) -> Vector3:
 func missing_health() -> float:
 	return health.max_health - health.current
 
+## Custo para reparar todo o dano (muros e portões: madeira; Núcleo: pedra e sucata). Building sobrescreve.
+func repair_cost() -> Dictionary:
+	var miss := missing_health()
+	if miss <= 0.5:
+		return {}
+	if kind == Kind.CORE:
+		var u := ceili(miss / 45.0)
+		return {&"stone": u, &"scrap": u}
+	return {&"wood": ceili(miss / 20.0)}
+
+## Repara gastando materiais do armazém/mochila; se não der para tudo, conserta a parte que der.
+func repair_with_materials() -> String:
+	if Coop.is_client():
+		Coop.request("repair_one", [String(name)])
+		return "Pedido de reparo enviado ao anfitrião."
+	var cost := repair_cost()
+	if cost.is_empty():
+		return "Já está inteiro."
+	var f := 1.0
+	for id: StringName in cost:
+		f = minf(f, float(ResourceManager.available(id)) / maxf(1.0, float(cost[id])))
+	if f <= 0.0:
+		return "Faltam materiais: " + ResourceManager.cost_to_string(cost)
+	var pay := {}
+	for id: StringName in cost:
+		pay[id] = maxi(1, ceili(float(cost[id]) * f))
+	if not ResourceManager.spend(pay):
+		return "Faltam materiais: " + ResourceManager.cost_to_string(cost)
+	repair(missing_health() * f)
+	EffectsHub.spawn_heal(global_position)
+	AudioManager.play_3d(&"build", global_position, -2.0)
+	return ("Reparado: " if f >= 1.0 else "Reparo parcial (%d%%): " % int(f * 100)) + ResourceManager.cost_to_string(pay)
+
 func repair(amount: float) -> void:
 	if health.dead:
 		health.revive(0.0)

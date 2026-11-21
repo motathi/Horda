@@ -327,6 +327,7 @@ func _fx(kind: String, a: Vector3, b: Vector3, f: float, c: Color) -> void:
 		"warcry": SkillFx.warcry(a)
 		"nova_t": SkillFx.nova_telegraph(a, f, b.x)
 		"nova": SkillFx.nova_burst(a, f)
+		"tpulse": SkillFx.tower_pulse(a, f, b.x)
 		"trap":
 			var trap := BearTrap.new()
 			trap.visual_only = true
@@ -514,17 +515,17 @@ func _building_placed(def_id: String, pos: Vector3, rot: float, lvl: int, node_n
 
 func building_changed(b: Building, removed: bool) -> void:
 	if is_host():
-		_building_changed.rpc(b.name, b.level, removed)
+		_building_changed.rpc(b.name, b.level, b.branch, removed)
 
 @rpc("authority", "call_remote", "reliable")
-func _building_changed(node_name: String, lvl: int, removed: bool) -> void:
+func _building_changed(node_name: String, lvl: int, br: String, removed: bool) -> void:
 	var b := _find_building(node_name)
 	if b == null:
 		return
 	if removed:
 		b.queue_free()
 	else:
-		b.apply_level(lvl)
+		b.apply_level(lvl, br)
 
 func _find_building(node_name: String) -> Building:
 	for n in get_tree().get_nodes_in_group("buildings"):
@@ -663,6 +664,15 @@ func _request(action: String, args: Array) -> void:
 		"upgrade":
 			var b2 := _find_building(str(args[0]))
 			msg = b2.upgrade() if b2 else "Construção não encontrada."
+		"tower_branch":
+			var b4 := _find_building(str(args[0]))
+			msg = b4.choose_branch(str(args[1])) if b4 else "Construção não encontrada."
+		"repair_one":
+			var st: Structure = null
+			for n in get_tree().get_nodes_in_group("structures"):
+				if n.name == str(args[0]):
+					st = n as Structure
+			msg = st.repair_with_materials() if st else "Estrutura não encontrada."
 		"demolish":
 			var b3 := _find_building(str(args[0]))
 			if b3:
