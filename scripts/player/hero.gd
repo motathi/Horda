@@ -142,7 +142,7 @@ func _ready() -> void:
 	attr_cfg = load(ATTRIBUTES_PATH) as AttributeConfig
 	for id in AttributeConfig.IDS:
 		attributes[id] = 0
-	health.setup(max_health, armor)
+	health.setup(total_max_health(), armor)
 	health.regen_per_second = health_regen
 	health.died.connect(_on_died)
 	health.damaged.connect(_on_damaged)
@@ -187,8 +187,11 @@ func set_camera(cam: Camera3D) -> void:
 func set_home(p: Vector3) -> void:
 	_home = p
 
+## Desafio: o herói final (com equipamento, atributos e pesquisas) tem 1/3 do dano e da vida.
+const POWER_SCALE := 1.0 / 3.0
+
 func damage() -> float:
-	return (base_damage + gear(&"damage") + weapon_level * SHARPEN_BONUS + (level - 1) * LEVEL_DAMAGE) * (1.0 + attr(&"strength") * attr_cfg.str_damage_pct + Tech.bonus("hero_damage_pct"))
+	return (base_damage + gear(&"damage") + weapon_level * SHARPEN_BONUS + (level - 1) * LEVEL_DAMAGE) * (1.0 + attr(&"strength") * attr_cfg.str_damage_pct + Tech.bonus("hero_damage_pct")) * POWER_SCALE
 
 ## Troca a classe/aparência em jogo (modelo, ataque e habilidades) — usado nos testes.
 func apply_class(id: String) -> void:
@@ -328,7 +331,7 @@ func cooldown_mult() -> float:
 	return 1.0 - minf(attr(&"intelligence") * attr_cfg.int_cdr_pct + gear(&"cdr_pct") + Tech.bonus("cdr_pct"), attr_cfg.int_cdr_cap)
 
 func total_max_health() -> float:
-	return max_health + (level - 1) * LEVEL_HP + attr(&"vitality") * attr_cfg.vit_hp + gear(&"max_hp") + Tech.bonus("hero_hp")
+	return (max_health + (level - 1) * LEVEL_HP + attr(&"vitality") * attr_cfg.vit_hp + gear(&"max_hp") + Tech.bonus("hero_hp")) * POWER_SCALE
 
 ## Armadura total: base + equipamento + Grito de Guerra.
 func total_armor() -> float:

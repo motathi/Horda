@@ -283,18 +283,21 @@ func _test_combat() -> void:
 	# Aponta o herói para o zumbi e ataca até morrer.
 	var kills_before: int = GameManager.stats.kills
 	var swings := 0
-	while not e.is_dead() and swings < 12:
+	hero.health.invulnerable = true  # o herói tem 1/3 da vida: o teste mede o golpe, não a sobrevivência
+	while not e.is_dead() and swings < 30:
 		hero.model.rotation.y = atan2(-(e.global_position.x - hero.global_position.x), -(e.global_position.z - hero.global_position.z))
 		hero._attack_timer = 0.0
 		hero._start_attack()
 		await wait(0.5)
 		swings += 1
+	hero.health.invulnerable = false
 	check(e.is_dead(), "herói mata zumbi em %d golpes" % swings)
 	check(GameManager.stats.kills == kills_before + 1, "abate contabilizado")
 	check(hero.xp > 0 or hero.level > 1, "herói ganhou experiência (%d XP, nível %d)" % [hero.xp, hero.level])
 	var lvl := hero.level
+	var max0 := hero.health.max_health
 	hero.add_xp(hero.xp_to_next())
-	check(hero.level == lvl + 1 and hero.health.max_health > hero.max_health, "subiu de nível: vida máx. %d" % int(hero.health.max_health))
+	check(hero.level == lvl + 1 and hero.health.max_health > max0, "subiu de nível: vida máx. %d (era %d)" % [int(hero.health.max_health), int(max0)])
 	# Zumbi persegue e ataca o herói
 	var e2 := (load("res://scenes/enemies/zombie.tscn") as PackedScene).instantiate() as Enemy
 	world.enemies_root.add_child(e2)
@@ -385,12 +388,15 @@ func _test_map_threats() -> void:
 		pack.append(_spawn_zombie(hero.global_position + fwd * 1.6 + side * (k - 2.5) * 0.45))
 	await wait(0.05)
 	hero._aim_point = hero.global_position + fwd * 3.0
+	var crit0 := hero.crit_chance
+	hero.crit_chance = -10.0  # sem crítico: o teste compara o dano do alvo principal com o dos demais
 	hero._apply_hit()
+	hero.crit_chance = crit0
 	var hit := pack.filter(func(e: Enemy) -> bool: return e.health.current < e.health.max_health)
 	var losses := hit.map(func(e: Enemy) -> float: return e.health.max_health - e.health.current)
 	losses.sort()
 	check(hit.size() == Hero.CLEAVE_MAX, "golpe em arco acerta no máximo %d de 6 zumbis (%d)" % [Hero.CLEAVE_MAX, hit.size()])
-	check(losses.size() >= 2 and losses[-1] > losses[0] * 1.5, "só o alvo principal leva o dano cheio")
+	check(losses.size() >= 2 and losses[-1] > losses[0] * 1.5, "só o alvo principal leva o dano cheio (%s)" % str(losses))
 	hero.ranged = was_ranged
 	await _clear_enemies()
 	world.spawner.set_process(true)
@@ -592,7 +598,7 @@ func _test_abilities() -> void:
 	victim.take_damage(DamageInfo.make(99999, null))
 	# Grito de Guerra
 	hero.health.invulnerable = false
-	hero.health.take_damage(DamageInfo.make(150, null))
+	hero.health.take_damage(DamageInfo.make(hero.health.max_health * 0.6, null))
 	hero.health.invulnerable = true
 	var armor0 := hero.health.armor
 	var hp_before := hero.health.current
@@ -634,7 +640,7 @@ func _test_attributes() -> void:
 	check(hero.damage() > dmg0 and ResourceManager.hero_inventory.capacity == cap0 + hero.attr_cfg.str_carry, "Força aumenta dano (%.1f -> %.1f) e carga" % [dmg0, hero.damage()])
 	var hp0 := hero.health.max_health
 	hero.add_attribute(&"vitality")
-	check(is_equal_approx(hero.health.max_health, hp0 + hero.attr_cfg.vit_hp), "Vitalidade aumenta vida máxima")
+	check(is_equal_approx(hero.health.max_health, hp0 + hero.attr_cfg.vit_hp * Hero.POWER_SCALE), "Vitalidade aumenta vida máxima")
 	var as0 := hero.attack_speed()
 	var ms0 := hero.current_move_speed()
 	hero.add_attribute(&"agility")
@@ -1365,11 +1371,11 @@ func _test_base_services() -> void:
 	check(potion_r != null and potion_r.buy, "poção de cura à venda no menu da base")
 	msg = world.services.craft(potion_r)
 	check(ResourceManager.hero_inventory.count(&"potion") >= 1 and msg.begins_with("Comprado"), "poção comprada: " + msg)
-	hero.health.take_damage(DamageInfo.make(200, null))
+	hero.health.take_damage(DamageInfo.make(hero.health.max_health * 0.8, null))
 	var hp_p := hero.health.current
 	hero.use_consumable(&"potion")
 	check(hero.health.current >= minf(hero.health.max_health, hp_p + 150.0), "poção cura na hora (%.0f -> %.0f)" % [hp_p, hero.health.current])
-	hero.health.take_damage(DamageInfo.make(80, null))
+	hero.health.take_damage(DamageInfo.make(hero.health.max_health * 0.6, null))
 	var hp := hero.health.current
 	hero.use_consumable(&"bandage")
 	await wait(2.0)
