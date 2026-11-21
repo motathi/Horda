@@ -277,8 +277,10 @@ Modelos riggados gerados pelo `tools/tripo_pipeline.py`.
 - Andar do herói: o corpo anda no passo da física e o modelo é desenhado interpolado entre as duas últimas
   posições (`Hero._process` + `Engine.get_physics_interpolation_fraction()`); a câmera segue
   `Hero.visual_position()`. Sem isso o herói tremia em relação à câmera no celular.
-- Construção: `CameraRig.set_overview()` sobe a câmera (72°, 54 m) centrada na base; o direcional arrasta a vista
-  (`pan_overview`) e a neblina de distância afina enquanto dura.
+- Construção: `CameraRig.set_overview()` sobe a câmera (72°, 54 m) e continua seguindo o herói (o direcional sempre
+  move o herói: arrastar a vista fazia o joystick parecer travado depois de construir, já que o modo construção
+  continua ativo para erguer vários muros seguidos); a neblina de distância afina enquanto dura. `HudActions`
+  solta o joystick se o HUD some com um dedo na tela.
 
 ## Memória no celular (web)
 

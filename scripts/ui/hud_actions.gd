@@ -61,6 +61,12 @@ func is_over_button(p: Vector2) -> bool:
 			return true
 	return false
 
+## O HUD sumiu (painel em tela cheia, mapa, carregamento) com um dedo no joystick: o "soltou" não chegaria aqui
+## e o herói ficaria andando sozinho — então solta tudo agora.
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_VISIBILITY_CHANGED and not is_visible_in_tree():
+		_reset_touches()
+
 func _input(event: InputEvent) -> void:
 	if not is_visible_in_tree():
 		return

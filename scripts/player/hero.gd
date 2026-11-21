@@ -483,13 +483,6 @@ func _physics_step(delta: float) -> void:
 	_attack_timer = maxf(0.0, _attack_timer - delta)
 	attack_cooldown_changed.emit(_attack_timer * attack_speed())
 	var dir := _input_direction()
-	if build_mode:
-		# Construindo: o direcional arrasta a vista de cima (o herói fica parado esperando).
-		var rig := _camera.get_parent() as CameraRig if _camera else null
-		if rig and rig.is_overview():
-			rig.pan_overview(Input.get_vector("move_left", "move_right", "move_up", "move_down", 0.12), delta)
-			dir = Vector3.ZERO
-			_has_move_target = false
 	if dir != Vector3.ZERO:
 		_has_move_target = false
 		_target_enemy = null

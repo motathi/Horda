@@ -43,23 +43,17 @@ const OVERVIEW_PITCH := 72.0
 const OVERVIEW_DISTANCE := 54.0
 const OVERVIEW_MAX := 70.0
 var _overview: bool = false
-var _overview_anchor: Node3D
 var _saved := {}
 var _pitch_target: float = -1.0
 
 ## Modo construção: câmera bem mais alta e quase de cima, centrada na base (onde se constrói).
-func set_overview(on: bool, center: Vector3 = Vector3.ZERO) -> void:
+func set_overview(on: bool) -> void:
 	if on == _overview:
 		return
 	_overview = on
 	if on:
+		# A câmera continua seguindo o herói (o joystick sempre move o herói), só que bem mais alta.
 		_saved = {"target": _target, "zoom": _zoom_target, "pitch": pitch_degrees, "max": max_distance}
-		if _overview_anchor == null:
-			_overview_anchor = Node3D.new()
-			_overview_anchor.name = "OverviewAnchor"
-			get_parent().add_child(_overview_anchor)
-		_overview_anchor.global_position = center
-		_target = _overview_anchor
 		max_distance = OVERVIEW_MAX
 		_zoom_target = OVERVIEW_DISTANCE
 		_pitch_target = OVERVIEW_PITCH
@@ -72,17 +66,6 @@ func set_overview(on: bool, center: Vector3 = Vector3.ZERO) -> void:
 
 func is_overview() -> bool:
 	return _overview
-
-## Arrasta a vista de construção (teclas/joystick), sem sair de perto da base.
-func pan_overview(v: Vector2, delta: float) -> void:
-	if not _overview or _overview_anchor == null or v == Vector2.ZERO:
-		return
-	var b := Basis(Vector3.UP, _yaw)
-	var move := (b.x * v.x + b.z * v.y) * delta * 30.0
-	var p := _overview_anchor.global_position + Vector3(move.x, 0, move.z)
-	var c := GameManager.base_core.global_position if GameManager.base_core else Vector3.ZERO
-	var off := Vector2(p.x - c.x, p.z - c.z).limit_length(30.0)
-	_overview_anchor.global_position = Vector3(c.x + off.x, 0, c.z + off.y)
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventScreenTouch:

@@ -98,11 +98,7 @@ func _ready() -> void:
 	build_manager.name = "BuildManager"
 	add_child(build_manager)
 	build_manager.setup(builder.structures_root, camera_rig.camera)
-	build_manager.mode_changed.connect(func(on: bool) -> void:
-		var c := GameManager.base_core.global_position if GameManager.base_core else Vector3.ZERO
-		# Centro da vista: o herói, se estiver na base; senão a fortaleza.
-		var h := hero.global_position if hero else c
-		camera_rig.set_overview(on, h if h.distance_to(c) < 26.0 else c))
+	build_manager.mode_changed.connect(func(on: bool) -> void: camera_rig.set_overview(on))
 	army = Army.new()
 	army.name = "Army"
 	army.parent_root = self
