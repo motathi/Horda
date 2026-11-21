@@ -291,7 +291,7 @@ servidor público do PeerJS (sem servidor próprio); em redes móveis muito rest
 Partidas coop não são salvas. No PC (sem navegador), o coop usa IP + porta 24680 (ENet).
 
 **Golpe corpo a corpo:** acerta em arco de 120°, mas só o alvo principal leva o dano cheio; até 3 outros
-levam metade (o resto da multidão não é atingido). Dano base 15.
+levam metade (o resto da multidão não é atingido). Dano base 12 (+2 por nível); vida base 170 (+18 por nível).
 
 **Habilidades:** gastam **energia** (barra azul, regenera 6/s) e têm recarga. *Golpe Giratório* acerta
 tudo ao redor (3,6 m, 100% do dano, recarga 10 s); *Investida* avança 8 m invulnerável atordoando quem estiver no caminho; *Grito de Guerra*

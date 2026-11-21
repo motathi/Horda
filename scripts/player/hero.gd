@@ -12,9 +12,9 @@ signal dodge_started
 signal dodge_success
 
 @export_group("Atributos")
-@export var max_health: float = 220.0
+@export var max_health: float = 170.0
 @export var armor: float = 2.0
-@export var base_damage: float = 15.0
+@export var base_damage: float = 12.0
 @export var attacks_per_second: float = 1.15
 @export var crit_chance: float = 0.12
 @export var crit_multiplier: float = 1.8
@@ -27,8 +27,8 @@ signal dodge_success
 
 const SHARPEN_BONUS := 4.0
 ## Ganho por nível (a árvore de atributos completa vem na Fase 2).
-const LEVEL_HP := 25.0
-const LEVEL_DAMAGE := 3.0
+const LEVEL_HP := 18.0
+const LEVEL_DAMAGE := 2.0
 
 var level: int = 1
 var xp: int = 0
