@@ -152,6 +152,11 @@ preparação até o passo final.
   (sinal `input_reset`) solta movimento, ataque, joystick, botões do HUD e toques da câmera; roda ao perder e
   ganhar foco, em `visibilitychange`/`pagehide`/`blur` do navegador e ao voltar para a horizontal. Um toque
   novo num índice que ainda constava como apertado também zera o estado (o "soltou" anterior se perdeu).
+- Áudio na web: `project.godot` usa `audio/general/default_playback_type.web=0` (Stream: o Godot mistura o som,
+  com volumes, fades da música e o limitador do Master). No padrão do 4.3 para web (Sample) o jogo ficava mudo.
+  `driver/output_latency.web=80` dá folga ao mixer no celular (export sem threads). O `head_include` guarda os
+  AudioContext criados e chama `resume()` a cada toque/tecla e ao voltar à aba (o celular suspende o áudio da
+  página escondida); no Safari pede `navigator.audioSession.type = "playback"` (toca mesmo com o modo silencioso).
 - `vercel.json`: `index.pck`/`index.wasm` com `max-age=0, must-revalidate` (sempre confere a versão; sem
   mudança o servidor responde 304). O service worker do PWA não chega a instalar no export sem threads
   (a lista dele inclui `index.worker.js`, que não existe), então não guarda versões antigas.

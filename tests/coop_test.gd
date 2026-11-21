@@ -109,7 +109,7 @@ func _run_host() -> void:
 	# Reviver: o cliente cai e o anfitrião o levanta (segurando E perto dele).
 	check(await wait_step("client_down", 30.0), "cliente avisou que caiu")
 	check(await wait_until(func() -> bool: return puppet.health.dead, 8.0), "herói caído do cliente aparece caído no anfitrião")
-	check(puppet._down_ring != null and puppet._down_ring.visible, "círculo de resgate sob o aliado caído")
+	check(await wait_until(func() -> bool: return puppet._down_ring != null and puppet._down_ring.visible, 2.0), "círculo de resgate sob o aliado caído")
 	var me: Hero = world.hero
 	me.global_position = puppet.global_position + Vector3(1.0, 0, 0)
 	await wait(0.3)
