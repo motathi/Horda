@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="Recipe" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/crafting/recipe.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"potion_stew"
+display_name = "Caldo de Cura"
+description = "Cozinha carne com ervas: uma Poção de Cura (cura 160 na hora, tecla 3) sem gastar sucata."
+inputs = {
+&"meat": 3,
+&"herbs": 1
+}
+output_item = &"potion"
+output_amount = 1

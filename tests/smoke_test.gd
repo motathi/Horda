@@ -37,6 +37,7 @@ func _ready() -> void:
 	print("Mundo pronto em %d ms" % (Time.get_ticks_msec() - t0))
 	await _test_world()
 	await _test_map_threats()
+	await _test_meat()
 	await _test_audio()
 	await _test_atmosphere()
 	await _test_settings_tutorial()
@@ -336,6 +337,27 @@ func _test_app_switch() -> void:
 			"ao voltar ao jogo, toques e joystick presos são liberados")
 	else:
 		check(false, "botões de ação do HUD encontrados")
+
+## Carne: até 8 na mochila; o excedente vai ao armazém e a falta é reposta dele; vira caldo (poção) e comida.
+func _test_meat() -> void:
+	print("[carne]")
+	var inv := ResourceManager.hero_inventory
+	var st := ResourceManager.storage
+	var meat0 := st.count(&"meat")
+	inv.remove(&"meat", inv.count(&"meat"))
+	inv.add(&"meat", 20)
+	ResourceManager.deposit_all()
+	check(inv.count(&"meat") == 8 and st.count(&"meat") == meat0 + 12, "mochila fica com 8 carnes e 12 vão ao armazém (%d / %d)" % [inv.count(&"meat"), st.count(&"meat") - meat0])
+	inv.remove(&"meat", 5)
+	ResourceManager.deposit_all()
+	check(inv.count(&"meat") == 8 and st.count(&"meat") == meat0 + 7, "ao entrar na base a mochila é reabastecida do armazém (%d)" % inv.count(&"meat"))
+	var stew := world.services.recipes.filter(func(r: Recipe) -> bool: return r.id == &"potion_stew")
+	check(stew.size() == 1 and int(stew[0].inputs.get(&"meat", 0)) == 3, "receita Caldo de Cura usa carne")
+	var zdef := load("res://data/enemies/zombie.tres") as EnemyDef
+	var meat_drop := zdef.loot.entries.filter(func(e: LootEntry) -> bool: return e.item_id == &"meat" and e.chance > 0.0)
+	check(meat_drop.is_empty(), "zumbis não soltam mais carne")
+	check(int((load("res://data/soldiers/0_guard.tres") as SoldierDef).cost.get(&"meat", 0)) > 0, "soldados comem carne (custo de recrutamento)")
+	st.remove(&"meat", st.count(&"meat") - meat0)
 
 ## Guardiões, baús, golpe em arco limitado e passo do herói casado com a velocidade.
 func _test_map_threats() -> void:
@@ -1113,7 +1135,7 @@ func _test_tower_paths() -> void:
 	var was_running := TimeManager.running
 	TimeManager.running = false  # não gasta a preparação (o teste da noite conta com ela)
 	TimeManager.day = 9
-	for id: StringName in [&"wood", &"stone", &"scrap", &"cloth", &"herbs"]:
+	for id: StringName in [&"wood", &"stone", &"scrap", &"cloth", &"herbs", &"meat"]:
 		ResourceManager.storage.add(id, 5000)
 	var spot := _clear_spot(Vector3(-30, 0, 30), 12.0)
 	hero.global_position = spot + Vector3(0, 0, 10)
@@ -1175,7 +1197,7 @@ func _test_army() -> void:
 	var bar := world.build_manager.place(Building.load_def(&"barracks"), Vector3(-20, 0, 20), 0.0, false)
 	await wait(0.1)
 	check(army.capacity() == 4, "Quartel dá 4 vagas (%d)" % army.capacity())
-	for id: StringName in [&"wood", &"stone", &"scrap", &"cloth", &"herbs"]:
+	for id: StringName in [&"wood", &"stone", &"scrap", &"cloth", &"herbs", &"meat"]:
 		ResourceManager.storage.add(id, 300)
 	var msg := army.recruit(guard)
 	check(army.queue.size() == 1, "recrutar coloca na fila de treino (%s)" % msg)

@@ -18,6 +18,7 @@ move_speed = 4.2
 aggro_range = 13.0
 splash_radius = 0.0
 cost = {
+&"meat": 2,
 &"wood": 10,
 &"scrap": 12,
 &"cloth": 2

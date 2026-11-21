@@ -24,7 +24,7 @@ script = ExtResource("3")
 item_id = &"meat"
 min_amount = 1
 max_amount = 3
-chance = 0.6
+chance = 0.0
 
 [sub_resource type="Resource" id="LootEntry_3"]
 script = ExtResource("3")

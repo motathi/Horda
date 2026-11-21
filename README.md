@@ -108,6 +108,11 @@ pontas de aço, recarga, lunetas, munição pesada, muralhas de ferro, pedreiros
 **Economia** (ferramentas, mochilas, saqueadores, coletores que produzem recursos, oficina avançada) e
 **Herói** (treinamento, medicina, foco arcano, veterano). Dados em `data/tech/*.tres`.
 
+**Carne e consumíveis:** a mochila leva no máximo 8 carnes, 6 curativos e 5 poções; o excedente vai para o
+armazém ao entrar na base e a mochila é reabastecida de lá. Carne cura 50 (tecla 1), vira **Caldo de Cura**
+(3 carnes + 1 erva = uma Poção, sem sucata) e é comida dos soldados (recrutar custa carne). Zumbis não soltam
+carne: ela vem de caixas, baús e da fazenda.
+
 **Evolução das torres:** níveis 1 a 3 em linha; no nível 3 (a partir da horda 4) cada torre escolhe uma de
 duas especializações, com mais dois níveis (o 5 libera na horda 8), mecânica e visual próprios (modelados no
 Blender):

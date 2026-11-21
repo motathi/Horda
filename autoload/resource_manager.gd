@@ -51,16 +51,27 @@ func give_hero(id: StringName, amount: int) -> int:
 
 ## Move os recursos da mochila para o armazém (itens consumíveis — carne,
 ## curativos — ficam com o herói para uso em campo).
+## Quanto de cada consumível o herói leva na mochila; o resto fica no armazém (carne pesava e lotava a mochila).
+const CARRY_LIMIT := {&"meat": 8, &"bandage": 6, &"potion": 5}
+
 func deposit_all() -> Dictionary:
 	var summary := {}
 	for id: StringName in hero_inventory.items():
 		var def := get_def(id)
-		if def and def.is_usable():
-			continue
 		var n := hero_inventory.count(id)
+		if def and def.is_usable():
+			n -= int(CARRY_LIMIT.get(id, 999))  # guarda só o que passa do limite
+		if n <= 0:
+			continue
 		store(id, n)
 		hero_inventory.remove(id, n)
 		summary[id] = n
+	# Reabastece os consumíveis da mochila com o que houver no armazém (até o limite).
+	for id: StringName in CARRY_LIMIT:
+		var want := int(CARRY_LIMIT[id]) - hero_inventory.count(id)
+		if want > 0 and storage.count(id) > 0 and not Coop.is_client():
+			var took := storage.remove(id, mini(want, storage.count(id)))
+			hero_inventory.add(id, took)
 	if not summary.is_empty():
 		EventBus.resources_deposited.emit(summary)
 	return summary
@@ -68,7 +79,7 @@ func deposit_all() -> Dictionary:
 func has_depositable() -> bool:
 	for id: StringName in hero_inventory.items():
 		var def := get_def(id)
-		if def == null or not def.is_usable():
+		if def == null or not def.is_usable() or hero_inventory.count(id) > int(CARRY_LIMIT.get(id, 999)):
 			return true
 	return false
 
