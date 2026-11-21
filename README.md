@@ -354,6 +354,8 @@ xvfb-run godot res://tools/render_portraits.tscn            # retratos dos heró
 ## Testes
 
 ```bash
+# Resistência: várias hordas seguidas medindo memória, objetos e nós a cada amanhecer
+godot --headless res://tests/endurance_test.tscn -- 7 --lowend
 # Teste automatizado da Fase 1 (gera o mundo, combate, coleta, saque, serviços, noite, amanhecer, save)
 godot --headless res://tests/smoke_test.tscn
 

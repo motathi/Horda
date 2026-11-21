@@ -255,6 +255,20 @@ func _enemy_died(id: int, killer_peer: int) -> void:
 			e.set_meta(&"soldier_kill", true)
 		e.puppet_die(local_hero() if killer_peer == Net.my_id() else null)
 
+## Anfitrião: inimigo retirado do mapa sem morrer (economia de memória no celular): some também nos clientes.
+func enemy_removed(e: Enemy) -> void:
+	if not is_host() or not e.has_meta(&"net_id"):
+		return
+	enemies.erase(int(e.get_meta(&"net_id")))
+	_enemy_removed.rpc(int(e.get_meta(&"net_id")))
+
+@rpc("authority", "call_remote", "reliable")
+func _enemy_removed(id: int) -> void:
+	var e := enemies.get(id) as Enemy
+	enemies.erase(id)
+	if e and is_instance_valid(e):
+		e.queue_free()
+
 ## Golpe de um jogador num inimigo. No anfitrião aplica; no cliente envia ao anfitrião.
 func hit_enemy(e: Enemy, amount: float, crit: bool, stun: float = 0.0) -> void:
 	if not e.has_meta(&"net_id"):

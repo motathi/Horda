@@ -247,6 +247,20 @@ Modelos riggados gerados pelo `tools/tripo_pipeline.py`.
   que ficam longe do corpo. A espada (`CharacterModel.attach_sword()`) é um `BoneAttachment3D` no osso
   `R_Hand`, encaixada na primeira pose de "parado" (`_fit_sword`), e acompanha o pulso nos golpes.
 
+## Memória no celular (web)
+
+- O navegador do celular mata a aba quando a soma de WebAssembly + JS + memória de vídeo passa do limite
+  (o jogo "fechava" ao vencer a 5ª horda). Medido com `tests/endurance_test.tscn` (várias hordas seguidas,
+  memória/objetos/nós a cada amanhecer) e, na versão web, contando `bufferData`/`texImage2D` do WebGL no
+  Chromium: as texturas são JPG/WebP com perdas (sem compressão de vídeo, para o .pck não dobrar), então cada
+  1024² ocupa ~5 MB na placa. Atlas de objetos pequenos do Blender, zumbis, esqueletos e texturas de
+  primitivas (tecido, metal, tábuas...) usam `process/size_limit=512`; muralhas, torres, fortaleza, casas,
+  heróis e o terreno seguem em 1024. Cada personagem animado tem a própria cópia da malha deformada na placa,
+  então no celular (`Platform.low_end`) a população espalhada não cresce com os dias e, ao começar a horda,
+  `WorldSpawner._trim_for_night()` retira os inimigos espalhados mais distantes até sobrar
+  `LOW_END_NIGHT_BUDGET` (nunca a menos de 45 m do herói; no coop, `Coop.enemy_removed`). Resultado medido:
+  texturas 305 → 197 MB, WebAssembly 166 → 138 MB, e nada mais cresce de uma horda para outra.
+
 ## Mapa: densidade, guardiões e baús
 
 - `WorldSpawner` cria os inimigos das regiões em grupos (2–4) até `max` (×0,6 em `Platform.low_end`) e

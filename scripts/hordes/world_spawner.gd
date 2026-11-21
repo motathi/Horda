@@ -23,9 +23,37 @@ var _t: float = 0.0
 var _parent: Node
 var _alive: Dictionary = {}  # region name -> Array[Enemy]
 
+## Celular: no máximo isto de inimigos espalhados durante a horda (cada personagem animado tem uma cópia da
+## malha na placa de vídeo; somados à horda, estouravam a memória do navegador lá pela 5ª horda).
+const LOW_END_NIGHT_BUDGET := 40
+
 func _ready() -> void:
 	_rng.randomize()
 	_parent = get_node(enemies_parent)
+	TimeManager.phase_changed.connect(func(phase: int, _day: int) -> void:
+		if phase == TimeManager.Phase.NIGHT and Platform.low_end:
+			_trim_for_night())
+
+## Ao começar a horda no celular, some com os inimigos espalhados mais distantes do herói (voltam de dia).
+func _trim_for_night() -> void:
+	if Coop.is_client():
+		return
+	var hero := GameManager.hero
+	var list: Array[Enemy] = []
+	for r in regions:
+		for e in _alive.get(r.name, []):
+			if is_instance_valid(e) and not (e as Enemy).is_dead():
+				list.append(e)
+	if list.size() <= LOW_END_NIGHT_BUDGET:
+		return
+	var from := hero.global_position if hero else Vector3.ZERO
+	list.sort_custom(func(a: Enemy, b: Enemy) -> bool: return a.global_position.distance_squared_to(from) > b.global_position.distance_squared_to(from))
+	for i in list.size() - LOW_END_NIGHT_BUDGET:
+		var e := list[i]
+		if e.global_position.distance_to(from) < 45.0:
+			break  # nunca some na frente do jogador
+		Coop.enemy_removed(e)
+		e.queue_free()
 
 func populate_initial() -> void:
 	if Coop.is_client():
@@ -43,8 +71,8 @@ func populate_initial() -> void:
 
 func _region_cap(r: Dictionary, grow: bool) -> int:
 	var k := LOW_END_DENSITY if Platform.low_end else 1.0
-	# Regiões ficam mais perigosas com o passar dos dias.
-	return int(round(float(r.max) * k)) + (mini(TimeManager.day - 1, 8) if grow else 0)
+	# Regiões ficam mais perigosas com o passar dos dias (no celular a quantidade fica fixa: memória).
+	return int(round(float(r.max) * k)) + (mini(TimeManager.day - 1, 8) if grow and not Platform.low_end else 0)
 
 func _spawn_guardian(g: Dictionary) -> void:
 	var e := ENEMY_SCENE.instantiate() as Enemy
